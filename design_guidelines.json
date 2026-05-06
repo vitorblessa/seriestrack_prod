@@ -1,0 +1,136 @@
+{
+  "theme": "dark",
+  "archetype": "5 (Jewel & Luxury) mixed with subtle 7 (Electric)",
+  "concept": "Premium Unicorn Entertainment Tracker. Replacing standard SaaS flat dark UI with a deep, cinematic obsidian look and high-tension 'Electric Coral' accents.",
+  "colors": {
+    "background": {
+      "base": "#0A0A0C",
+      "surface_glass": "rgba(10, 10, 12, 0.65)",
+      "surface_solid": "#16161A",
+      "surface_elevated": "#212126"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A0A0AB",
+      "tertiary": "#6C6C75"
+    },
+    "brand": {
+      "primary": "#FF2A54",
+      "primary_hover": "#FF4D71",
+      "glow": "rgba(255, 42, 84, 0.4)"
+    },
+    "borders": {
+      "subtle": "rgba(255, 255, 255, 0.08)",
+      "focus": "rgba(255, 255, 255, 0.2)"
+    },
+    "streaming_platforms": {
+      "netflix": "#E50914",
+      "prime_video": "#00A8E1",
+      "disney_plus": "#113CCF",
+      "max": "#002BE7",
+      "apple_tv": "#FFFFFF",
+      "paramount_plus": "#0064FF",
+      "crunchyroll": "#F47521",
+      "hulu": "#1CE783",
+      "peacock": "#000000"
+    }
+  },
+  "typography": {
+    "font_families": {
+      "heading": "'Cabinet Grotesk', sans-serif",
+      "body": "'Outfit', sans-serif",
+      "mono": "'JetBrains Mono', monospace"
+    },
+    "scales": {
+      "h1_hero": "text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-none",
+      "h2_section": "text-3xl md:text-4xl font-bold tracking-tight",
+      "h3_card": "text-xl font-bold tracking-tight",
+      "body_base": "text-base font-medium leading-relaxed",
+      "body_sm": "text-sm font-medium text-secondary",
+      "overline": "text-xs font-bold uppercase tracking-[0.2em] text-secondary"
+    }
+  },
+  "layout": {
+    "spacing_scale": {
+      "section_y": "py-20 md:py-32",
+      "container_px": "px-6 md:px-12 lg:px-24"
+    },
+    "grids": {
+      "library_bento": "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6",
+      "horizontal_rail": "flex overflow-x-auto gap-4 md:gap-6 pb-6 snap-x snap-mandatory scrollbar-hide",
+      "calendar_grid": "grid grid-cols-7 gap-px bg-white/10 rounded-xl overflow-hidden border border-white/10"
+    }
+  },
+  "surfaces": {
+    "header_nav": "sticky top-0 z-50 bg-[#0A0A0C]/70 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/5",
+    "poster_card": {
+      "container": "group relative rounded-xl overflow-hidden bg-white/5 border border-white/5 transition-all duration-500 hover:border-white/20 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(255,42,84,0.15)] snap-start shrink-0 cursor-pointer",
+      "overlay": "absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+    },
+    "hero_banner": {
+      "container": "relative w-full min-h-[80vh] md:min-h-[85vh] flex flex-col justify-end",
+      "overlay": "absolute inset-0 bg-gradient-to-r from-[#0A0A0C] via-[#0A0A0C]/80 to-transparent z-10",
+      "vignette": "absolute inset-0 bg-gradient-to-t from-[#0A0A0C] via-transparent to-transparent z-10"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "inline-flex items-center justify-center rounded-full bg-[#FF2A54] text-white px-8 py-3.5 font-bold tracking-wide transition-all hover:bg-[#FF4D71] hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,42,84,0.3)]",
+      "secondary_glass": "inline-flex items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md px-8 py-3.5 font-bold tracking-wide transition-all hover:bg-white/20 border border-white/10",
+      "icon_circle": "flex items-center justify-center rounded-full bg-white/10 p-3 hover:bg-white/20 transition-colors backdrop-blur-md"
+    },
+    "badges": {
+      "streaming": "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider",
+      "status": "inline-flex items-center px-2 py-1 rounded border border-white/10 bg-white/5 text-[10px] font-bold uppercase tracking-[0.1em]"
+    },
+    "tabs": {
+      "container": "flex space-x-1 p-1 bg-white/5 rounded-xl border border-white/5 backdrop-blur-sm",
+      "trigger": "px-6 py-2 rounded-lg text-sm font-bold transition-all data-[state=active]:bg-white data-[state=active]:text-black text-white/60 hover:text-white"
+    }
+  },
+  "motion": {
+    "page_transition": {
+      "initial": { "opacity": 0, "y": 10 },
+      "animate": { "opacity": 1, "y": 0 },
+      "transition": { "duration": 0.4, "ease": [0.22, 1, 0.36, 1] }
+    },
+    "stagger_children": {
+      "container": { "variants": { "hidden": { "opacity": 0 }, "show": { "opacity": 1, "transition": { "staggerChildren": 0.1 } } } },
+      "item": { "variants": { "hidden": { "opacity": 0, "y": 20 }, "show": { "opacity": 1, "y": 0, "transition": { "type": "spring", "stiffness": 300, "damping": 24 } } } }
+    }
+  },
+  "testing": {
+    "attributes": [
+      "data-testid='splash-login-button'",
+      "data-testid='splash-register-button'",
+      "data-testid='auth-email-input'",
+      "data-testid='auth-password-input'",
+      "data-testid='auth-submit-button'",
+      "data-testid='nav-home-link'",
+      "data-testid='nav-search-link'",
+      "data-testid='nav-library-link'",
+      "data-testid='nav-calendar-link'",
+      "data-testid='rail-trending-container'",
+      "data-testid='series-poster-card-{id}'",
+      "data-testid='series-detail-add-button'",
+      "data-testid='series-detail-season-accordion'",
+      "data-testid='library-tab-{status}'",
+      "data-testid='calendar-filter-{platform}'"
+    ]
+  },
+  "media": {
+    "hero_backgrounds": [
+      {
+        "url": "https://images.unsplash.com/photo-1755963969538-00dfa22a7c0b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwxfHxjaW5lbWF0aWMlMjBkYXJrJTIwZnV0dXJpc3RpYyUyMGNpdHl8ZW58MHx8fHwxNzc4MDk3ODUyfDA&ixlib=rb-4.1.0&q=85",
+        "category": "splash_hero",
+        "description": "Aerial view of dark skyscrapers at night, used for landing page hero background with vignette overlay."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1763895971784-f7e00791cae3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHw0fHxjaW5lbWF0aWMlMjBkYXJrJTIwZnV0dXJpc3RpYyUyMGNpdHl8ZW58MHx8fHwxNzc4MDk3ODUyfDA&ixlib=rb-4.1.0&q=85",
+        "category": "auth_background",
+        "description": "Foggy night with glowing streetlights and distant moon, used for login/register page background."
+      }
+    ],
+    "notes_for_main_agent": "Use TMDB API for actual series backdrops and posters. The images above are purely for the marketing splash and auth screens. CRITICAL: Use pure HTML+Tailwind for horizontal rails (do not force Shadcn carousel if it breaks standard snap scrolling). All posters MUST use aspect-[2/3] and backdrops aspect-video."
+  }
+}
