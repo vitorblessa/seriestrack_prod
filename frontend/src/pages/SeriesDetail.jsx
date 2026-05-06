@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { toast } from "sonner";
+import SeriesReviews from "../components/SeriesReviews";
+import { useAuth } from "../lib/auth";
 
 const STATUSES = [
     { key: "watching", label: "Assistindo", icon: Play },
@@ -19,6 +21,7 @@ const STATUSES = [
 
 export default function SeriesDetail() {
     const { id } = useParams();
+    const { user } = useAuth();
     const [series, setSeries] = useState(null);
     const [loading, setLoading] = useState(true);
     const [seasonNum, setSeasonNum] = useState(1);
@@ -26,6 +29,8 @@ export default function SeriesDetail() {
     const [seasonLoading, setSeasonLoading] = useState(false);
     const [inLib, setInLib] = useState(null); // null=unknown, item or false
     const [actLoading, setActLoading] = useState(false);
+    const [progress, setProgress] = useState(new Set()); // "S-E"
+    const [progressSummary, setProgressSummary] = useState(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -49,10 +54,23 @@ export default function SeriesDetail() {
             } catch {
                 if (!cancelled) setInLib(false);
             }
+            // Load episode progress (only if logged in)
+            if (user) {
+                try {
+                    const [{ data: prog }, { data: sum }] = await Promise.all([
+                        api.get(`/progress/${id}`),
+                        api.get(`/progress/${id}/summary`),
+                    ]);
+                    if (!cancelled) {
+                        setProgress(new Set(prog.map((p) => `${p.season}-${p.episode}`)));
+                        setProgressSummary(sum);
+                    }
+                } catch {}
+            }
         }
         load();
         return () => { cancelled = true; };
-    }, [id]);
+    }, [id, user]);
 
     useEffect(() => {
         if (!series) return;
@@ -102,6 +120,26 @@ export default function SeriesDetail() {
             setActLoading(false);
         }
     };
+
+    const toggleWatched = async (s, e) => {
+        const key = `${s}-${e}`;
+        const next = new Set(progress);
+        const willWatch = !next.has(key);
+        if (willWatch) next.add(key); else next.delete(key);
+        setProgress(next);
+        try {
+            await api.post("/progress", { tmdb_id: Number(id), season: s, episode: e, watched: willWatch });
+            const { data: sum } = await api.get(`/progress/${id}/summary`);
+            setProgressSummary(sum);
+        } catch {
+            // revert
+            const r = new Set(progress);
+            setProgress(r);
+            toast.error("Erro ao salvar progresso");
+        }
+    };
+
+    const currentSeasonProgress = progressSummary?.seasons?.find((x) => x.season_number === seasonNum);
 
     if (loading) {
         return (
@@ -222,6 +260,19 @@ export default function SeriesDetail() {
                                     </button>
                                 )}
                             </div>
+
+                            {/* Overall progress */}
+                            {progressSummary && progressSummary.total_episodes > 0 && (progressSummary.total_watched > 0 || inLib) && (
+                                <div className="mt-6 max-w-xl" data-testid="series-overall-progress">
+                                    <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-white/60 mb-2">
+                                        <span>Seu progresso geral</span>
+                                        <span>{progressSummary.total_watched}/{progressSummary.total_episodes} eps · {progressSummary.percent}%</span>
+                                    </div>
+                                    <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                                        <div className="h-full bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] transition-all duration-500" style={{ width: `${progressSummary.percent}%` }} />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -263,27 +314,56 @@ export default function SeriesDetail() {
                             ))}
                         </TabsList>
                         <TabsContent value={String(seasonNum)} className="mt-6">
+                            {currentSeasonProgress && (
+                                <div className="glass rounded-xl p-4 mb-4 flex items-center gap-4" data-testid="season-progress">
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-white/60">
+                                            <span>Progresso da temporada</span>
+                                            <span>{currentSeasonProgress.watched}/{currentSeasonProgress.total} · {currentSeasonProgress.percent}%</span>
+                                        </div>
+                                        <div className="mt-2 h-2 rounded-full bg-white/5 overflow-hidden">
+                                            <div className="h-full bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] transition-all duration-500" style={{ width: `${currentSeasonProgress.percent}%` }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             {seasonLoading ? (
                                 <Loader2 className="w-6 h-6 animate-spin text-[#FF2A54]" />
                             ) : season ? (
                                 <div className="space-y-3">
-                                    {season.episodes.map((ep) => (
-                                        <div key={ep.id} className="glass rounded-xl p-4 flex flex-col md:flex-row gap-4">
-                                            {ep.still_url ? (
-                                                <img src={ep.still_url} alt="" className="w-full md:w-44 aspect-video object-cover rounded-lg" />
-                                            ) : (
-                                                <div className="w-full md:w-44 aspect-video bg-surface rounded-lg" />
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-baseline gap-3 flex-wrap">
-                                                    <span className="text-xs font-bold uppercase tracking-wider text-[#FF2A54]">EP {ep.episode_number}</span>
-                                                    <h3 className="font-display font-bold text-lg">{ep.name}</h3>
-                                                    {ep.air_date && <span className="text-xs text-white/50">{ep.air_date}</span>}
+                                    {season.episodes.map((ep) => {
+                                        const watched = progress.has(`${ep.season_number}-${ep.episode_number}`);
+                                        return (
+                                            <div key={ep.id} className={`glass rounded-xl p-4 flex flex-col md:flex-row gap-4 transition-all ${watched ? "opacity-70" : ""}`}>
+                                                {ep.still_url ? (
+                                                    <img src={ep.still_url} alt="" className="w-full md:w-44 aspect-video object-cover rounded-lg" />
+                                                ) : (
+                                                    <div className="w-full md:w-44 aspect-video bg-surface rounded-lg" />
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-baseline gap-3 flex-wrap">
+                                                        <span className="text-xs font-bold uppercase tracking-wider text-[#FF2A54]">EP {ep.episode_number}</span>
+                                                        <h3 className="font-display font-bold text-lg">{ep.name}</h3>
+                                                        {ep.air_date && <span className="text-xs text-white/50">{ep.air_date}</span>}
+                                                    </div>
+                                                    <p className="text-white/60 text-sm mt-2 line-clamp-3">{ep.overview || "Sem descrição."}</p>
                                                 </div>
-                                                <p className="text-white/60 text-sm mt-2 line-clamp-3">{ep.overview || "Sem descrição."}</p>
+                                                {user && (
+                                                    <button
+                                                        onClick={() => toggleWatched(ep.season_number, ep.episode_number)}
+                                                        data-testid={`episode-toggle-${ep.season_number}-${ep.episode_number}`}
+                                                        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${
+                                                            watched
+                                                                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                                                                : "bg-white/5 border-white/10 hover:bg-white/10 text-white/70"
+                                                        }`}
+                                                    >
+                                                        {watched ? <><Check className="w-3.5 h-3.5" /> Assistido</> : <><Plus className="w-3.5 h-3.5" /> Marcar</>}
+                                                    </button>
+                                                )}
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : null}
                         </TabsContent>
@@ -308,6 +388,9 @@ export default function SeriesDetail() {
                     </div>
                 </section>
             )}
+
+            {/* Reviews */}
+            <SeriesReviews tmdbId={Number(id)} />
 
             {/* Recommendations */}
             {series.recommendations?.length > 0 && (

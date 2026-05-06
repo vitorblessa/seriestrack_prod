@@ -5,9 +5,11 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 import os
+import json
 import logging
+import asyncio
 from datetime import datetime, timezone, timedelta
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import bcrypt
 import jwt
@@ -17,6 +19,12 @@ from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depend
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
+
+try:
+    from pywebpush import webpush, WebPushException
+    PUSH_AVAILABLE = True
+except Exception:
+    PUSH_AVAILABLE = False
 
 # ---------------------- Setup ----------------------
 mongo_url = os.environ['MONGO_URL']
@@ -30,6 +38,18 @@ TMDB_REGION = os.environ.get('TMDB_REGION', 'US')
 TMDB_LANG = os.environ.get('TMDB_LANG', 'en-US')
 TMDB_BASE = "https://api.themoviedb.org/3"
 TMDB_IMG = "https://image.tmdb.org/t/p"
+
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_PEM_PATH = os.environ.get('VAPID_PRIVATE_PEM_PATH', '')
+VAPID_SUBJECT = os.environ.get('VAPID_SUBJECT', 'mailto:admin@example.com')
+EMERGENT_OAUTH_SESSION_ENDPOINT = os.environ.get(
+    'EMERGENT_OAUTH_SESSION_ENDPOINT',
+    'https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data'
+)
+VAPID_PRIVATE_PEM = ''
+if VAPID_PRIVATE_PEM_PATH and os.path.exists(VAPID_PRIVATE_PEM_PATH):
+    with open(VAPID_PRIVATE_PEM_PATH, 'r') as f:
+        VAPID_PRIVATE_PEM = f.read()
 
 app = FastAPI(title="SeriesTrack API")
 api = APIRouter(prefix="/api")
@@ -157,6 +177,26 @@ class ProgressIn(BaseModel):
     season: int
     episode: int
     watched: bool = True
+
+
+class GoogleCallbackIn(BaseModel):
+    session_id: str
+
+
+class ReviewIn(BaseModel):
+    tmdb_id: int
+    rating: int = Field(ge=1, le=5)
+    comment: Optional[str] = Field(None, max_length=1000)
+
+
+class PushKeysIn(BaseModel):
+    p256dh: str
+    auth: str
+
+
+class PushSubscriptionIn(BaseModel):
+    endpoint: str
+    keys: PushKeysIn
 
 
 # ---------------------- Auth routes ----------------------
@@ -515,6 +555,341 @@ async def stats(user: dict = Depends(get_current_user)):
     return counts
 
 
+# ---------------------- Google OAuth (Emergent) ----------------------
+# REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+@api.post("/auth/google")
+async def auth_google(payload: GoogleCallbackIn, response: Response):
+    """Exchange an Emergent session_id for our app's JWT.
+    Frontend obtains session_id via redirect from auth.emergentagent.com after Google login,
+    and POSTs it here. We hit Emergent's session-data endpoint, upsert the user,
+    and return our standard { user, access_token } shape so the existing AuthContext keeps working.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as hc:
+            r = await hc.get(
+                EMERGENT_OAUTH_SESSION_ENDPOINT,
+                headers={"X-Session-ID": payload.session_id},
+            )
+        if r.status_code != 200:
+            raise HTTPException(401, "Invalid Google session")
+        info = r.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"emergent oauth fetch failed: {e}")
+        raise HTTPException(502, "Auth provider unreachable")
+
+    email = (info.get("email") or "").lower().strip()
+    name = info.get("name") or "Usuário"
+    picture = info.get("picture")
+    if not email:
+        raise HTTPException(401, "No email returned from provider")
+
+    existing = await db.users.find_one({"email": email})
+    now = datetime.now(timezone.utc)
+    if existing:
+        await db.users.update_one(
+            {"_id": existing["_id"]},
+            {"$set": {"name": existing.get("name") or name, "avatar_url": picture or existing.get("avatar_url"), "google_linked": True}},
+        )
+        user_id = str(existing["_id"])
+        existing.update({"name": existing.get("name") or name, "avatar_url": picture or existing.get("avatar_url")})
+        user_doc = existing
+    else:
+        doc = {
+            "email": email,
+            "name": name,
+            "avatar_url": picture,
+            "google_linked": True,
+            "created_at": now,
+        }
+        res = await db.users.insert_one(doc)
+        user_id = str(res.inserted_id)
+        doc["_id"] = res.inserted_id
+        user_doc = doc
+
+    access = create_token(user_id, email, "access")
+    refresh = create_token(user_id, email, "refresh")
+    set_auth_cookies(response, access, refresh)
+    return {"user": serialize_user(user_doc), "access_token": access}
+
+
+# ---------------------- Episode progress ----------------------
+@api.post("/progress")
+async def upsert_progress(payload: ProgressIn, user: dict = Depends(get_current_user)):
+    user_id = str(user["_id"])
+    key = {"user_id": user_id, "tmdb_id": payload.tmdb_id, "season": payload.season, "episode": payload.episode}
+    if payload.watched:
+        await db.progress.update_one(
+            key,
+            {"$set": {**key, "watched_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True,
+        )
+    else:
+        await db.progress.delete_one(key)
+    return {"ok": True}
+
+
+@api.get("/progress/{tmdb_id}")
+async def get_progress(tmdb_id: int, user: dict = Depends(get_current_user)):
+    items = await db.progress.find(
+        {"user_id": str(user["_id"]), "tmdb_id": tmdb_id}, {"_id": 0}
+    ).to_list(2000)
+    return items
+
+
+@api.get("/progress/{tmdb_id}/summary")
+async def progress_summary(tmdb_id: int, user: dict = Depends(get_current_user)):
+    user_id = str(user["_id"])
+    # Get series info to know total episodes per season
+    tc = await tmdb()
+    r = await tc.get(f"/tv/{tmdb_id}", params={"language": TMDB_LANG})
+    if r.status_code != 200:
+        raise HTTPException(404, "Series not found")
+    s = r.json()
+    seasons = [se for se in (s.get("seasons") or []) if se.get("season_number", 0) > 0]
+
+    watched_docs = await db.progress.find(
+        {"user_id": user_id, "tmdb_id": tmdb_id}, {"_id": 0}
+    ).to_list(5000)
+    watched_set = {(d["season"], d["episode"]) for d in watched_docs}
+
+    season_summaries = []
+    total_watched = 0
+    total_eps = 0
+    for se in seasons:
+        sn = se["season_number"]
+        ec = se.get("episode_count") or 0
+        wc = sum(1 for (sx, ex) in watched_set if sx == sn)
+        total_watched += wc
+        total_eps += ec
+        season_summaries.append({
+            "season_number": sn,
+            "watched": wc,
+            "total": ec,
+            "percent": int((wc / ec) * 100) if ec else 0,
+        })
+
+    return {
+        "tmdb_id": tmdb_id,
+        "seasons": season_summaries,
+        "total_watched": total_watched,
+        "total_episodes": total_eps,
+        "percent": int((total_watched / total_eps) * 100) if total_eps else 0,
+    }
+
+
+# ---------------------- Reviews & Ratings ----------------------
+@api.post("/reviews")
+async def upsert_review(payload: ReviewIn, user: dict = Depends(get_current_user)):
+    user_id = str(user["_id"])
+    now = datetime.now(timezone.utc).isoformat()
+    doc = {
+        "user_id": user_id,
+        "user_name": user.get("name") or "Anônimo",
+        "tmdb_id": payload.tmdb_id,
+        "rating": payload.rating,
+        "comment": payload.comment or "",
+        "updated_at": now,
+    }
+    await db.reviews.update_one(
+        {"user_id": user_id, "tmdb_id": payload.tmdb_id},
+        {"$set": doc, "$setOnInsert": {"created_at": now}},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@api.delete("/reviews/{tmdb_id}")
+async def delete_review(tmdb_id: int, user: dict = Depends(get_current_user)):
+    await db.reviews.delete_one({"user_id": str(user["_id"]), "tmdb_id": tmdb_id})
+    return {"ok": True}
+
+
+@api.get("/reviews/{tmdb_id}")
+async def list_reviews(tmdb_id: int):
+    items = await db.reviews.find({"tmdb_id": tmdb_id}, {"_id": 0}).sort("updated_at", -1).to_list(200)
+    avg = None
+    if items:
+        avg = round(sum(r["rating"] for r in items) / len(items), 2)
+    return {"reviews": items, "average": avg, "count": len(items)}
+
+
+@api.get("/reviews/{tmdb_id}/mine")
+async def my_review(tmdb_id: int, user: dict = Depends(get_current_user)):
+    item = await db.reviews.find_one({"user_id": str(user["_id"]), "tmdb_id": tmdb_id}, {"_id": 0})
+    return item or {}
+
+
+# ---------------------- Public profile / shared library ----------------------
+@api.get("/users/{user_id}/public")
+async def public_profile(user_id: str):
+    try:
+        u = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(404, "User not found")
+    if not u:
+        raise HTTPException(404, "User not found")
+    counts = {}
+    for st in ("watching", "paused", "finished", "want"):
+        counts[st] = await db.library.count_documents({"user_id": user_id, "status": st})
+    counts["total"] = sum(counts.values())
+    recent_reviews = await db.reviews.find({"user_id": user_id}, {"_id": 0}).sort("updated_at", -1).limit(8).to_list(8)
+    return {
+        "id": user_id,
+        "name": u.get("name"),
+        "avatar_url": u.get("avatar_url"),
+        "joined_at": (u.get("created_at").isoformat() if isinstance(u.get("created_at"), datetime) else u.get("created_at")),
+        "stats": counts,
+        "recent_reviews": recent_reviews,
+    }
+
+
+@api.get("/users/{user_id}/library")
+async def public_library(user_id: str, status: Optional[str] = None):
+    q = {"user_id": user_id}
+    if status:
+        q["status"] = status
+    items = await db.library.find(q, {"_id": 0}).sort("updated_at", -1).to_list(500)
+    return items
+
+
+# ---------------------- Web Push ----------------------
+@api.get("/push/public_key")
+async def push_public_key():
+    return {"public_key": VAPID_PUBLIC_KEY, "available": bool(VAPID_PUBLIC_KEY) and PUSH_AVAILABLE}
+
+
+@api.post("/push/subscribe")
+async def push_subscribe(payload: PushSubscriptionIn, user: dict = Depends(get_current_user)):
+    user_id = str(user["_id"])
+    doc = {
+        "user_id": user_id,
+        "endpoint": payload.endpoint,
+        "keys": payload.keys.model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.push_subscriptions.update_one(
+        {"user_id": user_id, "endpoint": payload.endpoint},
+        {"$set": doc},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@api.delete("/push/subscribe")
+async def push_unsubscribe(endpoint: str, user: dict = Depends(get_current_user)):
+    await db.push_subscriptions.delete_one({"user_id": str(user["_id"]), "endpoint": endpoint})
+    return {"ok": True}
+
+
+def _send_push(sub: dict, title: str, body: str, url: Optional[str] = None, icon: Optional[str] = None):
+    if not (PUSH_AVAILABLE and VAPID_PRIVATE_PEM):
+        return False, "push not configured"
+    try:
+        webpush(
+            subscription_info={
+                "endpoint": sub["endpoint"],
+                "keys": sub["keys"],
+            },
+            data=json.dumps({"title": title, "body": body, "url": url, "icon": icon}),
+            vapid_private_key=VAPID_PRIVATE_PEM,
+            vapid_claims={"sub": VAPID_SUBJECT},
+            ttl=60 * 60 * 24,
+        )
+        return True, None
+    except WebPushException as e:
+        return False, str(e)
+    except Exception as e:
+        return False, str(e)
+
+
+@api.post("/push/test")
+async def push_test(user: dict = Depends(get_current_user)):
+    user_id = str(user["_id"])
+    subs = await db.push_subscriptions.find({"user_id": user_id}).to_list(20)
+    if not subs:
+        raise HTTPException(400, "Sem inscrições ativas. Ative as notificações primeiro.")
+    sent = 0
+    failed = 0
+    for s in subs:
+        ok, err = _send_push(s, "SeriesTrack 🎬", "Notificações ativadas com sucesso!", url="/dashboard")
+        if ok:
+            sent += 1
+        else:
+            failed += 1
+            if err and ("410" in err or "404" in err):
+                await db.push_subscriptions.delete_one({"_id": s["_id"]})
+    return {"sent": sent, "failed": failed}
+
+
+@api.post("/push/notify_today")
+async def push_notify_today(user: dict = Depends(get_current_user)):
+    """Manually trigger notifications for episodes airing today/tomorrow in the user's library.
+    Creates an in-app notification AND pushes a web-push if subscriptions exist.
+    """
+    user_id = str(user["_id"])
+    items = await db.library.find({"user_id": user_id}).to_list(500)
+    if not items:
+        return {"created": 0, "pushed": 0}
+
+    today = datetime.now(timezone.utc).date()
+    tomorrow = today + timedelta(days=1)
+    target_dates = {today.isoformat(), tomorrow.isoformat()}
+
+    tc = await tmdb()
+    created = 0
+    pushed = 0
+    subs = await db.push_subscriptions.find({"user_id": user_id}).to_list(20)
+
+    for it in items:
+        try:
+            r = await tc.get(f"/tv/{it['tmdb_id']}", params={"language": TMDB_LANG})
+            if r.status_code != 200:
+                continue
+            s = r.json()
+            ep = s.get("next_episode_to_air")
+            if not ep or ep.get("air_date") not in target_dates:
+                continue
+
+            title = f"Novo episódio: {s.get('name')}"
+            body = f"T{ep.get('season_number')}·E{ep.get('episode_number')} — {ep.get('name')} estreia em {ep.get('air_date')}"
+
+            existing_notif = await db.notifications.find_one({
+                "user_id": user_id,
+                "type": "episode_release",
+                "tmdb_id": it["tmdb_id"],
+                "season": ep.get("season_number"),
+                "episode": ep.get("episode_number"),
+            })
+            if not existing_notif:
+                await db.notifications.insert_one({
+                    "user_id": user_id,
+                    "type": "episode_release",
+                    "title": title,
+                    "message": body,
+                    "tmdb_id": it["tmdb_id"],
+                    "poster_url": it.get("poster_url"),
+                    "season": ep.get("season_number"),
+                    "episode": ep.get("episode_number"),
+                    "read": False,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                })
+                created += 1
+
+            for sub in subs:
+                ok, err = _send_push(sub, title, body, url=f"/series/{it['tmdb_id']}", icon=it.get("poster_url"))
+                if ok:
+                    pushed += 1
+                elif err and ("410" in err or "404" in err):
+                    await db.push_subscriptions.delete_one({"_id": sub["_id"]})
+        except Exception as e:
+            logger.warning(f"notify_today err {it.get('tmdb_id')}: {e}")
+            continue
+
+    return {"created": created, "pushed": pushed}
+
+
 # ---------------------- Health ----------------------
 @api.get("/")
 async def root():
@@ -546,6 +921,13 @@ async def startup():
         await db.library.create_index([("user_id", 1), ("tmdb_id", 1)], unique=True)
         await db.library.create_index([("user_id", 1), ("status", 1)])
         await db.notifications.create_index([("user_id", 1), ("created_at", -1)])
+        await db.progress.create_index(
+            [("user_id", 1), ("tmdb_id", 1), ("season", 1), ("episode", 1)],
+            unique=True,
+        )
+        await db.reviews.create_index([("user_id", 1), ("tmdb_id", 1)], unique=True)
+        await db.reviews.create_index([("tmdb_id", 1), ("updated_at", -1)])
+        await db.push_subscriptions.create_index([("user_id", 1), ("endpoint", 1)], unique=True)
     except Exception as e:
         logger.warning(f"index creation: {e}")
 

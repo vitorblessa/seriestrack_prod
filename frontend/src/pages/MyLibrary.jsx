@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
 import AppLayout from "../components/AppLayout";
-import { Loader2, Play, Heart, Pause, CheckCircle2, Trash2, Library as LibIcon } from "lucide-react";
+import { Loader2, Play, Heart, Pause, CheckCircle2, Trash2, Library as LibIcon, Share2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { toast } from "sonner";
+import { useAuth } from "../lib/auth";
 
 const STATUSES = [
     { key: "watching", label: "Assistindo", icon: Play },
@@ -14,6 +15,7 @@ const STATUSES = [
 ];
 
 export default function MyLibrary() {
+    const { user } = useAuth();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState("watching");
@@ -53,9 +55,24 @@ export default function MyLibrary() {
         <AppLayout>
             <section className="px-6 md:px-10 pt-10">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Sua biblioteca</p>
-                <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2 flex items-center gap-3">
-                    <LibIcon className="w-9 h-9 text-[#FF2A54]" /> Minha biblioteca
-                </h1>
+                <div className="flex items-end justify-between gap-4 flex-wrap mt-2">
+                    <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight flex items-center gap-3">
+                        <LibIcon className="w-9 h-9 text-[#FF2A54]" /> Minha biblioteca
+                    </h1>
+                    {user?.id && (
+                        <button
+                            onClick={() => {
+                                const url = `${window.location.origin}/u/${user.id}`;
+                                navigator.clipboard?.writeText(url);
+                                toast.success("Link copiado! Compartilhe com seus amigos.");
+                            }}
+                            data-testid="library-share-btn"
+                            className="btn-glass text-sm"
+                        >
+                            <Share2 className="w-4 h-4" /> Compartilhar minha lista
+                        </button>
+                    )}
+                </div>
 
                 {/* Stats */}
                 {stats && (

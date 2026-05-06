@@ -1,0 +1,17 @@
+{
+  "short_name": "SeriesTrack",
+  "name": "SeriesTrack — Acompanhe suas séries",
+  "description": "Acompanhe automaticamente o lançamento de episódios em todos os streamings.",
+  "icons": [
+    { "src": "favicon.ico", "sizes": "64x64", "type": "image/x-icon" },
+    { "src": "logo192.png", "type": "image/png", "sizes": "192x192", "purpose": "any maskable" },
+    { "src": "logo512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
+  ],
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0A0A0C",
+  "background_color": "#0A0A0C",
+  "categories": ["entertainment", "lifestyle"]
+}

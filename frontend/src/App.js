@@ -3,6 +3,7 @@ import "@/App.css";
 import { AuthProvider } from "./lib/auth";
 import { Toaster } from "sonner";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { registerSW } from "./lib/push";
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -13,6 +14,11 @@ import MyLibrary from "./pages/MyLibrary";
 import CalendarPage from "./pages/CalendarPage";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
+import AuthCallback from "./pages/AuthCallback";
+import PublicProfile from "./pages/PublicProfile";
+import Settings from "./pages/Settings";
+
+registerSW();
 
 export default function App() {
     return (
@@ -42,6 +48,9 @@ export default function App() {
                         <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                        <Route path="/auth/callback" element={<AuthCallback />} />
+                        <Route path="/u/:id" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
                     </Routes>
                 </AuthProvider>
             </BrowserRouter>

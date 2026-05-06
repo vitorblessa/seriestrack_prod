@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import api from "../lib/api";
 import AppLayout from "../components/AppLayout";
 import { useAuth } from "../lib/auth";
-import { User, Mail, Calendar, LogOut, Trophy } from "lucide-react";
+import { User, Mail, Calendar, LogOut, Trophy, ExternalLink, Settings as SettingsIcon } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Profile() {
     const { user, logout } = useAuth();
@@ -36,6 +37,14 @@ export default function Profile() {
                     <button onClick={logout} data-testid="profile-logout" className="btn-glass mt-6 text-sm w-full">
                         <LogOut className="w-4 h-4" /> Sair da conta
                     </button>
+                    {user?.id && (
+                        <Link to={`/u/${user.id}`} data-testid="profile-public-link" className="btn-glass mt-3 text-sm w-full">
+                            <ExternalLink className="w-4 h-4" /> Ver perfil público
+                        </Link>
+                    )}
+                    <Link to="/settings" data-testid="profile-settings-link" className="btn-glass mt-3 text-sm w-full">
+                        <SettingsIcon className="w-4 h-4" /> Configurações
+                    </Link>
                 </div>
 
                 <div className="lg:col-span-2 glass rounded-2xl p-8">

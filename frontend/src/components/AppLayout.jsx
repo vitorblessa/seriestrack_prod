@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth";
 import api from "../lib/api";
-import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv } from "lucide-react";
+import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv, Settings as SettingsIcon } from "lucide-react";
 
 const navItems = [
     { to: "/dashboard", label: "Início", icon: Home, testid: "nav-home-link" },
@@ -88,6 +88,14 @@ export default function AppLayout({ children }) {
                             <span className="hidden md:inline text-xs font-semibold text-white/80 max-w-[100px] truncate">
                                 {user?.name || "Convidado"}
                             </span>
+                        </button>
+                        <button
+                            onClick={() => navigate("/settings")}
+                            data-testid="nav-settings-btn"
+                            className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-white/60 hover:text-white"
+                            title="Configurações"
+                        >
+                            <SettingsIcon className="w-4 h-4" />
                         </button>
                         <button
                             onClick={logout}
