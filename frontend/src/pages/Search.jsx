@@ -107,7 +107,7 @@ export default function Search() {
                             <button
                                 key={p}
                                 onClick={() => setQ(p)}
-                                data-testid={`search-quick-${p.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                                data-testid={`search-quick-${p.toLowerCase().replace(/\s+/g, '-')}`}
                                 className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border ${active ? "ring-2 ring-white/30" : ""}`}
                                 style={{
                                     background: active ? b.color : "rgba(255,255,255,0.05)",
