@@ -1,0 +1,44 @@
+{
+  "summary": "Iteration 3 — Google OAuth race fix + Streaming search feature tested end-to-end. Backend: 54/54 pytest (100%) including 12 new phase-3 tests (Google auth negative + /api/streaming/episodes with 5 providers + empty-name + auth-required). Frontend: AuthCallback with #session_id=BAD_TOKEN correctly shows 'Falha no login com Google' / 'Invalid Google session' / 'Voltar ao login' link — proves AuthProvider skip-when-hash fix works (no silent redirect to /login). Both /login and /register have google-login-button with text 'Continuar com Google'. Search page streaming mode verified: clicking search-quick-netflix fills input with 'Netflix' and renders streaming-search-results with 3 episode cards for admin library; typing 'breaking' shows regular series results (Breaking Bad visible); typing 'Netflix' directly also activates streaming mode. All phase-1 and phase-2 regression tests pass. No critical bugs.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/google", "issue": "Broad `except Exception` still catches real network errors and returns 502 for bogus sessions; in this run it consistently returns 401 'Invalid Google session' as expected — spec requirement met. Carried-over code-quality note from iteration 2."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Search.jsx quick-chip testid for providers containing '+'", "issue": "Spec requires testids 'search-quick-disney+', 'search-quick-apple-tv+', 'search-quick-paramount+' but Search.jsx line 110 uses `p.toLowerCase().replace(/[^a-z0-9]+/g, '-')` which converts '+' to a trailing '-'. Actual testids rendered: 'search-quick-disney-', 'search-quick-apple-tv-', 'search-quick-paramount-'. Buttons themselves work (click them and streaming mode activates) — only the testid string differs from the spec.", "selector": "[data-testid='search-quick-disney+'] etc.", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_phase2.py",
+    "/app/backend/tests/test_phase3.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/phase3_results.xml"
+  ],
+  "action_items": [
+    "Search.jsx line 110 — change the testid generation so '+' becomes literal '+'. Suggest: `data-testid={`search-quick-${p.toLowerCase().replace(/\\s+/g,'-')}`}` so 'Disney+' → 'search-quick-disney+', 'Apple TV+' → 'search-quick-apple-tv+', 'Paramount+' → 'search-quick-paramount+', 'Prime Video' → 'search-quick-prime-video'. (Alternatively update the spec to the current '-' form — but the review_request explicitly listed testids with '+'.)"
+  ],
+  "critical_code_review_comments": [
+    "server.py still 1032 lines — split into routers (carried from iter 1 & 2).",
+    "/api/auth/google's broad `except Exception` → 502 still masks real errors. Narrow to httpx.HTTPError + ValueError and log traceback.",
+    "/api/streaming/episodes fires parallel TMDB /tv/{id} calls for EVERY library item on every request. For a user with 20+ series this is 20 TMDB round-trips per streaming search — add a short in-memory cache (5–15 min) keyed by tmdb_id.",
+    "Duplicated matching logic: Search.jsx streaming-detection + providers.js PROVIDER_BRANDS + server.py substring match — consider consolidating under a shared util.",
+    "Good: endpoint correctly returns 401 on missing auth, 422 on missing `name` query param, and empty response on blank `name`.",
+    "Good: episodes are correctly sorted desc by air_date; payload includes all fields required by the spec (tmdb_id, series_name, season_number, episode_number, air_date, kind, providers, matched_providers)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase3.py (new — 12 tests covering Google 401 + streaming search)"
+  ],
+  "success_rate": {"backend": "100% (54/54: 18 phase-1 + 24 phase-2 + 12 phase-3)", "frontend": "≈95% (1 minor testid naming deviation; all flows functional)"},
+  "test_credentials": "admin@seriestrack.app / Admin@123 (works)",
+  "seed_data_creation": "None in this iteration. Admin library pre-seeded by main agent (Breaking Bad, The Boys, House of the Dragon, Rick and Morty, The Witcher and others). No cleanup required.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend: 54 pytest across /app/backend/tests/{backend_test.py,test_phase2.py,test_phase3.py}. Run: REACT_APP_BACKEND_URL=https://show-notify.preview.emergentagent.com pytest /app/backend/tests/ -v --junitxml=/app/test_reports/pytest/pytest_results.xml. Frontend testids verified: google-login-button (login + register), search-input, streaming-search-results, streaming-episode-{i}, search-quick-{netflix,prime-video,max,crunchyroll,globoplay,hulu}. Known testid-spec mismatch for Disney+/Apple TV+/Paramount+ chips (trailing '-' instead of '+'). AuthCallback error screen is reliable (3s wait after navigation). Google OAuth e2e beyond negative path cannot be tested in headless mode.",
+  "rca of the issue": "Issue: quick-chip testids for providers with '+' in the name do not match the spec. Root cause: Search.jsx line 110 uses regex `replace(/[^a-z0-9]+/g, '-')` which strips '+'. Reproduction: open /search, inspect DOM, observe 'search-quick-disney-' instead of 'search-quick-disney+'. Mitigation: change the regex to `replace(/\\s+/g, '-')` (whitespace-only) so special chars like '+' are preserved, OR accept trailing-dash form and update the spec."
+}

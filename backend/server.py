@@ -890,6 +890,83 @@ async def push_notify_today(user: dict = Depends(get_current_user)):
     return {"created": created, "pushed": pushed}
 
 
+# ---------------------- Streaming search ----------------------
+@api.get("/streaming/episodes")
+async def streaming_episodes(name: str, user: dict = Depends(get_current_user)):
+    """Return the most recent episodes (recent + upcoming) for series in the user's library
+    that are available on a streaming platform whose name contains `name` (case-insensitive).
+    Sorted by air_date descending (most recent first).
+    """
+    user_id = str(user["_id"])
+    items = await db.library.find({"user_id": user_id}).to_list(500)
+    if not items:
+        return {"matched_providers": [], "episodes": []}
+
+    needle = name.strip().lower()
+    if not needle:
+        return {"matched_providers": [], "episodes": []}
+
+    tc = await tmdb()
+    matched_provider_set = set()
+    out: list = []
+
+    async def fetch(it: dict):
+        try:
+            r = await tc.get(
+                f"/tv/{it['tmdb_id']}",
+                params={"language": TMDB_LANG, "append_to_response": "watch/providers"},
+            )
+            if r.status_code != 200:
+                return None
+            return it, r.json()
+        except Exception:
+            return None
+
+    results = await asyncio.gather(*(fetch(it) for it in items))
+    for entry in results:
+        if not entry:
+            continue
+        it, s = entry
+        providers_block = (s.get("watch/providers", {}) or {}).get("results", {}) or {}
+        region_block = providers_block.get(TMDB_REGION) or providers_block.get("US") or {}
+        flatrate = region_block.get("flatrate") or []
+        provider_names = [p.get("provider_name") for p in flatrate if p.get("provider_name")]
+
+        # Match: any provider's name contains the search term (or vice versa)
+        match_names = [p for p in provider_names if needle in p.lower()]
+        if not match_names:
+            continue
+        for mn in match_names:
+            matched_provider_set.add(mn)
+
+        nxt = s.get("next_episode_to_air")
+        last = s.get("last_episode_to_air")
+        for ep, kind in [(nxt, "upcoming"), (last, "recent")]:
+            if not ep or not ep.get("air_date"):
+                continue
+            out.append({
+                "tmdb_id": it["tmdb_id"],
+                "series_name": s.get("name"),
+                "poster_url": it.get("poster_url"),
+                "backdrop_url": it.get("backdrop_url"),
+                "episode_name": ep.get("name"),
+                "season_number": ep.get("season_number"),
+                "episode_number": ep.get("episode_number"),
+                "air_date": ep.get("air_date"),
+                "still_url": f"{TMDB_IMG}/w300{ep.get('still_path')}" if ep.get("still_path") else None,
+                "overview": ep.get("overview"),
+                "kind": kind,
+                "providers": provider_names,
+                "matched_providers": match_names,
+            })
+
+    out.sort(key=lambda x: x.get("air_date") or "", reverse=True)
+    return {
+        "matched_providers": sorted(matched_provider_set),
+        "episodes": out,
+    }
+
+
 # ---------------------- Health ----------------------
 @api.get("/")
 async def root():

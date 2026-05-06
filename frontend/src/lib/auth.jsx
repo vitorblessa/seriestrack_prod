@@ -8,6 +8,12 @@ export function AuthProvider({ children }) {
     const [bootstrapped, setBootstrapped] = useState(false);
 
     const fetchMe = useCallback(async () => {
+        // CRITICAL: If returning from OAuth callback, skip the /auth/me check.
+        // AuthCallback will exchange the session_id and call setSession directly.
+        if (typeof window !== "undefined" && window.location.hash && window.location.hash.includes("session_id=")) {
+            setBootstrapped(true);
+            return;
+        }
         const tok = getToken();
         if (!tok) {
             setUser(false);
@@ -28,6 +34,12 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         fetchMe();
     }, [fetchMe]);
+
+    const setSession = (userObj, token) => {
+        if (token) setToken(token);
+        setUser(userObj);
+        setBootstrapped(true);
+    };
 
     const login = async (email, password) => {
         const { data } = await api.post("/auth/login", { email, password });
@@ -50,7 +62,7 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, bootstrapped, login, register, logout, refresh: fetchMe }}>
+        <AuthContext.Provider value={{ user, bootstrapped, login, register, logout, refresh: fetchMe, setSession }}>
             {children}
         </AuthContext.Provider>
     );
