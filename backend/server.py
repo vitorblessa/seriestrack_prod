@@ -5,6 +5,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 import os
+import re
 import json
 import logging
 import asyncio
@@ -891,10 +892,44 @@ async def push_notify_today(user: dict = Depends(get_current_user)):
 
 
 # ---------------------- Streaming search ----------------------
+def _normalize_provider(s: str) -> str:
+    """Normalize provider name for fuzzy matching.
+    Handles '+' / 'Plus' variants and strips punctuation/extra whitespace.
+    'Disney+' / 'Disney Plus' / 'disney plus' -> 'disney'
+    'Apple TV+' / 'Apple TV Plus' -> 'apple tv'
+    'Amazon Prime Video' -> 'amazon prime video'
+    """
+    n = (s or "").lower().strip()
+    n = n.replace("+", " plus ")
+    n = re.sub(r"\bplus\b", " ", n)  # remove the word "plus"
+    n = re.sub(r"[^a-z0-9 ]+", " ", n)  # strip remaining punctuation
+    n = re.sub(r"\s+", " ", n).strip()
+    return n
+
+
+def _provider_matches(needle_norm: str, provider_norm: str) -> bool:
+    """True when the needle matches the provider as exact, or as a word-sequence
+    that appears at the start or end of the provider (avoids false-positive midmatches
+    like 'apple tv' matching 'Paramount Plus Apple TV Channel')."""
+    if not needle_norm or not provider_norm:
+        return False
+    if needle_norm == provider_norm:
+        return True
+    n_words = needle_norm.split()
+    p_words = provider_norm.split()
+    if len(n_words) > len(p_words):
+        return False
+    if p_words[: len(n_words)] == n_words:
+        return True
+    if p_words[-len(n_words):] == n_words:
+        return True
+    return False
+
+
 @api.get("/streaming/episodes")
 async def streaming_episodes(name: str, user: dict = Depends(get_current_user)):
     """Return the most recent episodes (recent + upcoming) for series in the user's library
-    that are available on a streaming platform whose name contains `name` (case-insensitive).
+    that are available on a streaming platform whose name matches `name` (fuzzy: handles +/Plus).
     Sorted by air_date descending (most recent first).
     """
     user_id = str(user["_id"])
@@ -902,8 +937,8 @@ async def streaming_episodes(name: str, user: dict = Depends(get_current_user)):
     if not items:
         return {"matched_providers": [], "episodes": []}
 
-    needle = name.strip().lower()
-    if not needle:
+    needle_norm = _normalize_provider(name)
+    if not needle_norm:
         return {"matched_providers": [], "episodes": []}
 
     tc = await tmdb()
@@ -932,8 +967,12 @@ async def streaming_episodes(name: str, user: dict = Depends(get_current_user)):
         flatrate = region_block.get("flatrate") or []
         provider_names = [p.get("provider_name") for p in flatrate if p.get("provider_name")]
 
-        # Match: any provider's name contains the search term (or vice versa)
-        match_names = [p for p in provider_names if needle in p.lower()]
+        # Word-boundary fuzzy match (start/end/exact) to avoid sub-channel false positives
+        match_names = []
+        for p in provider_names:
+            pn = _normalize_provider(p)
+            if _provider_matches(needle_norm, pn):
+                match_names.append(p)
         if not match_names:
             continue
         for mn in match_names:

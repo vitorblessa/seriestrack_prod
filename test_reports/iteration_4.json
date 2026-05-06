@@ -1,0 +1,46 @@
+{
+  "summary": "Iteration 4 — Streaming search normalization + word-boundary matching fully validated. Backend: 74/74 pytest passing (100%) = 18 phase-1 + 24 phase-2 + 12 phase-3 + 20 NEW phase-4. New phase-4 file covers BOTH integration (real /api/streaming/episodes calls with admin token) AND pure unit tests of _normalize_provider/_provider_matches helpers. Critical false-positive guard verified: Apple TV+ does NOT match 'Paramount Plus Apple TV Channel'. Critical false-negative guard verified: Disney+ DOES match 'Disney Plus' (returns Demolidor). Suffix matching ('Prime Video' → 'Amazon Prime Video', 'Max' → 'HBO Max') and prefix matching ('Netflix' → 'Netflix Standard with Ads', 'Paramount+' → all paramount* variants) all work. Frontend: iter-3 testid bug now FIXED — all 9 chip testids present with literal '+' (search-quick-disney+, search-quick-apple-tv+, search-quick-paramount+). Disney+ chip click flow end-to-end: input → 'Disney+', streaming-search-results visible, 1 streaming-episode-* card (Demolidor). All 8 other chips clicked without crash. Empty-state 'Nada por aqui ainda' renders correctly for chips with no matching admin shows (Apple TV+, Crunchyroll, Globoplay, Hulu). Zero pageerrors / zero console errors during the full chip sweep.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/streaming/episodes", "issue": "No caching of TMDB /tv/{id} responses — every search fires N parallel TMDB round-trips. Add 5-15 min in-memory cache keyed by tmdb_id (carried from iter-3)."},
+      {"endpoint": "/api/auth/google", "issue": "Broad `except Exception` still returns 502 for some bogus sessions; spec compliance still met (returns 401 in main path) — carry-over note from iter-2/3."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_phase2.py",
+    "/app/backend/tests/test_phase3.py",
+    "/app/backend/tests/test_phase4_streaming.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/phase4_results.xml"
+  ],
+  "action_items": [
+    "(Optional, perf) Cache TMDB /tv/{id}?append_to_response=watch/providers responses for 5-15 min keyed by tmdb_id to avoid N round-trips per streaming search.",
+    "(Optional, code-quality) Narrow the `except Exception` in /api/auth/google to httpx.HTTPError + ValueError; log traceback for unexpected errors instead of silently returning 502.",
+    "(Optional, refactor) server.py is now ~1071 lines — split routers into modules (auth, library, streaming, calendar, notifications, stats)."
+  ],
+  "critical_code_review_comments": [
+    "GOOD: _normalize_provider() correctly handles '+' → 'plus' → '' so 'Disney+', 'Disney Plus', and 'disney plus' all collapse to 'disney'.",
+    "GOOD: _provider_matches() uses word-sequence prefix-OR-suffix equality on tokenized arrays — this elegantly avoids midword false positives (e.g., 'Maximum Streaming' won't match 'Max') AND sub-channel false positives (e.g., 'Paramount Plus Apple TV Channel' [tokens: paramount apple tv channel] does NOT have 'apple tv' at the start or end).",
+    "GOOD: Search.jsx line 110 testid generator now uses `replace(/\\s+/g,'-')` so '+' is preserved in chip testids per the spec.",
+    "MINOR: _provider_matches treats the empty-needle case correctly (returns False) — good defense.",
+    "PERF: streaming_episodes() does asyncio.gather across the entire user library with no caching — cold latency scales linearly with library size. Acceptable for current 8-series admin lib but should be optimized before production scale.",
+    "STYLE: The streaming_episodes endpoint is ~70 lines; consider extracting the per-item match step into a helper for readability."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase4_streaming.py (new — 20 tests: 10 integration + 10 unit covering normalization & word-boundary matching)"
+  ],
+  "success_rate": {"backend": "100% (74/74 — phase-1 18, phase-2 24, phase-3 12, phase-4 20)", "frontend": "100% (all 9 chips render with correct testids, Disney+ end-to-end shows Demolidor episode, no crashes, no console errors)"},
+  "test_credentials": "admin@seriestrack.app / Admin@123 (verified working)",
+  "seed_data_creation": "None. Admin library is intentionally pre-populated with 8 series (Breaking Bad, The Boys, House of the Dragon, Rick and Morty, The Witcher, Demolidor, Tulsa King, Invincible). Confirmed not removed.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression: 74 pytest across /app/backend/tests/{backend_test.py,test_phase2.py,test_phase3.py,test_phase4_streaming.py}. Run: REACT_APP_BACKEND_URL=https://show-notify.preview.emergentagent.com pytest /app/backend/tests/ -v --junitxml=/app/test_reports/pytest/pytest_results.xml. Phase-4 also imports server module directly (sys.path.insert /app/backend) for unit-testing _normalize_provider + _provider_matches without TMDB. Frontend testids stable: search-input, streaming-search-results, streaming-episode-{i}, search-quick-{netflix,prime-video,disney+,max,apple-tv+,paramount+,crunchyroll,globoplay,hulu}. Login testids: auth-email-input, auth-password-input, auth-submit-button (NOT login-* prefix).",
+  "rca of the issue": "Issue (from iter-3): backend was doing simple substring match — provider names like 'Disney+'/'Apple TV+' didn't match TMDB 'Disney Plus'/'Apple TV Plus'. Fix in iter-4 (verified): server.py:895 _normalize_provider() converts '+' → 'plus' word and then strips 'plus' tokens + punctuation → identical normalized strings for '+' and 'Plus' variants. server.py:910 _provider_matches() requires the needle's token sequence to appear as the prefix OR suffix of the provider's token sequence (or be exactly equal). This gives Disney+ ↔ Disney Plus equivalence AND blocks false positives like 'Paramount Plus Apple TV Channel' for an 'Apple TV+' search (tokenized as 'paramount apple tv channel' — 'apple tv' is mid-sequence, neither prefix nor suffix). Reproduction confirmed by 10 unit tests + 10 integration tests, all green."
+}
