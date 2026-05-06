@@ -91,7 +91,7 @@ export default function Search() {
                     Encontre sua próxima obsessão
                 </h1>
                 <p className="text-white/50 mt-3 max-w-2xl">
-                    Digite o nome de uma série <span className="text-white/80">ou</span> clique em um streaming abaixo para ver os episódios mais recentes da sua biblioteca.
+                    Digite o nome de uma série <span className="text-white/80">ou</span> clique em um streaming abaixo para ver os <span className="text-white/80">últimos episódios lançados</span> naquela plataforma.
                 </p>
 
                 <div className="mt-8 relative max-w-3xl">
@@ -178,7 +178,7 @@ function StreamingResults({ streaming, data, loading, onClose }) {
         return (
             <div className="flex items-center gap-3 py-6">
                 <Loader2 className="w-6 h-6 animate-spin text-[#FF2A54]" />
-                <span className="text-white/60 text-sm">Buscando episódios em {streaming}...</span>
+                <span className="text-white/60 text-sm">Buscando últimos episódios em {streaming}...</span>
             </div>
         );
     }
@@ -193,7 +193,7 @@ function StreamingResults({ streaming, data, loading, onClose }) {
                     <Tv className="w-3.5 h-3.5 mr-1.5" /> {streaming}
                 </span>
                 <h2 className="font-display text-xl font-bold text-white/80">
-                    Episódios mais recentes da sua biblioteca em {streaming}
+                    Últimos episódios em {streaming}
                 </h2>
                 <button
                     onClick={onClose}
@@ -207,11 +207,10 @@ function StreamingResults({ streaming, data, loading, onClose }) {
             {eps.length === 0 ? (
                 <div className="glass rounded-2xl py-16 px-6 text-center">
                     <CalIcon className="w-10 h-10 mx-auto text-white/30" />
-                    <p className="font-display text-xl font-bold mt-4">Nada em {streaming} ainda</p>
+                    <p className="font-display text-xl font-bold mt-4">Nenhum episódio recente em {streaming}</p>
                     <p className="text-white/60 mt-2 max-w-md mx-auto">
-                        Você não tem séries da sua biblioteca disponíveis em {streaming}, ou nenhum episódio recente foi encontrado.
+                        Não conseguimos encontrar episódios recentes ou próximos para essa plataforma na sua região.
                     </p>
-                    <Link to="/library" className="btn-glass mt-6 inline-flex text-sm">Ver minha biblioteca</Link>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -237,6 +236,11 @@ function StreamingResults({ streaming, data, loading, onClose }) {
                                     >
                                         {e.kind === "upcoming" ? "Próximo" : "Recém lançado"}
                                     </span>
+                                    {e.in_library && (
+                                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">
+                                            Na biblioteca
+                                        </span>
+                                    )}
                                 </div>
                                 <p className="font-display font-bold text-base line-clamp-1 mt-1">{e.series_name}</p>
                                 <p className="text-white/60 text-sm">T{e.season_number}·E{e.episode_number} — {e.episode_name}</p>

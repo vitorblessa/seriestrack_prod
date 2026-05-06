@@ -926,83 +926,123 @@ def _provider_matches(needle_norm: str, provider_norm: str) -> bool:
     return False
 
 
+# Cache TMDB tv watch-providers list for the configured region (24h)
+_tv_providers_cache: dict = {"data": None, "ts": 0.0}
+
+
+async def _resolve_provider_ids(needle_norm: str) -> tuple[list[int], list[str]]:
+    """Resolve all TMDB provider_ids whose normalized name matches the needle.
+    Returns (provider_ids, matched_provider_names). Caches the providers list for 24h.
+    """
+    import time as _time
+    now = _time.time()
+    if not _tv_providers_cache["data"] or (now - _tv_providers_cache["ts"]) > 86400:
+        try:
+            tc = await tmdb()
+            r = await tc.get("/watch/providers/tv", params={"language": TMDB_LANG, "watch_region": TMDB_REGION})
+            if r.status_code == 200:
+                _tv_providers_cache["data"] = r.json().get("results", [])
+                _tv_providers_cache["ts"] = now
+        except Exception as e:
+            logger.warning(f"providers cache refresh failed: {e}")
+    providers = _tv_providers_cache["data"] or []
+    ids: list[int] = []
+    names: list[str] = []
+    for p in providers:
+        pn = _normalize_provider(p.get("provider_name"))
+        if _provider_matches(needle_norm, pn):
+            pid = p.get("provider_id")
+            if pid:
+                ids.append(pid)
+                names.append(p.get("provider_name"))
+    return ids, names
+
+
 @api.get("/streaming/episodes")
 async def streaming_episodes(name: str, user: dict = Depends(get_current_user)):
-    """Return the most recent episodes (recent + upcoming) for series in the user's library
-    that are available on a streaming platform whose name matches `name` (fuzzy: handles +/Plus).
-    Sorted by air_date descending (most recent first).
+    """Return the latest episodes for shows currently available on a streaming platform.
+    Queries TMDB globally (NOT the user's library) — discovers popular shows on the
+    platform in the user's region, fetches last_episode_to_air for each, and returns
+    them sorted by air_date desc.
     """
-    user_id = str(user["_id"])
-    items = await db.library.find({"user_id": user_id}).to_list(500)
-    if not items:
-        return {"matched_providers": [], "episodes": []}
-
     needle_norm = _normalize_provider(name)
     if not needle_norm:
         return {"matched_providers": [], "episodes": []}
 
+    provider_ids, matched_names = await _resolve_provider_ids(needle_norm)
+    if not provider_ids:
+        return {"matched_providers": [], "episodes": []}
+
     tc = await tmdb()
-    matched_provider_set = set()
-    out: list = []
+    today = datetime.now(timezone.utc).date()
+    # 90-day window: episodes that aired in last 60d OR will air in next 30d
+    min_date = (today - timedelta(days=60)).isoformat()
+    max_date = (today + timedelta(days=30)).isoformat()
 
-    async def fetch(it: dict):
+    # Discover popular shows on this platform with recent episode activity
+    discover_params = {
+        "language": TMDB_LANG,
+        "watch_region": TMDB_REGION,
+        "with_watch_providers": "|".join(str(pid) for pid in provider_ids),
+        "with_watch_monetization_types": "flatrate",
+        "sort_by": "popularity.desc",
+        "air_date.gte": (today - timedelta(days=180)).isoformat(),
+        "page": 1,
+    }
+    try:
+        r = await tc.get("/discover/tv", params=discover_params)
+        if r.status_code != 200:
+            logger.warning(f"discover/tv failed {r.status_code}: {r.text[:200]}")
+            return {"matched_providers": matched_names, "episodes": []}
+        shows = r.json().get("results", [])[:25]
+    except Exception as e:
+        logger.warning(f"discover/tv error: {e}")
+        return {"matched_providers": matched_names, "episodes": []}
+
+    async def fetch_show_eps(show: dict):
         try:
-            r = await tc.get(
-                f"/tv/{it['tmdb_id']}",
-                params={"language": TMDB_LANG, "append_to_response": "watch/providers"},
-            )
-            if r.status_code != 200:
-                return None
-            return it, r.json()
+            rr = await tc.get(f"/tv/{show['id']}", params={"language": TMDB_LANG})
+            if rr.status_code != 200:
+                return []
+            s = rr.json()
+            poster = show.get("poster_path") or s.get("poster_path")
+            backdrop = show.get("backdrop_path") or s.get("backdrop_path")
+            out = []
+            for ep, kind in [(s.get("last_episode_to_air"), "recent"), (s.get("next_episode_to_air"), "upcoming")]:
+                if not ep or not ep.get("air_date"):
+                    continue
+                if ep["air_date"] < min_date or ep["air_date"] > max_date:
+                    continue
+                out.append({
+                    "tmdb_id": show["id"],
+                    "series_name": s.get("name") or show.get("name"),
+                    "poster_url": f"{TMDB_IMG}/w500{poster}" if poster else None,
+                    "backdrop_url": f"{TMDB_IMG}/original{backdrop}" if backdrop else None,
+                    "episode_name": ep.get("name"),
+                    "season_number": ep.get("season_number"),
+                    "episode_number": ep.get("episode_number"),
+                    "air_date": ep.get("air_date"),
+                    "still_url": f"{TMDB_IMG}/w300{ep.get('still_path')}" if ep.get("still_path") else None,
+                    "overview": ep.get("overview"),
+                    "kind": kind,
+                })
+            return out
         except Exception:
-            return None
+            return []
 
-    results = await asyncio.gather(*(fetch(it) for it in items))
-    for entry in results:
-        if not entry:
-            continue
-        it, s = entry
-        providers_block = (s.get("watch/providers", {}) or {}).get("results", {}) or {}
-        region_block = providers_block.get(TMDB_REGION) or providers_block.get("US") or {}
-        flatrate = region_block.get("flatrate") or []
-        provider_names = [p.get("provider_name") for p in flatrate if p.get("provider_name")]
-
-        # Word-boundary fuzzy match (start/end/exact) to avoid sub-channel false positives
-        match_names = []
-        for p in provider_names:
-            pn = _normalize_provider(p)
-            if _provider_matches(needle_norm, pn):
-                match_names.append(p)
-        if not match_names:
-            continue
-        for mn in match_names:
-            matched_provider_set.add(mn)
-
-        nxt = s.get("next_episode_to_air")
-        last = s.get("last_episode_to_air")
-        for ep, kind in [(nxt, "upcoming"), (last, "recent")]:
-            if not ep or not ep.get("air_date"):
-                continue
-            out.append({
-                "tmdb_id": it["tmdb_id"],
-                "series_name": s.get("name"),
-                "poster_url": it.get("poster_url"),
-                "backdrop_url": it.get("backdrop_url"),
-                "episode_name": ep.get("name"),
-                "season_number": ep.get("season_number"),
-                "episode_number": ep.get("episode_number"),
-                "air_date": ep.get("air_date"),
-                "still_url": f"{TMDB_IMG}/w300{ep.get('still_path')}" if ep.get("still_path") else None,
-                "overview": ep.get("overview"),
-                "kind": kind,
-                "providers": provider_names,
-                "matched_providers": match_names,
-            })
-
-    out.sort(key=lambda x: x.get("air_date") or "", reverse=True)
+    results = await asyncio.gather(*(fetch_show_eps(sh) for sh in shows))
+    episodes: list = []
+    for r in results:
+        episodes.extend(r)
+    episodes.sort(key=lambda x: x.get("air_date") or "", reverse=True)
+    # In-library marking — annotate which ones are in the user's library
+    user_id = str(user["_id"])
+    lib_ids = {it["tmdb_id"] for it in await db.library.find({"user_id": user_id}, {"_id": 0, "tmdb_id": 1}).to_list(500)}
+    for e in episodes:
+        e["in_library"] = e["tmdb_id"] in lib_ids
     return {
-        "matched_providers": sorted(matched_provider_set),
-        "episodes": out,
+        "matched_providers": sorted(set(matched_names)),
+        "episodes": episodes[:30],
     }
 
 
