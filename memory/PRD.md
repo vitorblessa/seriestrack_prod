@@ -23,25 +23,32 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 6. Stats endpoint (counts by status).
 7. UI: Splash hero, Login/Register split layout, Dashboard with featured hero + 5 rails + upcoming grid, Search w/ debounced TMDB search, Series Detail w/ hero + actions + seasons tabs + cast + recommendations, Library w/ tabs + stats + remove, Calendar w/ month grid + per-platform filter chips + list view, Notifications, Profile with stats.
 
-## Tested
-- 18/18 pytest backend tests pass.
-- Frontend e2e via Playwright: splash, register, login, dashboard rails, search, series detail (all 4 actions + season tab), library tabs + remove, calendar grid + filters, notifications, profile + logout — all green.
+## Phase 2 Implemented (Feb 2026)
+8. **Episode tracking** — POST/GET /api/progress + summary; per-season + overall progress bars on series detail; episode toggle button per episode.
+9. **Reviews & Ratings** — POST/GET/DELETE /api/reviews; 1–5 star widget + comment; community feed shown on series detail; average + count.
+10. **Public profile + Share list** — GET /api/users/{id}/public + /library; /u/:id route shows public profile (stats, recent reviews, library); MyLibrary "Compartilhar minha lista" button copies link.
+11. **Google OAuth via Emergent Auth** — POST /api/auth/google (session_id → JWT); /auth/callback page; "Continuar com Google" button on login/register.
+12. **Web Push notifications** — VAPID keys configured; /api/push/{public_key, subscribe, test, notify_today}; service worker handles push + notification clicks; Settings page UI to enable/disable + send test + trigger today's check.
+13. **PWA installable + offline** — manifest.json (start_url=/dashboard, theme #0A0A0C), service worker with network-first navigations + cache-first static.
 
-## P1 backlog (next iterations)
-- [ ] Update flow: status change shouldn't always create a notification (dedupe).
-- [ ] Calendar: parallelize TMDB calls with `asyncio.gather` for big libraries.
-- [ ] Episode "watched" tracking with progress bars per season.
-- [ ] Real push notifications (web-push or email via Resend).
-- [ ] Recommendations based on user's library (collaborative filter).
-- [ ] Wrap `ObjectId(...)` in try/except → 401 instead of 500 on malformed sub.
-- [ ] Migrate `@app.on_event` to FastAPI lifespan context.
+## Tested
+- Iteration 1: 18/18 pytest + e2e Playwright — all green.
+- Iteration 2: 42/42 pytest (24 new + 18 regression) + e2e Playwright on all phase-2 flows — all green.
+
+## P1 backlog
+- [ ] Schedule daily cron worker that calls `notify_today` for all users automatically.
+- [ ] Cache TMDB responses (5-min in-memory) to reduce API calls on hot endpoints.
+- [ ] Auto-expand season 1 on first load (small UX papercut flagged in tests).
+- [ ] Apple OAuth (iOS users); confirm/email reset flow.
+- [ ] Friend follow + activity feed (full social, currently MVP).
+- [ ] Migrate FastAPI startup/shutdown to lifespan context.
+- [ ] Split server.py (954 lines) into routers per domain.
 
 ## P2 backlog
-- [ ] Social features (follow friends, share lists, ratings, comments).
-- [ ] Premium tier (remove ads, advanced alerts, Plex/Jellyfin integration, statistics export).
-- [ ] OAuth providers (Google / Apple).
-- [ ] Mobile app (React Native + Expo).
-- [ ] Offline mode (PWA + IndexedDB).
+- [ ] Premium tier (remove ads, advanced alerts, Plex/Jellyfin, statistics export).
+- [ ] React Native + Expo mobile app (separate project).
+- [ ] Recommendations engine (collaborative filter using ratings).
+- [ ] Rate limiting on POST /api/reviews and /api/progress.
 
 ## Test credentials
 See `/app/memory/test_credentials.md`.
