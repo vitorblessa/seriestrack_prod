@@ -1,6 +1,7 @@
 // SeriesTrack Service Worker — handles push notifications + offline cache
-const CACHE_NAME = "seriestrack-v1";
-const APP_SHELL = ["/", "/index.html", "/manifest.json", "/favicon.ico"];
+// Bump CACHE_NAME on UI changes that need to invalidate prior cached HTML/assets
+const CACHE_NAME = "seriestrack-v3";
+const APP_SHELL = ["/manifest.json", "/favicon.ico"];
 
 self.addEventListener("install", (event) => {
     self.skipWaiting();
@@ -17,12 +18,17 @@ self.addEventListener("activate", (event) => {
     );
 });
 
-// Network-first for navigations; cache-first for static assets
+// Network-first for navigations; pass-through for JS/CSS (let CRA's content-hashed names
+// handle versioning); cache-first for true static assets only.
 self.addEventListener("fetch", (event) => {
     const req = event.request;
     if (req.method !== "GET") return;
     const url = new URL(req.url);
     if (url.pathname.startsWith("/api/")) return; // never cache API calls
+    // Don't cache JS/CSS bundles — let the browser HTTP cache + CRA hashing handle them.
+    // This prevents getting stuck on a stale bundle if anything goes wrong.
+    if (/\.(js|css|map)$/i.test(url.pathname)) return;
+
     if (req.mode === "navigate") {
         event.respondWith(
             fetch(req)
@@ -75,4 +81,9 @@ self.addEventListener("notificationclick", (event) => {
             if (clients.openWindow) return clients.openWindow(url);
         })
     );
+});
+
+// Allow page to ask the SW to activate immediately
+self.addEventListener("message", (event) => {
+    if (event.data === "SKIP_WAITING") self.skipWaiting();
 });

@@ -3,8 +3,30 @@ import api from "./api";
 
 export function registerSW() {
     if (!("serviceWorker" in navigator)) return;
+
+    let reloading = false;
+    // When a new SW takes control, reload the page once so the user immediately sees fresh code
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloading) return;
+        reloading = true;
+        window.location.reload();
+    });
+
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch(() => {});
+        navigator.serviceWorker.register("/sw.js").then((reg) => {
+            // Force an update check on every load so users on stale builds catch up
+            try { reg.update(); } catch {}
+            reg.addEventListener("updatefound", () => {
+                const sw = reg.installing;
+                if (!sw) return;
+                sw.addEventListener("statechange", () => {
+                    if (sw.state === "installed" && navigator.serviceWorker.controller) {
+                        // New SW ready; tell it to skip waiting → activates → controllerchange → reload
+                        sw.postMessage("SKIP_WAITING");
+                    }
+                });
+            });
+        }).catch(() => {});
     });
 }
 
