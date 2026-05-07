@@ -44,14 +44,27 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 19. **Frontend**: `/pricing` (public) with Free vs Pro side-by-side, monthly/yearly toggle (-36% badge), Stripe redirect on click; `/billing/success` with status polling (12 retries × 2.5s).
 20. **UI integration**: nav-upgrade-btn in header (free users), nav-pro-badge (Pro users); profile-upgrade-link / profile-pro-badge on /profile.
 
-## P1 backlog
-- [ ] Cron worker daily that calls notify_today for all users.
-- [ ] Cache TMDB /tv/{id} responses (5-15 min) — large perf win on streaming search.
-- [ ] Real Pro feature gating (library cap of 50 for free, IA recommendations behind require_pro).
-- [ ] Stripe webhook IP allowlist + better signature verification logging.
-- [ ] Stripe Customer Portal for self-cancel (currently must contact support).
+## Sprint 2 — Pro feature gating + AI + advanced stats (Feb 2026)
+21. **Library cap (50)**: free-tier users are 402-blocked from adding the 51st series; UPDATE of existing series still works; Pro = unlimited. New `GET /api/limits` returns current usage.
+22. **AI Recommendations** (`POST /api/ai/recommendations`, `require_pro`): Claude Sonnet 4.5 via Emergent Universal Key analyzes user's library + reviews, returns 5 series with personalized "porque você vai gostar" explanation in pt-BR. Output is enriched with TMDB posters + in_library flag.
+23. **Advanced stats** (`GET /api/stats/advanced`, `require_pro`): total eps watched, estimated hours/days, top series, top genres (parallel TMDB fetches), 365-day heatmap, library breakdown, top months.
+24. **Frontend pages**: `/ai-recommendations` (with paywall fallback for free), `/stats` (with paywall fallback). Both have nav links visible to all users — Free clicks open paywall.
+25. **402 cap UX**: SeriesDetail action buttons show toast with "Fazer upgrade" action button when free user hits cap.
+
+## Tested
+- Iteration 6: 18/18 Sprint-2 backend tests + 100% frontend e2e (Pro + Free flows). Zero bugs.
+
+## P1 backlog (post Sprint-2)
+- [ ] Cache TMDB /tv/{id} (15-30min LRU) — big perf win on /streaming/episodes + /stats/advanced.
+- [ ] Cache AI recommendations per user (5-10min TTL) — deterministic given inputs, costs $$ otherwise.
 - [ ] Trial period of 14 days (requires expiration cron).
 - [ ] Wrapped 2026 page (year-end viral feature).
+- [ ] Stripe Customer Portal for self-cancel.
+- [ ] Split server.py (1624 lines) into routers (auth, library, streaming, billing, pro).
+- [ ] Daily cron worker for notify_today + push.
+- [ ] Apple OAuth (iOS users), email reset flow.
+- [ ] Friend follow + activity feed (full social).
+- [ ] Migrate FastAPI startup/shutdown to lifespan context.
 
 ## P2 backlog
 - [ ] Premium tier (remove ads, advanced alerts, Plex/Jellyfin, statistics export).
