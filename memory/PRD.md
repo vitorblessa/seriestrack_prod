@@ -35,14 +35,23 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 - Iteration 1: 18/18 pytest + e2e Playwright — all green.
 - Iteration 2: 42/42 pytest (24 new + 18 regression) + e2e Playwright on all phase-2 flows — all green.
 
+## Sprint 1 — Pro monetization (Stripe Checkout via emergentintegrations)
+14. **Plans backend**: PRO_PLANS dict (pro_monthly R$ 12,90/30d, pro_yearly R$ 99,00/365d) — server-side fixed; frontend never sets price.
+15. **Endpoints**: `GET /api/billing/plans`, `POST /api/billing/checkout`, `GET /api/billing/status/{session_id}` (idempotent credit), `GET /api/billing/me`, `POST /api/webhook/stripe` (signature-verified).
+16. **`payment_transactions` collection** with session_id (unique), credited flag for idempotency.
+17. **`is_pro()` + `require_pro` deps**: ready for gating Pro features.
+18. **`_credit_pro()`** extends subscription_renews_at by N days from max(now, current_renews) — supports stacking renewals.
+19. **Frontend**: `/pricing` (public) with Free vs Pro side-by-side, monthly/yearly toggle (-36% badge), Stripe redirect on click; `/billing/success` with status polling (12 retries × 2.5s).
+20. **UI integration**: nav-upgrade-btn in header (free users), nav-pro-badge (Pro users); profile-upgrade-link / profile-pro-badge on /profile.
+
 ## P1 backlog
-- [ ] Schedule daily cron worker that calls `notify_today` for all users automatically.
-- [ ] Cache TMDB responses (5-min in-memory) to reduce API calls on hot endpoints.
-- [ ] Auto-expand season 1 on first load (small UX papercut flagged in tests).
-- [ ] Apple OAuth (iOS users); confirm/email reset flow.
-- [ ] Friend follow + activity feed (full social, currently MVP).
-- [ ] Migrate FastAPI startup/shutdown to lifespan context.
-- [ ] Split server.py (954 lines) into routers per domain.
+- [ ] Cron worker daily that calls notify_today for all users.
+- [ ] Cache TMDB /tv/{id} responses (5-15 min) — large perf win on streaming search.
+- [ ] Real Pro feature gating (library cap of 50 for free, IA recommendations behind require_pro).
+- [ ] Stripe webhook IP allowlist + better signature verification logging.
+- [ ] Stripe Customer Portal for self-cancel (currently must contact support).
+- [ ] Trial period of 14 days (requires expiration cron).
+- [ ] Wrapped 2026 page (year-end viral feature).
 
 ## P2 backlog
 - [ ] Premium tier (remove ads, advanced alerts, Plex/Jellyfin, statistics export).

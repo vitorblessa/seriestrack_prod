@@ -236,7 +236,7 @@ class PushSubscriptionIn(BaseModel):
 
 
 class CheckoutIn(BaseModel):
-    plan: str = Field(pattern="^(pro_monthly|pro_yearly)$")
+    plan: str
     origin_url: str
 
 
@@ -1004,7 +1004,9 @@ def _normalize_provider(s: str) -> str:
 def _provider_matches(needle_norm: str, provider_norm: str) -> bool:
     """True when the needle matches the provider as exact, or as a word-sequence
     that appears at the start or end of the provider (avoids false-positive midmatches
-    like 'apple tv' matching 'Paramount Plus Apple TV Channel')."""
+    like 'apple tv' matching 'Paramount Plus Apple TV Channel').
+    Also rejects sub-channel variants (* channel) when the needle doesn't explicitly
+    include 'channel' — e.g. 'apple tv' must NOT match 'apple tv amazon channel'."""
     if not needle_norm or not provider_norm:
         return False
     if needle_norm == provider_norm:
@@ -1012,6 +1014,9 @@ def _provider_matches(needle_norm: str, provider_norm: str) -> bool:
     n_words = needle_norm.split()
     p_words = provider_norm.split()
     if len(n_words) > len(p_words):
+        return False
+    # Reject sub-channel variants unless user explicitly searched for "channel"
+    if "channel" in p_words and "channel" not in n_words:
         return False
     if p_words[: len(n_words)] == n_words:
         return True
@@ -1119,6 +1124,8 @@ async def streaming_episodes(name: str, user: dict = Depends(get_current_user)):
                     "still_url": f"{TMDB_IMG}/w300{ep.get('still_path')}" if ep.get("still_path") else None,
                     "overview": ep.get("overview"),
                     "kind": kind,
+                    "providers": matched_names,
+                    "matched_providers": matched_names,
                 })
             return out
         except Exception:
