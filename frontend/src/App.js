@@ -17,6 +17,8 @@ import Profile from "./pages/Profile";
 import AuthCallback from "./pages/AuthCallback";
 import PublicProfile from "./pages/PublicProfile";
 import Settings from "./pages/Settings";
+import Pricing from "./pages/Pricing";
+import BillingSuccess from "./pages/BillingSuccess";
 
 registerSW();
 
@@ -51,6 +53,8 @@ export default function App() {
                         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                         <Route path="/auth/callback" element={<AuthCallback />} />
                         <Route path="/u/:id" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
+                        <Route path="/pricing" element={<Pricing />} />
+                        <Route path="/billing/success" element={<ProtectedRoute><BillingSuccess /></ProtectedRoute>} />
                     </Routes>
                 </AuthProvider>
             </BrowserRouter>

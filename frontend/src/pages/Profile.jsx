@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../lib/api";
 import AppLayout from "../components/AppLayout";
 import { useAuth } from "../lib/auth";
-import { User, Mail, Calendar, LogOut, Trophy, ExternalLink, Settings as SettingsIcon } from "lucide-react";
+import { User, Mail, Calendar, LogOut, Trophy, ExternalLink, Settings as SettingsIcon, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Profile() {
@@ -29,6 +29,15 @@ export default function Profile() {
                     <p className="text-white/50 text-sm mt-1 flex items-center justify-center gap-1">
                         <Mail className="w-3.5 h-3.5" /> {user?.email}
                     </p>
+                    {user?.subscription_tier === "pro" ? (
+                        <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-[#FF2A54]/20 border border-amber-400/50 text-amber-200 text-xs font-black uppercase tracking-wider" data-testid="profile-pro-badge">
+                            <Crown className="w-3.5 h-3.5" /> Pro 💎
+                        </div>
+                    ) : (
+                        <Link to="/pricing" data-testid="profile-upgrade-link" className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF2A54]/15 border border-[#FF2A54]/40 text-[#FF8a8a] text-xs font-bold uppercase tracking-wider hover:bg-[#FF2A54]/25">
+                            <Crown className="w-3.5 h-3.5" /> Fazer upgrade
+                        </Link>
+                    )}
                     {user?.created_at && (
                         <p className="text-white/40 text-xs mt-3 flex items-center justify-center gap-1">
                             <Calendar className="w-3 h-3" /> Membro desde {String(user.created_at).slice(0, 10)}

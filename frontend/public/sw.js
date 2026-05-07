@@ -1,6 +1,6 @@
 // SeriesTrack Service Worker — handles push notifications + offline cache
 // Bump CACHE_NAME on UI changes that need to invalidate prior cached HTML/assets
-const CACHE_NAME = "seriestrack-v5";
+const CACHE_NAME = "seriestrack-v6";
 const APP_SHELL = ["/manifest.json", "/favicon.ico"];
 
 self.addEventListener("install", (event) => {

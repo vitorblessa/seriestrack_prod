@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth";
 import api from "../lib/api";
-import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv, Settings as SettingsIcon } from "lucide-react";
+import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv, Settings as SettingsIcon, Crown } from "lucide-react";
 
 const navItems = [
     { to: "/dashboard", label: "Início", icon: Home, testid: "nav-home-link" },
@@ -63,6 +63,21 @@ export default function AppLayout({ children }) {
                     </nav>
 
                     <div className="ml-auto flex items-center gap-2">
+                        {user?.subscription_tier !== "pro" && (
+                            <button
+                                onClick={() => navigate("/pricing")}
+                                data-testid="nav-upgrade-btn"
+                                className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#FF2A54] to-[#7c1531] hover:from-[#FF4D71] hover:to-[#7c1531] text-white text-xs font-black uppercase tracking-wider shadow-[0_0_20px_rgba(255,42,84,0.3)]"
+                                title="Fazer upgrade para Pro"
+                            >
+                                <Crown className="w-3.5 h-3.5" /> Upgrade
+                            </button>
+                        )}
+                        {user?.subscription_tier === "pro" && (
+                            <span data-testid="nav-pro-badge" className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-[#FF2A54]/20 border border-amber-400/40 text-amber-200 text-xs font-bold uppercase tracking-wider">
+                                <Crown className="w-3.5 h-3.5" /> Pro
+                            </span>
+                        )}
                         <button
                             onClick={() => navigate("/notifications")}
                             data-testid="nav-notifications-btn"

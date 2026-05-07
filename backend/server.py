@@ -27,6 +27,14 @@ try:
 except Exception:
     PUSH_AVAILABLE = False
 
+try:
+    from emergentintegrations.payments.stripe.checkout import (
+        StripeCheckout, CheckoutSessionRequest,
+    )
+    STRIPE_AVAILABLE = True
+except Exception:
+    STRIPE_AVAILABLE = False
+
 # ---------------------- Setup ----------------------
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -51,6 +59,14 @@ VAPID_PRIVATE_PEM = ''
 if VAPID_PRIVATE_PEM_PATH and os.path.exists(VAPID_PRIVATE_PEM_PATH):
     with open(VAPID_PRIVATE_PEM_PATH, 'r') as f:
         VAPID_PRIVATE_PEM = f.read()
+
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
+
+# Server-side fixed pricing (NEVER trust client-supplied amounts)
+PRO_PLANS = {
+    "pro_monthly": {"amount": 12.90, "currency": "brl", "days": 30, "label": "Pro Mensal"},
+    "pro_yearly": {"amount": 99.00, "currency": "brl", "days": 365, "label": "Pro Anual"},
+}
 
 app = FastAPI(title="SeriesTrack API")
 api = APIRouter(prefix="/api")
@@ -90,12 +106,25 @@ def clear_auth_cookies(response: Response):
 
 
 def serialize_user(doc: dict) -> dict:
+    tier = doc.get("subscription_tier") or "free"
+    renews = doc.get("subscription_renews_at")
+    is_active_pro = False
+    if tier == "pro" and renews:
+        try:
+            ren_dt = renews if isinstance(renews, datetime) else datetime.fromisoformat(renews)
+            if ren_dt.tzinfo is None:
+                ren_dt = ren_dt.replace(tzinfo=timezone.utc)
+            is_active_pro = ren_dt > datetime.now(timezone.utc)
+        except Exception:
+            is_active_pro = False
     return {
         "id": str(doc["_id"]),
         "email": doc["email"],
         "name": doc.get("name", ""),
         "avatar_url": doc.get("avatar_url"),
         "created_at": doc.get("created_at").isoformat() if isinstance(doc.get("created_at"), datetime) else doc.get("created_at"),
+        "subscription_tier": "pro" if is_active_pro else "free",
+        "subscription_renews_at": (renews.isoformat() if isinstance(renews, datetime) else renews),
     }
 
 
@@ -204,6 +233,31 @@ class PushKeysIn(BaseModel):
 class PushSubscriptionIn(BaseModel):
     endpoint: str
     keys: PushKeysIn
+
+
+class CheckoutIn(BaseModel):
+    plan: str = Field(pattern="^(pro_monthly|pro_yearly)$")
+    origin_url: str
+
+
+async def is_pro(user: dict) -> bool:
+    tier = user.get("subscription_tier")
+    renews = user.get("subscription_renews_at")
+    if tier != "pro" or not renews:
+        return False
+    try:
+        ren_dt = renews if isinstance(renews, datetime) else datetime.fromisoformat(renews)
+        if ren_dt.tzinfo is None:
+            ren_dt = ren_dt.replace(tzinfo=timezone.utc)
+        return ren_dt > datetime.now(timezone.utc)
+    except Exception:
+        return False
+
+
+async def require_pro(user: dict = Depends(get_current_user)) -> dict:
+    if not await is_pro(user):
+        raise HTTPException(402, "Pro subscription required")
+    return user
 
 
 # ---------------------- Auth routes ----------------------
@@ -1086,6 +1140,198 @@ async def streaming_episodes(name: str, user: dict = Depends(get_current_user)):
     }
 
 
+# ---------------------- Billing (Stripe) ----------------------
+def _stripe_client(request: Request) -> "StripeCheckout":
+    if not STRIPE_AVAILABLE:
+        raise HTTPException(503, "Pagamentos indisponíveis no momento")
+    if not STRIPE_API_KEY:
+        raise HTTPException(503, "Stripe não configurado")
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    return StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+
+
+@api.get("/billing/plans")
+async def billing_plans():
+    return {"plans": [
+        {"id": k, "label": v["label"], "amount": v["amount"], "currency": v["currency"], "days": v["days"]}
+        for k, v in PRO_PLANS.items()
+    ]}
+
+
+@api.post("/billing/checkout")
+async def billing_checkout(payload: CheckoutIn, request: Request, user: dict = Depends(get_current_user)):
+    plan = PRO_PLANS.get(payload.plan)
+    if not plan:
+        raise HTTPException(400, "Plano inválido")
+    sc = _stripe_client(request)
+    origin = payload.origin_url.rstrip("/")
+    success_url = f"{origin}/billing/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/pricing"
+    metadata = {
+        "user_id": str(user["_id"]),
+        "user_email": user["email"],
+        "plan": payload.plan,
+        "days": str(plan["days"]),
+    }
+    req = CheckoutSessionRequest(
+        amount=float(plan["amount"]),
+        currency=plan["currency"],
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata=metadata,
+    )
+    try:
+        session = await sc.create_checkout_session(req)
+    except Exception as e:
+        logger.warning(f"stripe checkout error: {e}")
+        raise HTTPException(502, f"Erro ao criar sessão de pagamento: {e}")
+
+    # MANDATORY: create payment_transactions row BEFORE redirecting
+    await db.payment_transactions.insert_one({
+        "session_id": session.session_id,
+        "user_id": str(user["_id"]),
+        "user_email": user["email"],
+        "plan": payload.plan,
+        "amount": plan["amount"],
+        "currency": plan["currency"],
+        "days": plan["days"],
+        "metadata": metadata,
+        "status": "initiated",
+        "payment_status": "unpaid",
+        "credited": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"url": session.url, "session_id": session.session_id}
+
+
+async def _credit_pro(user_id: str, days: int) -> Optional[str]:
+    """Idempotently extend the user's Pro subscription by `days`. Returns new renews_at iso."""
+    try:
+        u = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        return None
+    if not u:
+        return None
+    now = datetime.now(timezone.utc)
+    cur = u.get("subscription_renews_at")
+    cur_dt = None
+    if cur:
+        try:
+            cur_dt = cur if isinstance(cur, datetime) else datetime.fromisoformat(cur)
+            if cur_dt.tzinfo is None:
+                cur_dt = cur_dt.replace(tzinfo=timezone.utc)
+        except Exception:
+            cur_dt = None
+    base = cur_dt if (cur_dt and cur_dt > now) else now
+    new_renews = base + timedelta(days=days)
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"subscription_tier": "pro", "subscription_renews_at": new_renews.isoformat(), "subscription_status": "active"}},
+    )
+    return new_renews.isoformat()
+
+
+@api.get("/billing/status/{session_id}")
+async def billing_status(session_id: str, request: Request, user: dict = Depends(get_current_user)):
+    """Polled by frontend after Stripe redirect. Verifies + credits Pro idempotently."""
+    tx = await db.payment_transactions.find_one({"session_id": session_id, "user_id": str(user["_id"])}, {"_id": 0})
+    if not tx:
+        raise HTTPException(404, "Transação não encontrada")
+
+    sc = _stripe_client(request)
+    try:
+        st = await sc.get_checkout_status(session_id)
+    except Exception as e:
+        logger.warning(f"stripe status error: {e}")
+        raise HTTPException(502, f"Erro ao consultar Stripe: {e}")
+
+    new_status = st.status
+    new_payment_status = st.payment_status
+
+    update = {
+        "status": new_status,
+        "payment_status": new_payment_status,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "amount_total": st.amount_total,
+        "currency_received": st.currency,
+    }
+
+    # Credit only once
+    credited = tx.get("credited", False)
+    if not credited and new_payment_status == "paid":
+        days = int(tx.get("days") or 30)
+        new_renews = await _credit_pro(tx["user_id"], days)
+        update["credited"] = True
+        update["credited_at"] = datetime.now(timezone.utc).isoformat()
+        update["new_renews_at"] = new_renews
+
+    await db.payment_transactions.update_one({"session_id": session_id}, {"$set": update})
+
+    return {
+        "status": new_status,
+        "payment_status": new_payment_status,
+        "amount_total": st.amount_total,
+        "currency": st.currency,
+        "plan": tx.get("plan"),
+        "credited": update.get("credited", credited),
+        "new_renews_at": update.get("new_renews_at"),
+    }
+
+
+@api.get("/billing/me")
+async def billing_me(user: dict = Depends(get_current_user)):
+    pro = await is_pro(user)
+    renews = user.get("subscription_renews_at")
+    if isinstance(renews, datetime):
+        renews = renews.isoformat()
+    days_left = None
+    if pro and renews:
+        try:
+            ren_dt = datetime.fromisoformat(renews)
+            if ren_dt.tzinfo is None:
+                ren_dt = ren_dt.replace(tzinfo=timezone.utc)
+            delta = ren_dt - datetime.now(timezone.utc)
+            days_left = max(0, delta.days)
+        except Exception:
+            pass
+    return {"tier": "pro" if pro else "free", "renews_at": renews, "days_left": days_left}
+
+
+@api.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    if not STRIPE_AVAILABLE:
+        return {"received": False}
+    body = await request.body()
+    sig = request.headers.get("Stripe-Signature", "")
+    sc = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=str(request.base_url).rstrip("/") + "/api/webhook/stripe")
+    try:
+        ev = await sc.handle_webhook(body, sig)
+    except Exception as e:
+        logger.warning(f"stripe webhook verify failed: {e}")
+        raise HTTPException(400, "invalid signature")
+
+    session_id = getattr(ev, "session_id", None)
+    if session_id:
+        tx = await db.payment_transactions.find_one({"session_id": session_id})
+        if tx and ev.payment_status == "paid" and not tx.get("credited"):
+            days = int(tx.get("days") or 30)
+            new_renews = await _credit_pro(tx["user_id"], days)
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {
+                    "credited": True,
+                    "credited_at": datetime.now(timezone.utc).isoformat(),
+                    "new_renews_at": new_renews,
+                    "status": "complete",
+                    "payment_status": ev.payment_status,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }},
+            )
+    return {"received": True, "event_type": getattr(ev, "event_type", None)}
+
+
 # ---------------------- Health ----------------------
 @api.get("/")
 async def root():
@@ -1124,6 +1370,8 @@ async def startup():
         await db.reviews.create_index([("user_id", 1), ("tmdb_id", 1)], unique=True)
         await db.reviews.create_index([("tmdb_id", 1), ("updated_at", -1)])
         await db.push_subscriptions.create_index([("user_id", 1), ("endpoint", 1)], unique=True)
+        await db.payment_transactions.create_index("session_id", unique=True)
+        await db.payment_transactions.create_index([("user_id", 1), ("created_at", -1)])
     except Exception as e:
         logger.warning(f"index creation: {e}")
 
