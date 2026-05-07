@@ -35,6 +35,12 @@ try:
 except Exception:
     STRIPE_AVAILABLE = False
 
+try:
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    LLM_AVAILABLE = True
+except Exception:
+    LLM_AVAILABLE = False
+
 # ---------------------- Setup ----------------------
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -61,6 +67,10 @@ if VAPID_PRIVATE_PEM_PATH and os.path.exists(VAPID_PRIVATE_PEM_PATH):
         VAPID_PRIVATE_PEM = f.read()
 
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
+
+# Free tier limits
+FREE_LIBRARY_CAP = 50
 
 # Server-side fixed pricing (NEVER trust client-supplied amounts)
 PRO_PLANS = {
@@ -480,6 +490,21 @@ async def get_library(status: Optional[str] = None, user: dict = Depends(get_cur
 @api.post("/library")
 async def upsert_library(payload: LibraryUpsertIn, user: dict = Depends(get_current_user)):
     user_id = str(user["_id"])
+    # Free-tier cap: 50 series. Existing items can be updated; new adds are blocked.
+    existing_in_lib = await db.library.find_one({"user_id": user_id, "tmdb_id": payload.tmdb_id})
+    if not existing_in_lib and not await is_pro(user):
+        count = await db.library.count_documents({"user_id": user_id})
+        if count >= FREE_LIBRARY_CAP:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "library_cap_reached",
+                    "message": f"Limite gratuito de {FREE_LIBRARY_CAP} séries atingido. Faça upgrade para Pro para biblioteca ilimitada.",
+                    "cap": FREE_LIBRARY_CAP,
+                    "current": count,
+                },
+            )
+
     # Fetch missing details from TMDB if needed
     name = payload.name
     poster_url = payload.poster_url
@@ -1343,6 +1368,200 @@ async def stripe_webhook(request: Request):
 @api.get("/")
 async def root():
     return {"app": "SeriesTrack", "version": "1.0.0"}
+
+
+# ---------------------- AI Recommendations (Pro) ----------------------
+@api.post("/ai/recommendations")
+async def ai_recommendations(user: dict = Depends(require_pro)):
+    if not LLM_AVAILABLE or not EMERGENT_LLM_KEY:
+        raise HTTPException(503, "Recomendações IA indisponíveis no momento")
+    user_id = str(user["_id"])
+
+    # Build user context
+    lib = await db.library.find({"user_id": user_id}, {"_id": 0}).limit(40).to_list(40)
+    reviews = await db.reviews.find({"user_id": user_id}, {"_id": 0}).limit(20).to_list(20)
+    if not lib and not reviews:
+        return {"recommendations": [], "reason": "no_history"}
+
+    # Compose a compact prompt
+    seen_lines = []
+    for it in lib[:30]:
+        seen_lines.append(f"- {it.get('name')} ({it.get('status')})")
+    review_lines = []
+    for r in reviews:
+        c = (r.get('comment') or '').strip()
+        review_lines.append(f"- {r.get('user_name','')}: rated {r.get('rating')}/5{(' — ' + c) if c else ''}")
+
+    system = (
+        "Você é um curador especialista em séries de TV. Recomende 5 séries que o usuário "
+        "provavelmente vai amar, baseado no que ele já assistiu e avaliou. Cada recomendação "
+        "DEVE ser de uma série diferente, NÃO repita séries que já estão na lista do usuário. "
+        "Responda APENAS com JSON válido no formato: "
+        '{"recommendations":[{"title":"<nome em inglês ou original>","year":<ano>,"why":"<1-2 frases em pt-BR explicando por que essa pessoa vai gostar>"}]}'
+    )
+    prompt = (
+        "Séries que o usuário tem na biblioteca:\n" + "\n".join(seen_lines or ["(vazio)"]) +
+        "\n\nAvaliações do usuário:\n" + "\n".join(review_lines or ["(nenhuma)"]) +
+        "\n\nGere as 5 recomendações em JSON puro. Sem markdown, sem ```."
+    )
+
+    try:
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"recs-{user_id}",
+            system_message=system,
+        ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+        msg = UserMessage(text=prompt)
+        raw = await chat.send_message(msg)
+    except Exception as e:
+        logger.warning(f"LLM recs failed: {e}")
+        raise HTTPException(502, "Erro ao gerar recomendações")
+
+    # Strip code fences if present + parse
+    txt = (raw or "").strip()
+    if txt.startswith("```"):
+        txt = re.sub(r"^```(?:json)?\s*|\s*```$", "", txt, flags=re.MULTILINE)
+    try:
+        data = json.loads(txt)
+        recs = data.get("recommendations", [])[:5]
+    except Exception:
+        logger.warning(f"Bad LLM JSON: {txt[:300]}")
+        raise HTTPException(502, "Resposta inválida do modelo")
+
+    # Enrich with TMDB poster + tmdb_id for each
+    tc = await tmdb()
+
+    async def enrich(r: dict):
+        title = (r.get("title") or "").strip()
+        if not title:
+            return None
+        try:
+            sr = await tc.get("/search/tv", params={"query": title, "language": TMDB_LANG, "include_adult": False})
+            results = sr.json().get("results") or [] if sr.status_code == 200 else []
+            if r.get("year"):
+                yr = str(r["year"])
+                exact = [x for x in results if (x.get("first_air_date") or "").startswith(yr)]
+                if exact:
+                    results = exact
+            top = results[0] if results else None
+        except Exception:
+            top = None
+        if not top:
+            return None
+        return {
+            "tmdb_id": top.get("id"),
+            "name": top.get("name"),
+            "poster_url": f"{TMDB_IMG}/w500{top.get('poster_path')}" if top.get("poster_path") else None,
+            "backdrop_url": f"{TMDB_IMG}/original{top.get('backdrop_path')}" if top.get("backdrop_path") else None,
+            "first_air_date": top.get("first_air_date"),
+            "vote_average": top.get("vote_average"),
+            "ai_why": r.get("why", ""),
+        }
+
+    enriched = await asyncio.gather(*(enrich(r) for r in recs))
+    out = [e for e in enriched if e]
+
+    # Mark which are already in library
+    lib_ids = {it["tmdb_id"] for it in lib}
+    for e in out:
+        e["in_library"] = e["tmdb_id"] in lib_ids
+
+    return {"recommendations": out, "model": "claude-sonnet-4-5"}
+
+
+# ---------------------- Advanced Stats (Pro) ----------------------
+@api.get("/stats/advanced")
+async def advanced_stats(user: dict = Depends(require_pro)):
+    user_id = str(user["_id"])
+    progress = await db.progress.find({"user_id": user_id}, {"_id": 0}).to_list(20000)
+    library = await db.library.find({"user_id": user_id}, {"_id": 0}).to_list(500)
+
+    # Total episodes watched and approx hours (45min avg per episode)
+    total_eps = len(progress)
+    estimated_minutes = total_eps * 45
+    estimated_hours = round(estimated_minutes / 60, 1)
+    estimated_days = round(estimated_minutes / 60 / 24, 2)
+
+    # Episodes per series (top 5)
+    by_series: dict = {}
+    for p in progress:
+        by_series[p["tmdb_id"]] = by_series.get(p["tmdb_id"], 0) + 1
+    series_name_map = {it["tmdb_id"]: it.get("name") for it in library}
+    top_series = sorted(
+        [{"tmdb_id": k, "name": series_name_map.get(k, f"Série {k}"), "episodes": v} for k, v in by_series.items()],
+        key=lambda x: x["episodes"], reverse=True,
+    )[:5]
+
+    # Heatmap: episodes watched per day (last 365 days, ISO date → count)
+    from collections import Counter
+    today = datetime.now(timezone.utc).date()
+    cutoff = (today - timedelta(days=365)).isoformat()
+    heat: dict = {}
+    for p in progress:
+        d = (p.get("watched_at") or "")[:10]
+        if d and d >= cutoff:
+            heat[d] = heat.get(d, 0) + 1
+    heatmap = [{"date": k, "count": v} for k, v in sorted(heat.items())]
+
+    # Genre breakdown — fetch genres for each library show in parallel (cached implicitly by TMDB CDN)
+    tc = await tmdb()
+    async def fetch_genres(it: dict):
+        try:
+            r = await tc.get(f"/tv/{it['tmdb_id']}", params={"language": TMDB_LANG})
+            if r.status_code != 200:
+                return []
+            return [g.get("name") for g in (r.json().get("genres") or [])]
+        except Exception:
+            return []
+    genre_lists = await asyncio.gather(*(fetch_genres(it) for it in library[:50]))
+    genre_counter = Counter()
+    for gs in genre_lists:
+        for g in gs:
+            if g:
+                genre_counter[g] += 1
+    top_genres = [{"genre": g, "count": c} for g, c in genre_counter.most_common(10)]
+
+    # Library status breakdown (also in /api/stats but include here)
+    statuses = {}
+    for st in ("watching", "paused", "finished", "want"):
+        statuses[st] = sum(1 for it in library if it.get("status") == st)
+
+    # Most active month (last 12 months)
+    month_counter = Counter()
+    for p in progress:
+        d = (p.get("watched_at") or "")[:7]
+        if d:
+            month_counter[d] += 1
+    top_months = [{"month": m, "count": c} for m, c in month_counter.most_common(6)]
+
+    return {
+        "total_episodes_watched": total_eps,
+        "estimated_minutes": estimated_minutes,
+        "estimated_hours": estimated_hours,
+        "estimated_days": estimated_days,
+        "top_series": top_series,
+        "top_genres": top_genres,
+        "heatmap": heatmap,
+        "library_breakdown": statuses,
+        "top_months": top_months,
+        "library_size": len(library),
+    }
+
+
+@api.get("/limits")
+async def usage_limits(user: dict = Depends(get_current_user)):
+    """Return current usage vs limits for the authenticated user."""
+    user_id = str(user["_id"])
+    pro = await is_pro(user)
+    library_count = await db.library.count_documents({"user_id": user_id})
+    return {
+        "tier": "pro" if pro else "free",
+        "library": {
+            "used": library_count,
+            "cap": None if pro else FREE_LIBRARY_CAP,
+            "remaining": None if pro else max(0, FREE_LIBRARY_CAP - library_count),
+        },
+    }
 
 
 # Mount router & CORS

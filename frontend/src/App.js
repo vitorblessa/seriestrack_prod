@@ -19,6 +19,8 @@ import PublicProfile from "./pages/PublicProfile";
 import Settings from "./pages/Settings";
 import Pricing from "./pages/Pricing";
 import BillingSuccess from "./pages/BillingSuccess";
+import AIRecommendations from "./pages/AIRecommendations";
+import AdvancedStats from "./pages/AdvancedStats";
 
 registerSW();
 
@@ -55,6 +57,8 @@ export default function App() {
                         <Route path="/u/:id" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
                         <Route path="/pricing" element={<Pricing />} />
                         <Route path="/billing/success" element={<ProtectedRoute><BillingSuccess /></ProtectedRoute>} />
+                        <Route path="/ai-recommendations" element={<ProtectedRoute><AIRecommendations /></ProtectedRoute>} />
+                        <Route path="/stats" element={<ProtectedRoute><AdvancedStats /></ProtectedRoute>} />
                     </Routes>
                 </AuthProvider>
             </BrowserRouter>

@@ -2,13 +2,15 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth";
 import api from "../lib/api";
-import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv, Settings as SettingsIcon, Crown } from "lucide-react";
+import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv, Settings as SettingsIcon, Crown, Sparkles, BarChart3 } from "lucide-react";
 
 const navItems = [
     { to: "/dashboard", label: "Início", icon: Home, testid: "nav-home-link" },
     { to: "/search", label: "Buscar", icon: Search, testid: "nav-search-link" },
     { to: "/library", label: "Biblioteca", icon: Library, testid: "nav-library-link" },
     { to: "/calendar", label: "Calendário", icon: Calendar, testid: "nav-calendar-link" },
+    { to: "/ai-recommendations", label: "IA Recs", icon: Sparkles, testid: "nav-ai-link", proHint: true },
+    { to: "/stats", label: "Stats", icon: BarChart3, testid: "nav-stats-link", proHint: true },
 ];
 
 export default function AppLayout({ children }) {

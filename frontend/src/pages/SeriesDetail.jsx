@@ -101,8 +101,19 @@ export default function SeriesDetail() {
             });
             setInLib({ tmdb_id: Number(id), status, name: series.name });
             toast.success(`Adicionada como "${STATUSES.find((s) => s.key === status).label}"`);
-        } catch {
-            toast.error("Erro ao salvar");
+        } catch (e) {
+            const detail = e?.response?.data?.detail;
+            if (e?.response?.status === 402 && detail?.code === "library_cap_reached") {
+                toast.error(detail.message, {
+                    action: {
+                        label: "Fazer upgrade",
+                        onClick: () => { window.location.href = "/pricing"; },
+                    },
+                    duration: 8000,
+                });
+            } else {
+                toast.error("Erro ao salvar");
+            }
         } finally {
             setActLoading(false);
         }
