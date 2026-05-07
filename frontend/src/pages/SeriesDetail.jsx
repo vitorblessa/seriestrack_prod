@@ -139,6 +139,30 @@ export default function SeriesDetail() {
         }
     };
 
+    const [bulkLoading, setBulkLoading] = useState(false);
+
+    const toggleSeasonWatched = async (s) => {
+        const sum = progressSummary?.seasons?.find((x) => x.season_number === s);
+        const allWatched = sum && sum.total > 0 && sum.watched >= sum.total;
+        const willWatch = !allWatched;
+        setBulkLoading(true);
+        try {
+            await api.post("/progress/bulk", { tmdb_id: Number(id), season: s, watched: willWatch });
+            // Refresh both progress set and summary
+            const [{ data: prog }, { data: newSum }] = await Promise.all([
+                api.get(`/progress/${id}`),
+                api.get(`/progress/${id}/summary`),
+            ]);
+            setProgress(new Set(prog.map((p) => `${p.season}-${p.episode}`)));
+            setProgressSummary(newSum);
+            toast.success(willWatch ? `Temporada ${s} marcada como assistida` : `Temporada ${s} desmarcada`);
+        } catch {
+            toast.error("Erro ao atualizar temporada");
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
     const currentSeasonProgress = progressSummary?.seasons?.find((x) => x.season_number === seasonNum);
 
     if (loading) {
@@ -315,8 +339,8 @@ export default function SeriesDetail() {
                         </TabsList>
                         <TabsContent value={String(seasonNum)} className="mt-6">
                             {currentSeasonProgress && (
-                                <div className="glass rounded-xl p-4 mb-4 flex items-center gap-4" data-testid="season-progress">
-                                    <div className="flex-1">
+                                <div className="glass rounded-xl p-4 mb-4 flex items-center gap-4 flex-wrap" data-testid="season-progress">
+                                    <div className="flex-1 min-w-[200px]">
                                         <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-white/60">
                                             <span>Progresso da temporada</span>
                                             <span>{currentSeasonProgress.watched}/{currentSeasonProgress.total} · {currentSeasonProgress.percent}%</span>
@@ -325,6 +349,31 @@ export default function SeriesDetail() {
                                             <div className="h-full bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] transition-all duration-500" style={{ width: `${currentSeasonProgress.percent}%` }} />
                                         </div>
                                     </div>
+                                    {inLib && currentSeasonProgress.total > 0 && (
+                                        (() => {
+                                            const allWatched = currentSeasonProgress.watched >= currentSeasonProgress.total;
+                                            return (
+                                                <button
+                                                    onClick={() => toggleSeasonWatched(seasonNum)}
+                                                    disabled={bulkLoading}
+                                                    data-testid={`season-bulk-toggle-${seasonNum}`}
+                                                    className={`shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${
+                                                        allWatched
+                                                            ? "bg-white/5 border-white/15 text-white/70 hover:bg-white/10"
+                                                            : "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25"
+                                                    } disabled:opacity-60`}
+                                                >
+                                                    {bulkLoading ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : allWatched ? (
+                                                        <><Trash2 className="w-3.5 h-3.5" /> Desmarcar temporada</>
+                                                    ) : (
+                                                        <><CheckCircle2 className="w-3.5 h-3.5" /> Marcar temporada como assistida</>
+                                                    )}
+                                                </button>
+                                            );
+                                        })()
+                                    )}
                                 </div>
                             )}
                             {seasonLoading ? (

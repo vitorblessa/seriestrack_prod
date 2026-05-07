@@ -180,6 +180,12 @@ class ProgressIn(BaseModel):
     watched: bool = True
 
 
+class ProgressBulkIn(BaseModel):
+    tmdb_id: int
+    season: int
+    watched: bool = True
+
+
 class GoogleCallbackIn(BaseModel):
     session_id: str
 
@@ -637,6 +643,40 @@ async def get_progress(tmdb_id: int, user: dict = Depends(get_current_user)):
         {"user_id": str(user["_id"]), "tmdb_id": tmdb_id}, {"_id": 0}
     ).to_list(2000)
     return items
+
+
+@api.post("/progress/bulk")
+async def bulk_progress(payload: ProgressBulkIn, user: dict = Depends(get_current_user)):
+    """Mark ALL episodes of a season as watched (or unwatched). Useful for fast catch-up."""
+    user_id = str(user["_id"])
+    if payload.watched:
+        # Need episode list from TMDB to upsert each
+        tc = await tmdb()
+        r = await tc.get(f"/tv/{payload.tmdb_id}/season/{payload.season}", params={"language": TMDB_LANG})
+        if r.status_code != 200:
+            raise HTTPException(404, "Season not found")
+        episodes = r.json().get("episodes", [])
+        if not episodes:
+            return {"updated": 0, "watched": True}
+        now = datetime.now(timezone.utc).isoformat()
+        # Use individual upserts (small N per season, fine without bulk_write)
+        for ep in episodes:
+            ep_num = ep.get("episode_number")
+            if ep_num is None:
+                continue
+            await db.progress.update_one(
+                {"user_id": user_id, "tmdb_id": payload.tmdb_id, "season": payload.season, "episode": ep_num},
+                {"$set": {"user_id": user_id, "tmdb_id": payload.tmdb_id, "season": payload.season, "episode": ep_num, "watched_at": now}},
+                upsert=True,
+            )
+        return {"updated": len(episodes), "watched": True}
+    # unmark all
+    result = await db.progress.delete_many({
+        "user_id": user_id,
+        "tmdb_id": payload.tmdb_id,
+        "season": payload.season,
+    })
+    return {"deleted": result.deleted_count, "watched": False}
 
 
 @api.get("/progress/{tmdb_id}/summary")
