@@ -145,8 +145,8 @@ class TestHelpersUnit:
     def helpers(self):
         import sys
         sys.path.insert(0, "/app/backend")
-        import server  # noqa: E402
-        return server._normalize_provider, server._provider_matches
+        from routes.streaming import _normalize_provider, _provider_matches  # noqa: E402
+        return _normalize_provider, _provider_matches
 
     def test_normalize_disney_plus_variants(self, helpers):
         norm, _ = helpers
@@ -178,9 +178,9 @@ class TestHelpersUnit:
     def test_match_max_suffix_only(self, helpers):
         norm, match = helpers
         assert match(norm("Max"), norm("HBO Max")) is True
-        # 'Max' must NOT match a midword like 'maximum' or 'Max Channel'
-        assert match(norm("Max"), norm("Max Channel")) is True  # prefix
-        # But does NOT match 'Maximum' since normalize keeps as one word and word != 'max'
+        # Sub-channel rejection: 'Max' alone should NOT match 'Max Channel' since
+        # the user didn't explicitly include 'channel' in their search.
+        assert match(norm("Max"), norm("Max Channel")) is False
         assert match(norm("Max"), norm("Maximum Streaming")) is False
 
     def test_match_netflix_prefix(self, helpers):
@@ -191,7 +191,9 @@ class TestHelpersUnit:
     def test_match_paramount_prefix_all(self, helpers):
         norm, match = helpers
         assert match(norm("Paramount+"), norm("Paramount Plus")) is True
-        assert match(norm("Paramount+"), norm("Paramount Plus Apple TV Channel")) is True
+        # Sub-channel rejection: 'Paramount+' alone must NOT match the 'Apple TV Channel'
+        # delivery surface unless the user explicitly includes 'channel'.
+        assert match(norm("Paramount+"), norm("Paramount Plus Apple TV Channel")) is False
 
     def test_match_empty_returns_false(self, helpers):
         norm, match = helpers

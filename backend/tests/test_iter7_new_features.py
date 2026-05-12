@@ -322,13 +322,22 @@ class TestCalendarICal:
             assert "END:VEVENT" in body
 
     def test_admin_via_token_query(self, admin_token):
-        """Calendar apps subscribe via URL — must accept ?token=."""
+        """Calendar apps subscribe via URL — must accept ?token= with a SCOPED calendar_feed JWT."""
+        # Mint scoped feed token first
+        mr = requests.post(f"{BASE_URL}/api/calendar/ical/feed",
+                           headers={"Authorization": f"Bearer {admin_token}"}, timeout=15)
+        assert mr.status_code == 200, mr.text
+        feed_token = mr.json()["token"]
         r = requests.get(f"{BASE_URL}/api/calendar/ical",
-                         params={"token": admin_token}, timeout=45)
+                         params={"token": feed_token}, timeout=45)
         assert r.status_code == 200, r.text
         assert "text/calendar" in r.headers.get("content-type", "").lower()
         assert r.text.startswith("BEGIN:VCALENDAR")
         assert "END:VCALENDAR" in r.text
+        # Full access token must be REJECTED on ?token=
+        r2 = requests.get(f"{BASE_URL}/api/calendar/ical",
+                          params={"token": admin_token}, timeout=15)
+        assert r2.status_code == 401
 
     def test_free_user_with_library_works(self, free_user, mongo_db):
         uid = free_user["user_id"]

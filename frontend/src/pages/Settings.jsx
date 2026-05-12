@@ -3,7 +3,7 @@ import AppLayout from "../components/AppLayout";
 import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink } from "lucide-react";
 import { getPushStatus, subscribePush, unsubscribePush, sendTestPush } from "../lib/push";
 import { toast } from "sonner";
-import api, { API, getToken } from "../lib/api";
+import api from "../lib/api";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
@@ -112,14 +112,30 @@ export default function Settings() {
         }
     };
 
-    const subscribeUrl = `${API}/calendar/ical?token=${encodeURIComponent(getToken() || "")}`;
+    const [feedUrl, setFeedUrl] = useState("");
+    const [feedBusy, setFeedBusy] = useState(false);
 
-    const copySubscribeUrl = async () => {
+    const generateFeedUrl = async () => {
+        setFeedBusy(true);
         try {
-            await navigator.clipboard.writeText(subscribeUrl);
-            toast.success("URL copiada — cole no Google Calendar ou Apple Calendar");
+            const { data } = await api.post("/calendar/ical/feed");
+            setFeedUrl(data.feed_url);
+            await navigator.clipboard.writeText(data.feed_url).catch(() => {});
+            toast.success("URL gerada e copiada — qualquer URL anterior foi revogada");
         } catch {
-            toast.error("Não foi possível copiar");
+            toast.error("Erro ao gerar URL");
+        } finally {
+            setFeedBusy(false);
+        }
+    };
+
+    const revokeFeedUrl = async () => {
+        try {
+            await api.delete("/calendar/ical/feed");
+            setFeedUrl("");
+            toast.success("URL revogada — quem tinha o link perdeu acesso");
+        } catch {
+            toast.error("Erro ao revogar");
         }
     };
 
@@ -289,19 +305,30 @@ export default function Settings() {
                                 <button onClick={downloadICS} className="btn-primary text-sm" data-testid="ical-download-btn">
                                     <CalendarDays className="w-4 h-4" /> Baixar .ics
                                 </button>
-                                <button onClick={copySubscribeUrl} className="btn-glass text-sm" data-testid="ical-copy-url-btn">
-                                    <Copy className="w-4 h-4" /> Copiar URL de assinatura
+                                <button onClick={generateFeedUrl} disabled={feedBusy} className="btn-glass text-sm" data-testid="ical-copy-url-btn">
+                                    {feedBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
+                                    {feedUrl ? "Gerar nova URL" : "Gerar URL de assinatura"}
                                 </button>
+                                {feedUrl && (
+                                    <button onClick={revokeFeedUrl} className="btn-glass text-sm" data-testid="ical-revoke-btn">
+                                        Revogar
+                                    </button>
+                                )}
                             </div>
+                            {feedUrl && (
+                                <div className="mt-3 p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs break-all font-mono text-white/70" data-testid="ical-feed-url">
+                                    {feedUrl}
+                                </div>
+                            )}
 
                             <details className="mt-4 text-xs text-white/60">
                                 <summary className="cursor-pointer text-white/70 font-semibold">Como assinar no Google Calendar / Apple</summary>
                                 <ol className="mt-2 list-decimal pl-5 space-y-1">
-                                    <li>Clique em "Copiar URL de assinatura" acima.</li>
+                                    <li>Clique em "Gerar URL de assinatura" acima — copiamos automaticamente.</li>
                                     <li><b>Google Calendar:</b> Outros calendários → De URL → Cole o link.</li>
                                     <li><b>Apple Calendar:</b> Arquivo → Nova Assinatura de Calendário → Cole o link.</li>
                                 </ol>
-                                <p className="mt-2 text-amber-300/70">⚠️ A URL contém seu token — mantenha privada.</p>
+                                <p className="mt-2 text-emerald-300/80">🔒 URL com token isolado (só lê o calendário, não dá acesso à conta). Pode revogar quando quiser.</p>
                             </details>
                         </div>
                     </div>

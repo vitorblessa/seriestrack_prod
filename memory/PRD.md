@@ -62,19 +62,40 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 ## Tested
 - Iteration 7: 17/17 backend tests (preview_rec 4, import_trakt 7, ical 5, fixtures 1) + Playwright e2e on Free upsell + Admin settings Trakt upload (real file → "✓ 2 séries adicionadas") + iCal download (real file with suggested_filename `seriestrack.ics`). Zero bugs.
 
-## P1 backlog (post Sprint-3)
-- [ ] Custom private lists (Pro: ilimitado, Free: 1) — was planned for Sprint 3 but deferred.
+## Sprint 3.5 — Backlog burn-down / Health refactor (Feb 2026)
+29. **TMDB cache (in-process)**: `tmdb_get_tv()` helper caches `/tv/{id}` responses for 30 min — used by `/calendar/upcoming`, `/calendar/ical`, `/push/notify_today`, `/streaming/episodes`, `/library` upsert, `/progress/summary`, `/stats/advanced`, `/import/trakt`. Auto-evicts oldest 500 when cache exceeds 2000 entries.
+30. **AI recs cache (per user)**: `/ai/recommendations` results cached for 10min keyed by `(user_id, lib+reviews signature)` — invalidates automatically when library/ratings change. Response includes `cached: true|false` flag.
+31. **iCal status filter**: `/calendar/ical` now only fetches shows in `status in ('watching','want')` — drops TMDB fetches for finished/paused entries (big win for large Pro libraries).
+32. **Scoped iCal feed token**: NEW endpoints `POST /api/calendar/ical/feed` (mint long-lived 365d read-only JWT) + `DELETE /api/calendar/ical/feed` (revoke all by bumping `calendar_feed_version`). The `?token=` query param on `/calendar/ical` now **rejects** access tokens — only accepts scoped feed tokens. Leaked feed URL can't escalate to account access.
+33. **server.py refactor**: split from 2078 lines → 60 lines. New layout:
+    - `core/config.py` — env vars + constants
+    - `core/db.py` — Mongo client
+    - `core/security.py` — JWT, hashing, auth deps, serialize_user, is_pro/require_pro
+    - `core/tmdb.py` — TMDB client + tmdb_get_tv cache + normalize_show
+    - `core/models.py` — all Pydantic request models
+    - `routes/auth.py` — register/login/logout/me/google
+    - `routes/series.py` — TMDB proxy routes
+    - `routes/library.py` — library + progress + reviews + public profile + stats + limits
+    - `routes/calendar_routes.py` — /calendar/upcoming + iCal mint/revoke/feed + notifications
+    - `routes/push.py` — Web Push (VAPID)
+    - `routes/streaming.py` — streaming-platform discovery
+    - `routes/billing.py` — Stripe Checkout + webhook
+    - `routes/ai.py` — preview rec + Claude AI recommendations + advanced stats
+    - `routes/imports.py` — Trakt CSV/JSON import
+34. **Frontend Settings iCal UX**: "Gerar URL de assinatura" button now mints scoped token via `POST /calendar/ical/feed`, displays the URL with a "Revogar" button. Security copy updated.
+
+## Tested
+- Iteration 7.5: 103/103 pytest pass (full suite including phase2, phase3, phase4 streaming, billing, sprint2 pro, iter7 new features + 2 pre-existing test expectations corrected to match production sub-channel-rejection logic). Backend smoke-tested 12 endpoints (all 200). Frontend e2e Settings page renders cleanly. Zero new regressions from refactor.
+
+## P1 backlog (post Sprint-3.5)
+- [ ] Custom private lists (Pro: ilimitado, Free: 1) — was planned for Sprint 3.
 - [ ] UI themes: OLED pure-black + per-streaming brand colors (Pro-only).
-- [ ] Long-lived scoped "calendar_feed" JWT for iCal URL (current ?token= uses the full access JWT — leaks = full account access until expiry). Add revoke endpoint.
-- [ ] Filter iCal lookup to `status in ('watching','want')` before TMDB hit — perf win for large Pro libraries.
-- [ ] Cache TMDB /tv/{id} (15-30min LRU).
-- [ ] Cache AI recommendations per user (5-10min TTL).
 - [ ] Trial period of 14 days (requires expiration cron).
 - [ ] Wrapped 2026 page (year-end viral feature).
 - [ ] Stripe Customer Portal for self-cancel.
-- [ ] **Split server.py (now 1985 lines)** into routers (auth, library, streaming, billing, pro, import, calendar) — getting urgent.
 - [ ] Daily cron worker for notify_today + push.
 - [ ] Apple OAuth (iOS users), email reset flow.
+- [ ] Migrate `app.on_event` → `lifespan` (FastAPI deprecation warning).
 - [ ] Friend follow + activity feed (full social).
 - [ ] Migrate FastAPI startup/shutdown to lifespan context.
 
