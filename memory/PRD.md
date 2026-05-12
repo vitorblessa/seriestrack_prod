@@ -54,13 +54,25 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 ## Tested
 - Iteration 6: 18/18 Sprint-2 backend tests + 100% frontend e2e (Pro + Free flows). Zero bugs.
 
-## P1 backlog (post Sprint-2)
-- [ ] Cache TMDB /tv/{id} (15-30min LRU) — big perf win on /streaming/episodes + /stats/advanced.
-- [ ] Cache AI recommendations per user (5-10min TTL) — deterministic given inputs, costs $$ otherwise.
+## Sprint 3 — Upsell + Conveniência (Feb 2026)
+26. **Free-tier upsell hook on Dashboard** (`GET /api/ai/preview_rec`, no LLM cost): returns ONE TMDB-native recommendation seeded by user's most-recent library item. Frontend component `UpsellPreview.jsx` shows poster + title + 4 locked teaser slots + CTA "Ver mais 4 no Pro" → `/pricing`. Renders only when `subscription_tier !== 'pro'` AND library has items.
+27. **Import Trakt** (`POST /api/import/trakt`, multipart): accepts Trakt JSON (list OR `{shows:[]}` wrapped) + CSV (Title/Year/Tmdb columns). Resolves each entry via TMDB (uses provided tmdb_id when present, falls back to title+year search). Inserts as `want`. Free-tier 50-cap enforced — overflow goes to `skipped_cap`. 5MB / 300-item hard limits; semaphore-throttled to 8 concurrent TMDB calls.
+28. **Export iCal** (`GET /api/calendar/ical`): returns RFC-5545 compliant `text/calendar` feed of `next_episode_to_air` + `last_episode_to_air` for every show in the library. Accepts both `Authorization: Bearer` AND `?token=<jwt>` query param so Google Calendar / Apple Calendar / Outlook can subscribe by URL. Settings page exposes "Baixar .ics" + "Copiar URL de assinatura".
+
+## Tested
+- Iteration 7: 17/17 backend tests (preview_rec 4, import_trakt 7, ical 5, fixtures 1) + Playwright e2e on Free upsell + Admin settings Trakt upload (real file → "✓ 2 séries adicionadas") + iCal download (real file with suggested_filename `seriestrack.ics`). Zero bugs.
+
+## P1 backlog (post Sprint-3)
+- [ ] Custom private lists (Pro: ilimitado, Free: 1) — was planned for Sprint 3 but deferred.
+- [ ] UI themes: OLED pure-black + per-streaming brand colors (Pro-only).
+- [ ] Long-lived scoped "calendar_feed" JWT for iCal URL (current ?token= uses the full access JWT — leaks = full account access until expiry). Add revoke endpoint.
+- [ ] Filter iCal lookup to `status in ('watching','want')` before TMDB hit — perf win for large Pro libraries.
+- [ ] Cache TMDB /tv/{id} (15-30min LRU).
+- [ ] Cache AI recommendations per user (5-10min TTL).
 - [ ] Trial period of 14 days (requires expiration cron).
 - [ ] Wrapped 2026 page (year-end viral feature).
 - [ ] Stripe Customer Portal for self-cancel.
-- [ ] Split server.py (1624 lines) into routers (auth, library, streaming, billing, pro).
+- [ ] **Split server.py (now 1985 lines)** into routers (auth, library, streaming, billing, pro, import, calendar) — getting urgent.
 - [ ] Daily cron worker for notify_today + push.
 - [ ] Apple OAuth (iOS users), email reset flow.
 - [ ] Friend follow + activity feed (full social).
