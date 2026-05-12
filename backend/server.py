@@ -16,7 +16,7 @@ import bcrypt
 import jwt
 import httpx
 from bson import ObjectId
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, UploadFile, File
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
@@ -1562,6 +1562,366 @@ async def usage_limits(user: dict = Depends(get_current_user)):
             "remaining": None if pro else max(0, FREE_LIBRARY_CAP - library_count),
         },
     }
+
+
+# ---------------------- AI Preview rec (Free upsell hook) ----------------------
+@api.get("/ai/preview_rec")
+async def ai_preview_rec(user: dict = Depends(get_current_user)):
+    """Return ONE recommendation preview for Free users — used as upsell hook on the Dashboard.
+    Uses TMDB-native recommendations (no LLM cost) seeded by user's most-recent library item.
+    Pro users hit /ai/recommendations directly for the full 5-rec list.
+    """
+    user_id = str(user["_id"])
+    lib_items = await db.library.find({"user_id": user_id}, {"_id": 0}).sort("updated_at", -1).to_list(20)
+    if not lib_items:
+        return {"rec": None, "reason": "empty_library"}
+
+    lib_ids = {it["tmdb_id"] for it in lib_items}
+    tc = await tmdb()
+
+    # Try up to first 5 most-recent library items in order until we find a new rec
+    for seed in lib_items[:5]:
+        try:
+            r = await tc.get(
+                f"/tv/{seed['tmdb_id']}/recommendations",
+                params={"language": TMDB_LANG, "page": 1},
+            )
+            if r.status_code != 200:
+                continue
+            results = r.json().get("results") or []
+            for cand in results:
+                if cand.get("id") in lib_ids:
+                    continue
+                if not cand.get("poster_path"):
+                    continue
+                return {
+                    "rec": {
+                        "tmdb_id": cand.get("id"),
+                        "name": cand.get("name"),
+                        "poster_url": f"{TMDB_IMG}/w500{cand.get('poster_path')}",
+                        "backdrop_url": f"{TMDB_IMG}/original{cand.get('backdrop_path')}" if cand.get("backdrop_path") else None,
+                        "first_air_date": cand.get("first_air_date"),
+                        "vote_average": cand.get("vote_average"),
+                        "overview": cand.get("overview"),
+                        "seed_name": seed.get("name"),
+                    },
+                }
+        except Exception as e:
+            logger.warning(f"preview_rec seed {seed.get('tmdb_id')} failed: {e}")
+            continue
+    return {"rec": None, "reason": "no_match"}
+
+
+# ---------------------- Trakt Import ----------------------
+def _normalize_trakt_title(s: str) -> str:
+    return re.sub(r"\s+", " ", (s or "")).strip()
+
+
+def _parse_trakt_file(content: bytes, filename: str) -> List[Dict[str, Any]]:
+    """Parse a Trakt export (JSON list/object OR CSV) and return [{title, year?, tmdb_id?, status?}]."""
+    text = content.decode("utf-8", errors="ignore").strip()
+    if not text:
+        return []
+    items: List[Dict[str, Any]] = []
+    is_json = filename.lower().endswith(".json") or text.startswith("[") or text.startswith("{")
+    if is_json:
+        try:
+            data = json.loads(text)
+        except Exception as e:
+            raise HTTPException(400, f"JSON inválido: {e}")
+        if isinstance(data, dict):
+            # Trakt format may wrap shows under "shows" / "items"
+            data = data.get("shows") or data.get("items") or data.get("watchlist") or []
+        for entry in data:
+            if not isinstance(entry, dict):
+                continue
+            show = entry.get("show") or entry
+            ids = show.get("ids") or {}
+            title = _normalize_trakt_title(show.get("title") or entry.get("title") or "")
+            if not title:
+                continue
+            items.append({
+                "title": title,
+                "year": show.get("year") or entry.get("year"),
+                "tmdb_id": ids.get("tmdb") if isinstance(ids, dict) else None,
+                "status": entry.get("status") or "want",
+            })
+    else:
+        # CSV — accept Trakt's "Title,Year,..." style or any with a Title column
+        import csv as _csv
+        from io import StringIO
+        reader = _csv.DictReader(StringIO(text))
+        if not reader.fieldnames:
+            return []
+        # find case-insensitive title/year/tmdb columns
+        cols = {c.lower().strip(): c for c in reader.fieldnames}
+        title_col = cols.get("title") or cols.get("name") or cols.get("show")
+        year_col = cols.get("year")
+        tmdb_col = cols.get("tmdb") or cols.get("tmdb_id") or cols.get("tmdbid")
+        status_col = cols.get("status")
+        if not title_col:
+            raise HTTPException(400, "CSV precisa de uma coluna 'Title'")
+        for row in reader:
+            title = _normalize_trakt_title(row.get(title_col) or "")
+            if not title:
+                continue
+            try:
+                yr = int(row[year_col]) if year_col and row.get(year_col) else None
+            except Exception:
+                yr = None
+            try:
+                tid = int(row[tmdb_col]) if tmdb_col and row.get(tmdb_col) else None
+            except Exception:
+                tid = None
+            items.append({
+                "title": title,
+                "year": yr,
+                "tmdb_id": tid,
+                "status": (row.get(status_col) or "want").lower() if status_col else "want",
+            })
+    return items
+
+
+def _coerce_status(s: str) -> str:
+    s = (s or "").lower().strip()
+    if s in ("watching", "paused", "finished", "want"):
+        return s
+    # Trakt-ish aliases
+    if s in ("watched", "completed", "ended"):
+        return "finished"
+    if s in ("watchlist", "plan_to_watch", "plan-to-watch"):
+        return "want"
+    if s in ("on_hold", "on-hold", "hold"):
+        return "paused"
+    return "want"
+
+
+@api.post("/import/trakt")
+async def import_trakt(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Upload a Trakt export (CSV or JSON). Matches each title against TMDB and inserts into the
+    user's library as `want` (unless status hints otherwise). Free users are still capped at
+    FREE_LIBRARY_CAP — extra items are skipped and reported in `skipped_cap`.
+    """
+    user_id = str(user["_id"])
+    raw = await file.read()
+    if len(raw) > 5 * 1024 * 1024:
+        raise HTTPException(413, "Arquivo muito grande (max 5MB)")
+    items = _parse_trakt_file(raw, file.filename or "")
+    if not items:
+        raise HTTPException(400, "Nenhum item encontrado no arquivo")
+
+    pro = await is_pro(user)
+    current_count = await db.library.count_documents({"user_id": user_id})
+    cap = None if pro else FREE_LIBRARY_CAP
+
+    tc = await tmdb()
+    added = 0
+    skipped_cap = 0
+    not_found: List[str] = []
+    duplicates = 0
+
+    # Cap parallelism to avoid TMDB rate limit and keep it within request budget
+    semaphore = asyncio.Semaphore(8)
+
+    async def resolve(it: Dict[str, Any]):
+        async with semaphore:
+            if it.get("tmdb_id"):
+                try:
+                    r = await tc.get(f"/tv/{it['tmdb_id']}", params={"language": TMDB_LANG})
+                    if r.status_code == 200:
+                        s = r.json()
+                        return {
+                            "tmdb_id": s.get("id"),
+                            "name": s.get("name") or it["title"],
+                            "poster_url": f"{TMDB_IMG}/w500{s.get('poster_path')}" if s.get("poster_path") else None,
+                            "backdrop_url": f"{TMDB_IMG}/original{s.get('backdrop_path')}" if s.get("backdrop_path") else None,
+                            "overview": s.get("overview"),
+                            "status": _coerce_status(it.get("status")),
+                        }
+                except Exception:
+                    pass
+            # search by title (+year if available)
+            try:
+                params = {"query": it["title"], "language": TMDB_LANG, "include_adult": False}
+                if it.get("year"):
+                    params["first_air_date_year"] = it["year"]
+                sr = await tc.get("/search/tv", params=params)
+                if sr.status_code != 200:
+                    return None
+                results = sr.json().get("results") or []
+                if not results and it.get("year"):
+                    sr = await tc.get("/search/tv", params={"query": it["title"], "language": TMDB_LANG, "include_adult": False})
+                    results = sr.json().get("results") or [] if sr.status_code == 200 else []
+                if not results:
+                    return None
+                top = results[0]
+                return {
+                    "tmdb_id": top.get("id"),
+                    "name": top.get("name") or it["title"],
+                    "poster_url": f"{TMDB_IMG}/w500{top.get('poster_path')}" if top.get("poster_path") else None,
+                    "backdrop_url": f"{TMDB_IMG}/original{top.get('backdrop_path')}" if top.get("backdrop_path") else None,
+                    "overview": top.get("overview"),
+                    "status": _coerce_status(it.get("status")),
+                }
+            except Exception:
+                return None
+
+    resolved = await asyncio.gather(*(resolve(it) for it in items[:300]))  # hard limit 300
+    now = datetime.now(timezone.utc).isoformat()
+    for src_item, found in zip(items[:300], resolved):
+        if not found:
+            not_found.append(src_item["title"])
+            continue
+        # Duplicate check
+        existing = await db.library.find_one({"user_id": user_id, "tmdb_id": found["tmdb_id"]})
+        if existing:
+            duplicates += 1
+            continue
+        # Cap check (Free)
+        if cap is not None and current_count >= cap:
+            skipped_cap += 1
+            continue
+        await db.library.update_one(
+            {"user_id": user_id, "tmdb_id": found["tmdb_id"]},
+            {
+                "$set": {
+                    "user_id": user_id,
+                    "tmdb_id": found["tmdb_id"],
+                    "status": found["status"],
+                    "name": found["name"],
+                    "poster_url": found["poster_url"],
+                    "backdrop_url": found["backdrop_url"],
+                    "overview": found["overview"],
+                    "updated_at": now,
+                },
+                "$setOnInsert": {"added_at": now, "imported_from": "trakt"},
+            },
+            upsert=True,
+        )
+        added += 1
+        current_count += 1
+
+    return {
+        "total": len(items),
+        "added": added,
+        "duplicates": duplicates,
+        "skipped_cap": skipped_cap,
+        "not_found": not_found[:50],
+        "not_found_count": len(not_found),
+        "tier": "pro" if pro else "free",
+        "cap": cap,
+    }
+
+
+# ---------------------- iCal Export ----------------------
+def _ics_escape(s: str) -> str:
+    return (s or "").replace("\\", "\\\\").replace(",", "\\,").replace(";", "\\;").replace("\n", "\\n")
+
+
+def _ics_fold(line: str) -> str:
+    """Fold long lines per RFC 5545 (75 octets, continuation lines start with a space)."""
+    if len(line) <= 73:
+        return line
+    out = []
+    while len(line) > 73:
+        out.append(line[:73])
+        line = " " + line[73:]
+    out.append(line)
+    return "\r\n".join(out)
+
+
+@api.get("/calendar/ical")
+async def calendar_ical(request: Request, token: Optional[str] = None):
+    """Returns user's upcoming/recent episodes as an iCalendar (.ics) feed.
+    Authentication: prefers normal access cookie/Authorization header; ALSO accepts
+    `?token=<jwt>` so Google Calendar / Apple Calendar subscriptions (which can't
+    send custom headers) work. The token is a normal access JWT — same one used
+    elsewhere — so users must keep their feed URL private.
+    """
+    # Auth — try cookie / bearer first; fallback to ?token
+    try:
+        user = await get_current_user(request)
+    except Exception:
+        if not token:
+            raise HTTPException(401, "Not authenticated")
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(401, "Token expired")
+        except jwt.InvalidTokenError:
+            raise HTTPException(401, "Invalid token")
+        if payload.get("type") != "access":
+            raise HTTPException(401, "Wrong token type")
+        user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+        if not user:
+            raise HTTPException(401, "User not found")
+
+    user_id = str(user["_id"])
+    items = await db.library.find({"user_id": user_id}).to_list(500)
+    tc = await tmdb()
+    events: list[str] = []
+    now_stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+    async def fetch_show(it: dict):
+        try:
+            r = await tc.get(f"/tv/{it['tmdb_id']}", params={"language": TMDB_LANG})
+            if r.status_code != 200:
+                return None
+            return r.json()
+        except Exception:
+            return None
+
+    results = await asyncio.gather(*(fetch_show(it) for it in items))
+    for it, s in zip(items, results):
+        if not s:
+            continue
+        for ep in (s.get("next_episode_to_air"), s.get("last_episode_to_air")):
+            if not ep or not ep.get("air_date"):
+                continue
+            try:
+                d = datetime.strptime(ep["air_date"], "%Y-%m-%d").date()
+            except Exception:
+                continue
+            dtstart = d.strftime("%Y%m%d")
+            dtend = (d + timedelta(days=1)).strftime("%Y%m%d")
+            uid = f"{it['tmdb_id']}-s{ep.get('season_number')}e{ep.get('episode_number')}@seriestrack"
+            summary = f"{s.get('name')} — T{ep.get('season_number')}·E{ep.get('episode_number')}: {ep.get('name') or ''}".strip(": ")
+            desc_parts = [ep.get("overview") or ""]
+            if it.get("name"):
+                desc_parts.append(f"Série: {it.get('name')}")
+            desc = " — ".join([p for p in desc_parts if p])
+            url = f"https://www.themoviedb.org/tv/{it['tmdb_id']}"
+            ev = [
+                "BEGIN:VEVENT",
+                _ics_fold(f"UID:{uid}"),
+                f"DTSTAMP:{now_stamp}",
+                f"DTSTART;VALUE=DATE:{dtstart}",
+                f"DTEND;VALUE=DATE:{dtend}",
+                _ics_fold(f"SUMMARY:{_ics_escape(summary)}"),
+                _ics_fold(f"DESCRIPTION:{_ics_escape(desc)}"),
+                _ics_fold(f"URL:{url}"),
+                "TRANSP:TRANSPARENT",
+                "END:VEVENT",
+            ]
+            events.append("\r\n".join(ev))
+
+    cal = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//SeriesTrack//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "X-WR-CALNAME:SeriesTrack — Próximos episódios",
+        "X-WR-TIMEZONE:UTC",
+        *events,
+        "END:VCALENDAR",
+    ]
+    body = "\r\n".join(cal) + "\r\n"
+    return Response(
+        content=body,
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="seriestrack.ics"'},
+    )
 
 
 # Mount router & CORS

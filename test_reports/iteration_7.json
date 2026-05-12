@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 7 — Full backend + frontend test of the 3 NEW features delivered this session: (a) GET /api/ai/preview_rec, (b) POST /api/import/trakt, (c) GET /api/calendar/ical, plus their UI surfaces (Dashboard UpsellPreview for Free + Settings Trakt import card + iCal export card). NEW backend test file /app/backend/tests/test_iter7_new_features.py → 17/17 PASS (100%) in 24.8s. Playwright E2E on the public preview URL verified ALL listed data-testid hooks render correctly for both Free + Pro paths AND the UI actually integrates with the new endpoints (Trakt upload returned '✓ 2 séries adicionadas de 2' and iCal download fired a real file with suggested_filename='seriestrack.ics'). Admin Pro state preserved; all TEST_* + upsell+* fixtures and any trakt-imported library docs cleaned up post-run. NO bugs found in the new scope.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter7_new_features.py",
+    "/app/test_reports/pytest/iter7_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "GOOD: /api/ai/preview_rec uses TMDB-native /tv/{id}/recommendations (zero LLM cost) and iterates up to 5 most-recent library seeds — graceful degradation when first seed has no recs.",
+    "GOOD: /api/import/trakt handles all three Trakt export shapes (JSON list, JSON {shows:[]} wrapped, CSV) and falls back from year-scoped search to broad search when nothing returns.",
+    "GOOD: trakt import uses asyncio.Semaphore(8) to cap TMDB parallelism + hard-limits to 300 items per upload, preventing runaway requests.",
+    "GOOD: trakt import cap enforcement is correctly placed AFTER duplicate detection — duplicates do not consume cap slots (matches spec).",
+    "GOOD: /api/calendar/ical accepts BOTH Authorization header AND ?token= query — required for Google/Apple Calendar URL subscriptions which can't send custom headers.",
+    "GOOD: ICS body is RFC 5545 compliant: BEGIN:VCALENDAR, VERSION:2.0, PRODID, CALSCALE, DTSTART;VALUE=DATE: for all-day events, _ics_fold() handles 75-octet line folding, _ics_escape() escapes ',;\\\\\\n'.",
+    "GOOD: 5MB upload limit on /import/trakt prevents memory exhaustion.",
+    "GOOD: UpsellPreview component returns null while loading OR when rec is null — silent no-op for empty-library users avoids a janky empty placeholder.",
+    "MINOR: /api/calendar/ical fetches every series in the user's library via TMDB even though only those with next_episode_to_air OR last_episode_to_air produce events — for large Free-cap libraries (~50) this is acceptable, but Pro users with 200+ items will see noticeable latency. Consider filtering items with status in ('watching','want') before TMDB lookup, or caching show metadata.",
+    "MINOR: ?token= JWT in the iCal URL is the SAME access token used for API auth — if a user shares the calendar URL by mistake, attacker gets full account access until the JWT expires. Suggest minting a separate long-lived 'calendar_feed' token scoped to GET /calendar/ical only, with a revoke endpoint.",
+    "MINOR: trakt import returns the first 50 not_found titles via `not_found[:50]` but `not_found_count` reflects the true total — UI should warn when count > 50.",
+    "MINOR: server.py is now 1985 lines — pre-existing concern from iter-6, getting worse with each sprint. Strongly suggest splitting into routers/ subpackage (auth, library, billing, pro, import, calendar) before further work."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter7_new_features.py (NEW — 17 tests: 4 preview_rec + 7 trakt_import + 5 ical + 1 shared free_user fixture)"
+  ],
+  "success_rate": {"backend": "100% (17/17 new-feature tests)", "frontend": "100% (Free upsell hook + Admin settings Trakt+iCal cards + real upload/download verified)"},
+  "test_credentials": "admin@seriestrack.app / Admin@123 (Pro). Free-tier tests register ephemeral upselltest+TIMESTAMP@seriestrack.app / Test@1234 — cleaned up post-test. /app/memory/test_credentials.md already documents the canonical admin creds.",
+  "seed_data_creation": "Free-tier cap test (test_free_user_cap_enforced) inserts 49 dummy library docs directly via pymongo to fast-forward the cap, then verifies exactly 1 add + >=2 skipped_cap on a 3-item Trakt import. Both dummies and TEST_iter7_* user are deleted by fixture teardown. Admin Pro state verified intact pre/post test run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run: REACT_APP_BACKEND_URL=https://show-notify.preview.emergentagent.com MONGO_URL=mongodb://localhost:27017 DB_NAME=seriestrack pytest /app/backend/tests/test_iter7_new_features.py -v. The TrakImport tests do real TMDB /search/tv calls and take ~10-15s total. NO LLM calls in this test file (preview_rec uses TMDB-native recs, not Claude). Frontend E2E reproducer in this iteration's tool log: register a fresh free user via /api/auth/register, POST /api/library 3 times, log in via UI, navigate to /dashboard — upsell-preview-container will appear within ~3-5s after /ai/preview_rec resolves. Streaming /episodes regressions from iter-5/6 (providers + matched_providers keys missing, Apple TV+ false-positive on 'Apple TV Amazon Channel') remain UNTOUCHED in this run — out of scope for the new 3 endpoints.",
+  "rca of the issue": "N/A — no bugs found in the iteration-7 scope. All 17 backend tests pass and all required data-testid hooks render + integrate with the new endpoints as specified."
+}

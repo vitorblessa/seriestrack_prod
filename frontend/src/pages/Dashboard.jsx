@@ -4,6 +4,7 @@ import api from "../lib/api";
 import AppLayout from "../components/AppLayout";
 import Rail from "../components/Rail";
 import PosterCard from "../components/PosterCard";
+import UpsellPreview from "../components/UpsellPreview";
 import { useAuth } from "../lib/auth";
 import { Sparkles, TrendingUp, Loader2, Calendar as CalIcon, Play } from "lucide-react";
 import { brandFor } from "../lib/providers";
@@ -140,6 +141,9 @@ export default function Dashboard() {
                     testid="rail-watching-container"
                 />
             )}
+
+            {/* Free-tier upsell hook (hidden for Pro users) */}
+            {user?.subscription_tier !== "pro" && library.length > 0 && <UpsellPreview />}
 
             {/* Upcoming / Recent episodes with streaming filter */}
             {calendarEvents.length > 0 && (
