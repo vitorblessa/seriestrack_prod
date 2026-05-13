@@ -2,7 +2,7 @@
 All route definitions live in /app/backend/routes/*.py and shared infra in /app/backend/core/*.py.
 """
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
@@ -53,6 +53,37 @@ async def startup():
             "created_at": datetime.now(timezone.utc),
         })
         logger.info(f"Seeded admin user {admin_email}")
+
+    # Lifetime Pro accounts — env-driven so we can roll the list without code changes.
+    # Format: comma-separated emails, e.g. PRO_OWNERS=foo@bar.com,baz@qux.com
+    # On every backend startup we ensure each listed email has subscription_tier=pro
+    # with renews_at extended at least 10 years out. Idempotent.
+    owners_raw = os.environ.get("PRO_OWNERS", "vitor.blessa@gmail.com")
+    owner_emails = [e.strip().lower() for e in owners_raw.split(",") if e.strip()]
+    now_dt = datetime.now(timezone.utc)
+    far_future = (now_dt + timedelta(days=365 * 10)).isoformat()
+    for owner_email in owner_emails:
+        try:
+            u = await db.users.find_one({"email": owner_email})
+            if not u:
+                # User hasn't signed up yet — skip. We'll grant when they register/login.
+                continue
+            await db.users.update_one(
+                {"_id": u["_id"]},
+                {
+                    "$set": {
+                        "subscription_tier": "pro",
+                        "subscription_renews_at": far_future,
+                        "subscription_status": "active",
+                        "auto_renew": True,
+                        "is_owner": True,
+                    },
+                    "$unset": {"canceled_at": ""},
+                },
+            )
+            logger.info(f"Lifetime Pro ensured for owner {owner_email}")
+        except Exception as e:
+            logger.warning(f"Lifetime Pro ensure failed for {owner_email}: {e}")
 
 
 @app.on_event("shutdown")

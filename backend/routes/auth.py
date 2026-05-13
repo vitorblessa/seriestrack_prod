@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Response, Depends
 from core import (
     db, logger, hash_password, verify_password, create_token,
     set_auth_cookies, clear_auth_cookies, serialize_user, get_current_user,
-    EMERGENT_OAUTH_SESSION_ENDPOINT,
+    ensure_owner_pro, EMERGENT_OAUTH_SESSION_ENDPOINT,
 )
 from core.models import RegisterIn, LoginIn, GoogleCallbackIn
 
@@ -27,10 +27,13 @@ async def register(payload: RegisterIn, response: Response):
     }
     res = await db.users.insert_one(doc)
     user_id = str(res.inserted_id)
+    # Auto-grant Pro if this email is in PRO_OWNERS env var
+    await ensure_owner_pro(email)
+    # Reload to get the updated tier in the response
+    doc = await db.users.find_one({"_id": res.inserted_id}) or doc
     access = create_token(user_id, email, "access")
     refresh = create_token(user_id, email, "refresh")
     set_auth_cookies(response, access, refresh)
-    doc["_id"] = res.inserted_id
     return {"user": serialize_user(doc), "access_token": access}
 
 
@@ -41,6 +44,9 @@ async def login(payload: LoginIn, response: Response):
     if not user or not verify_password(payload.password, user["password_hash"]):
         raise HTTPException(401, "Invalid email or password")
     user_id = str(user["_id"])
+    # Auto-grant Pro if owner email (idempotent)
+    if await ensure_owner_pro(email):
+        user = await db.users.find_one({"_id": user["_id"]}) or user
     access = create_token(user_id, email, "access")
     refresh = create_token(user_id, email, "refresh")
     set_auth_cookies(response, access, refresh)
@@ -127,4 +133,7 @@ async def auth_google(payload: GoogleCallbackIn, response: Response):
     access = create_token(user_id, email, "access")
     refresh = create_token(user_id, email, "refresh")
     set_auth_cookies(response, access, refresh)
+    # Auto-grant Pro if owner email (idempotent, runs every Google login too)
+    if await ensure_owner_pro(email):
+        user_doc = await db.users.find_one({"_id": user_doc["_id"]}) or user_doc
     return {"user": serialize_user(user_doc), "access_token": access}

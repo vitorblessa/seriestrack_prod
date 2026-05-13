@@ -35,6 +35,7 @@ from .security import (
     require_pro,
 )
 from .tmdb import tmdb, tmdb_get_tv, normalize_show, close_tmdb
+from .owners import ensure_owner_pro
 
 __all__ = [
     "FREE_LIBRARY_CAP", "PRO_PLANS",
@@ -50,4 +51,5 @@ __all__ = [
     "set_auth_cookies", "clear_auth_cookies", "serialize_user",
     "get_current_user", "is_pro", "require_pro",
     "tmdb", "tmdb_get_tv", "normalize_show", "close_tmdb",
+    "ensure_owner_pro",
 ]
