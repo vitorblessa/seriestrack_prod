@@ -87,15 +87,28 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 ## Tested
 - Iteration 7.5: 103/103 pytest pass (full suite including phase2, phase3, phase4 streaming, billing, sprint2 pro, iter7 new features + 2 pre-existing test expectations corrected to match production sub-channel-rejection logic). Backend smoke-tested 12 endpoints (all 200). Frontend e2e Settings page renders cleanly. Zero new regressions from refactor.
 
-## P1 backlog (post Sprint-3.5)
-- [ ] Custom private lists (Pro: ilimitado, Free: 1) — was planned for Sprint 3.
-- [ ] UI themes: OLED pure-black + per-streaming brand colors (Pro-only).
-- [ ] Trial period of 14 days (requires expiration cron).
-- [ ] Wrapped 2026 page (year-end viral feature).
-- [ ] Stripe Customer Portal for self-cancel.
-- [ ] Daily cron worker for notify_today + push.
+## Sprint 4 — Temas Pro + Wrapped (Feb 2026)
+35. **UI Themes (Pro)**: 9 temas — `default` (Free) + 8 Pro (`oled`, `netflix`, `disney_plus`, `hbo_max`, `prime_video`, `apple_tv`, `paramount_plus`, `globoplay`). Cada um troca background, CSS vars de accent e gradient do `.btn-primary`. Implementação via `body[data-theme="X"]` em `themes.css`.
+    - `GET /api/me/preferences` → tema atual + lista de free/pro themes + tier.
+    - `PATCH /api/me/preferences` com `{ui_theme}` — 402 com `code='pro_theme_required'` se Free escolher Pro theme. 400 se tema desconhecido.
+    - Frontend: `ThemeProvider` em `/app/frontend/src/lib/theme.jsx` aplica `data-theme` no `<body>` e sincroniza com backend on mount + on change. Settings tem grid 4×3 com swatches preview + lock icon.
+36. **Wrapped 2026**: Year-in-review estilo Spotify Wrapped.
+    - `GET /api/wrapped/{year}` (auth required) → `{totals, top_series, top_genres, top_day_of_week, top_month, longest_streak_days, biggest_binge, first_episode, last_episode, reviews}`. Calcula a partir de `progress.watched_at` + `library` + `reviews`.
+    - `GET /api/wrapped/{year}/share/{user_id}` — PÚBLICO (sem auth) pra link compartilhável.
+    - Frontend `/wrapped`, `/wrapped/{year}`, `/wrapped/share/{userId}/{year}` (esta sem auth). Animações fade-up staggered. Botão "Compartilhar" copia link ou usa `navigator.share()` mobile. Share view tem header minimal com CTA "Criar meu Wrapped" → `/register` pra signups orgânicos.
+
+## Tested
+- Iteration 8: 20/20 backend pytest pass (theme listing + 402 pro-gating + admin all themes + 400 unknown + wrapped shape + empty/year-bounds + public share). Frontend: 13/13 após fix do bug de Share URL no owner view (data?.user?.id || authUser?.id fallback). Clipboard verified via Playwright: `https://show-notify.preview.emergentagent.com/wrapped/share/{userId}/2026`.
+
+## P1 backlog (post Sprint-4)
+- [ ] Custom private lists (Pro: ilimitado, Free: 1) — pendente do Sprint 3.
+- [ ] Wrapped: cachear genres top-10 por tmdb_id em mongo (evita TMDB fetch a cada request).
+- [ ] Wrapped: implementar `top_streaming` (atualmente retorna array vazio — `tmdb_get_tv` não traz watch/providers).
+- [ ] Trial period de 14 dias (cron de expiração).
+- [ ] Stripe Customer Portal pra self-cancel.
+- [ ] Daily cron worker pra notify_today + push.
 - [ ] Apple OAuth (iOS users), email reset flow.
-- [ ] Migrate `app.on_event` → `lifespan` (FastAPI deprecation warning).
+- [ ] Migrar `app.on_event` → `lifespan` (FastAPI deprecation warning).
 - [ ] Friend follow + activity feed (full social).
 - [ ] Migrate FastAPI startup/shutdown to lifespan context.
 

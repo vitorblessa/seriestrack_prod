@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import api from "../lib/api";
 import AppLayout from "../components/AppLayout";
+import { useAuth } from "../lib/auth";
 import { Sparkles, Loader2, Share2, Tv, Clock, Flame, Calendar, Trophy, Star, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
@@ -11,6 +12,7 @@ export default function Wrapped() {
     const { year: yearParam, userId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { user: authUser } = useAuth();
     const isShareView = location.pathname.startsWith("/wrapped/share/");
     const year = parseInt(yearParam || CURRENT_YEAR, 10);
 
@@ -40,7 +42,7 @@ export default function Wrapped() {
 
     const share = async () => {
         if (!data || data.empty) return;
-        const shareUserId = data?.user?.id;
+        const shareUserId = data?.user?.id || authUser?.id;
         const targetUrl = shareUserId
             ? `${window.location.origin}/wrapped/share/${shareUserId}/${year}`
             : window.location.href;
