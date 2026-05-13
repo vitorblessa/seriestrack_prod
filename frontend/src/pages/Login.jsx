@@ -143,10 +143,6 @@ export default function Login() {
                         Ainda não tem conta?{" "}
                         <Link to="/register" className="text-[#FF2A54] hover:text-[#FF4D71] font-semibold">Criar agora</Link>
                     </p>
-
-                    <div className="mt-8 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-xs text-white/50">
-                        <span className="font-bold text-white/70">Demo:</span> admin@seriestrack.app / Admin@123
-                    </div>
                 </form>
             </div>
         </div>
