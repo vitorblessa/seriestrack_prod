@@ -2,16 +2,55 @@ import { useEffect, useState } from "react";
 import api from "../lib/api";
 import AppLayout from "../components/AppLayout";
 import { useAuth } from "../lib/auth";
-import { User, Mail, Calendar, LogOut, Trophy, ExternalLink, Settings as SettingsIcon, Crown } from "lucide-react";
+import { Mail, Calendar, LogOut, Trophy, ExternalLink, Settings as SettingsIcon, Crown, X, RotateCcw, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function Profile() {
     const { user, logout } = useAuth();
     const [stats, setStats] = useState(null);
+    const [billing, setBilling] = useState(null);
+    const [busy, setBusy] = useState(false);
+    const [confirming, setConfirming] = useState(false);
+
+    const loadBilling = async () => {
+        try {
+            const { data } = await api.get("/billing/me");
+            setBilling(data);
+        } catch {/* ignore */}
+    };
 
     useEffect(() => {
         api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
+        loadBilling();
     }, []);
+
+    const handleCancel = async () => {
+        setBusy(true);
+        try {
+            await api.post("/billing/cancel");
+            toast.success("Renovação automática desativada. Você fica Pro até o fim do período.");
+            await loadBilling();
+            setConfirming(false);
+        } catch (e) {
+            toast.error(e?.response?.data?.detail || "Erro ao cancelar");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const handleReactivate = async () => {
+        setBusy(true);
+        try {
+            await api.post("/billing/reactivate");
+            toast.success("Assinatura reativada — bom te ver de volta! 🎉");
+            await loadBilling();
+        } catch (e) {
+            toast.error(e?.response?.data?.detail || "Erro ao reativar");
+        } finally {
+            setBusy(false);
+        }
+    };
 
     return (
         <AppLayout>
@@ -74,6 +113,79 @@ export default function Profile() {
                     )}
                 </div>
             </section>
+
+            {/* Subscription management — only when Pro */}
+            {billing?.tier === "pro" && (
+                <section className="px-6 md:px-10 mt-6" data-testid="subscription-card">
+                    <div className="glass rounded-2xl p-6 md:p-8 max-w-5xl">
+                        <div className="flex items-start gap-4 flex-wrap">
+                            <div className="w-12 h-12 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center shrink-0">
+                                <Crown className="w-5 h-5 text-amber-300" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h2 className="font-display text-xl font-bold">Assinatura Pro</h2>
+                                {billing.cancel_pending ? (
+                                    <p className="text-amber-300/90 text-sm mt-1" data-testid="subscription-cancel-pending">
+                                        ⚠️ Renovação automática desativada. Você fica Pro até {formatDate(billing.renews_at)}
+                                        {billing.days_left !== null && billing.days_left !== undefined && ` (faltam ${billing.days_left} ${billing.days_left === 1 ? "dia" : "dias"})`}, depois volta pro plano Free.
+                                    </p>
+                                ) : (
+                                    <p className="text-white/60 text-sm mt-1" data-testid="subscription-active">
+                                        Próxima renovação em {formatDate(billing.renews_at)}
+                                        {billing.days_left !== null && billing.days_left !== undefined && ` · ${billing.days_left} ${billing.days_left === 1 ? "dia restante" : "dias restantes"}`}
+                                    </p>
+                                )}
+
+                                <div className="mt-5 flex flex-wrap gap-3">
+                                    {billing.cancel_pending ? (
+                                        <button
+                                            onClick={handleReactivate}
+                                            disabled={busy}
+                                            data-testid="subscription-reactivate-btn"
+                                            className="btn-primary text-sm"
+                                        >
+                                            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                                            Reativar assinatura
+                                        </button>
+                                    ) : !confirming ? (
+                                        <button
+                                            onClick={() => setConfirming(true)}
+                                            data-testid="subscription-cancel-btn"
+                                            className="btn-glass text-sm"
+                                        >
+                                            <X className="w-4 h-4" /> Cancelar renovação
+                                        </button>
+                                    ) : (
+                                        <div className="w-full rounded-xl border border-amber-400/30 bg-amber-400/5 p-4" data-testid="subscription-cancel-confirm">
+                                            <p className="text-sm text-white/80">
+                                                Tem certeza? Você <b>continua Pro até {formatDate(billing.renews_at)}</b>, mas não renovamos depois disso. Sem cobrança extra, sem reembolso do período pago.
+                                            </p>
+                                            <div className="mt-3 flex gap-2">
+                                                <button
+                                                    onClick={handleCancel}
+                                                    disabled={busy}
+                                                    data-testid="subscription-cancel-confirm-btn"
+                                                    className="px-4 py-2 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-400/40 text-red-200 text-xs font-bold uppercase tracking-wider"
+                                                >
+                                                    {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin inline" /> : "Sim, cancelar"}
+                                                </button>
+                                                <button
+                                                    onClick={() => setConfirming(false)}
+                                                    disabled={busy}
+                                                    data-testid="subscription-cancel-keep-btn"
+                                                    className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold uppercase tracking-wider"
+                                                >
+                                                    Voltar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
             <div className="h-20" />
         </AppLayout>
     );
@@ -86,4 +198,13 @@ function Stat({ label, value, accent }) {
             <p className="font-display text-4xl font-black mt-2">{value || 0}</p>
         </div>
     );
+}
+
+function formatDate(iso) {
+    if (!iso) return "—";
+    try {
+        return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+    } catch {
+        return iso;
+    }
 }

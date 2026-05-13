@@ -100,12 +100,23 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 ## Tested
 - Iteration 8: 20/20 backend pytest pass (theme listing + 402 pro-gating + admin all themes + 400 unknown + wrapped shape + empty/year-bounds + public share). Frontend: 13/13 após fix do bug de Share URL no owner view (data?.user?.id || authUser?.id fallback). Clipboard verified via Playwright: `https://show-notify.preview.emergentagent.com/wrapped/share/{userId}/2026`.
 
-## P1 backlog (post Sprint-4)
+## Sprint 5 — Self-service cancel (Feb 2026)
+37. **In-app subscription cancel/reactivate** (alternativa pragmática ao Stripe Customer Portal). Nosso modelo é one-time payments (não Stripe Subscriptions recorrentes), então o Portal nativo não se aplica. Implementamos UX equivalente:
+    - `POST /api/billing/cancel` — marca `auto_renew=false` + `canceled_at`, usuário mantém Pro até `renews_at` (sem refund — período já foi pago).
+    - `POST /api/billing/reactivate` — limpa flag, volta a "vai renovar".
+    - `GET /api/billing/me` agora retorna `{auto_renew, cancel_pending}` além de `{tier, renews_at, days_left}`.
+    - `_credit_pro` reseta `auto_renew=true` em cada novo pagamento (caso usuário cancele → pague de novo).
+    - Frontend: card "Assinatura Pro" na página Profile com data-testid='subscription-card' / 'subscription-cancel-btn' / 'subscription-cancel-confirm' / 'subscription-reactivate-btn'. Estado de "cancel_pending" mostra warning amarelo com dias restantes e botão "Reativar".
+
+## Tested
+- Iteration 8 (cancel): 7/7 pytest pass (auto_renew shape, round-trip cancel→reactivate, idempotência, rejeição pra Free user em ambos endpoints, 401 sem auth, billing/me retorna auto_renew=null pra Free). UI smoke-testada via Playwright: clicar "Cancelar" → confirm → "Sim, cancelar" → estado pending visível → "Reativar" → estado active de novo.
+
+## P1 backlog (post Sprint-5)
 - [ ] Custom private lists (Pro: ilimitado, Free: 1) — pendente do Sprint 3.
 - [ ] Wrapped: cachear genres top-10 por tmdb_id em mongo (evita TMDB fetch a cada request).
-- [ ] Wrapped: implementar `top_streaming` (atualmente retorna array vazio — `tmdb_get_tv` não traz watch/providers).
+- [ ] Wrapped: implementar `top_streaming` (atualmente retorna array vazio).
 - [ ] Trial period de 14 dias (cron de expiração).
-- [ ] Stripe Customer Portal pra self-cancel.
+- [ ] ~~Stripe Customer Portal pra self-cancel~~ — feito como cancel in-app (Sprint 5).
 - [ ] Daily cron worker pra notify_today + push.
 - [ ] Apple OAuth (iOS users), email reset flow.
 - [ ] Migrar `app.on_event` → `lifespan` (FastAPI deprecation warning).

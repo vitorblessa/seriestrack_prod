@@ -106,7 +106,15 @@ async def _credit_pro(user_id: str, days: int) -> Optional[str]:
     new_renews = base + timedelta(days=days)
     await db.users.update_one(
         {"_id": ObjectId(user_id)},
-        {"$set": {"subscription_tier": "pro", "subscription_renews_at": new_renews.isoformat(), "subscription_status": "active"}},
+        {
+            "$set": {
+                "subscription_tier": "pro",
+                "subscription_renews_at": new_renews.isoformat(),
+                "subscription_status": "active",
+                "auto_renew": True,
+            },
+            "$unset": {"canceled_at": ""},
+        },
     )
     return new_renews.isoformat()
 
@@ -172,7 +180,45 @@ async def billing_me(user: dict = Depends(get_current_user)):
             days_left = max(0, delta.days)
         except Exception:
             pass
-    return {"tier": "pro" if pro else "free", "renews_at": renews, "days_left": days_left}
+    # auto_renew defaults to True so existing Pro users aren't surprised
+    auto_renew = user.get("auto_renew", True) if pro else None
+    cancel_pending = bool(pro and auto_renew is False)
+    return {
+        "tier": "pro" if pro else "free",
+        "renews_at": renews,
+        "days_left": days_left,
+        "auto_renew": auto_renew,
+        "cancel_pending": cancel_pending,
+    }
+
+
+@router.post("/billing/cancel")
+async def cancel_subscription(user: dict = Depends(get_current_user)):
+    """Self-service cancel — user keeps Pro until subscription_renews_at expires, then drops to Free.
+    No refund (one-time payment model). Idempotent: calling twice keeps the same state.
+    """
+    if not await is_pro(user):
+        raise HTTPException(400, "Você não tem uma assinatura Pro ativa")
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"auto_renew": False, "canceled_at": datetime.now(timezone.utc).isoformat()}},
+    )
+    renews = user.get("subscription_renews_at")
+    if isinstance(renews, datetime):
+        renews = renews.isoformat()
+    return {"ok": True, "auto_renew": False, "renews_at": renews}
+
+
+@router.post("/billing/reactivate")
+async def reactivate_subscription(user: dict = Depends(get_current_user)):
+    """Undo a pending cancel — user keeps Pro and will be reminded to renew."""
+    if not await is_pro(user):
+        raise HTTPException(400, "Você não tem uma assinatura Pro ativa para reativar")
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"auto_renew": True}, "$unset": {"canceled_at": ""}},
+    )
+    return {"ok": True, "auto_renew": True}
 
 
 @router.post("/webhook/stripe")
