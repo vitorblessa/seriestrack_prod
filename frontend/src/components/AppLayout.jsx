@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth";
 import api from "../lib/api";
-import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv, Settings as SettingsIcon, Crown, Sparkles, BarChart3 } from "lucide-react";
+import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv, Settings as SettingsIcon, Crown, Sparkles, BarChart3, Award } from "lucide-react";
 
 const navItems = [
     { to: "/dashboard", label: "Início", icon: Home, testid: "nav-home-link" },
@@ -11,6 +11,7 @@ const navItems = [
     { to: "/calendar", label: "Calendário", icon: Calendar, testid: "nav-calendar-link" },
     { to: "/ai-recommendations", label: "IA Recs", icon: Sparkles, testid: "nav-ai-link", proHint: true },
     { to: "/stats", label: "Stats", icon: BarChart3, testid: "nav-stats-link", proHint: true },
+    { to: "/wrapped", label: "Wrapped", icon: Award, testid: "nav-wrapped-link" },
 ];
 
 export default function AppLayout({ children }) {

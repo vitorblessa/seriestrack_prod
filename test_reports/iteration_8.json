@@ -1,0 +1,30 @@
+{
+  "summary": "Tested NEW features: UI themes (/api/me/preferences) + Wrapped 2026 (/api/wrapped/{year} + public share). Backend: 20/20 pytest cases passed (theme listing, free-user 402 pro-gating, admin can set all 9 pro themes, unknown theme 400, default reset, year bounds 400, admin wrapped shape, free-user empty wrapped, public share without auth, invalid/malformed user_id 404). Frontend: Settings shows all 9 theme cards with correct data-testids; admin clicking Netflix updated body[data-theme]=netflix and showed 'Tema Netflix aplicado' toast; admin theme-upgrade-link correctly hidden; free user sees theme-upgrade-link, clicking Pro theme keeps body[data-theme]=default and shows 'Tema exclusivo Pro' toast (lock icons visible). Wrapped page for admin renders wrapped-container with all required sub-testids (total-eps, total-hours, top-series + 5 items, streak, top-month, top-dow, genres-card, bookends, share-btn). Free user with no progress lands on wrapped-empty with wrapped-empty-cta. Public share at /wrapped/share/{userId}/{year} loads WITHOUT auth, shows wrapped-share-cta and wrapped-container, and the in-share share-btn is NOT rendered (correct).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Wrapped.jsx share button (own /wrapped page)", "issue": "Share URL incorrectly falls back to window.location.href ('https://host/wrapped') instead of a proper '/wrapped/share/{userId}/{year}' link. Root cause: shareUserId = data?.user?.id — but the authenticated endpoint GET /api/wrapped/{year} does NOT return a 'user' field (only the public /share/{user_id} variant does). So when the admin clicks Share on their own Wrapped, the copied link is unshareable (anyone opening it gets redirected to login or sees their own wrapped instead).", "selector": "[data-testid='wrapped-share-btn']", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_themes_wrapped.py", "/app/test_reports/pytest/iter8_results.xml"],
+  "action_items": [
+    "Fix Wrapped.jsx share() to derive user id from AuthContext (useAuth().user.id) when not in share view, OR include user.id in /api/wrapped/{year} response. Currently the share button on the owner's view copies an unshareable URL.",
+    "(Optional) Consider lowering register-response status from 200 → 201 for /api/auth/register (not blocking)."
+  ],
+  "critical_code_review_comments": [
+    "wrapped.py: tmdb_get_tv is called for each top-10 series to derive genres on every Wrapped request — no caching. For heavy users this can be slow and burn TMDB quota. Consider caching genres per tmdb_id in mongo.",
+    "wrapped.py top_streaming is hard-coded to [] with a comment explaining tmdb_get_tv doesn't include watch/providers — feature shipped non-functional. Either remove from response or wire it up.",
+    "preferences.py PATCH builds new_prefs from stale user dict (user.get('preferences')) — fine for single-field updates but won't reflect concurrent writes; minor.",
+    "Wrapped.jsx share(): missing fallback path means anyone-with-the-link sharing is broken for owner-view (see UI bug above)."
+  ],
+  "updated_files": ["/app/backend/tests/test_themes_wrapped.py", "/app/test_reports/iteration_8.json"],
+  "success_rate": {"backend": "100% (20/20)", "frontend": "92% (12/13 — share URL bug)"},
+  "test_credentials": "admin@seriestrack.app / Admin@123 (Pro). Ephemeral free users created via /api/auth/register with TEST_ prefix.",
+  "seed_data_creation": "Registered ephemeral TEST_free_* users for free-tier checks; admin Wrapped 2026 reported 229 episodes / 5 top series. Admin theme reset to 'default' at end.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Tests for new features live in /app/backend/tests/test_themes_wrapped.py. Theme card data-testids: theme-default/oled/netflix/disney_plus/hbo_max/prime_video/apple_tv/paramount_plus/globoplay. Auth inputs use data-testid='auth-email-input' / 'auth-password-input'. Toast text uses THEME_LABELS so it's 'Tema \"Netflix\" aplicado' (with quotes) — review-request spec expected unquoted but acceptable. Share-URL bug: after fix, retest by logging admin in, clicking wrapped-share-btn, and verifying clipboard URL contains '/wrapped/share/'.",
+  "rca of the issue": "Wrapped.jsx line ~43: `const shareUserId = data?.user?.id;` — only the PUBLIC /share endpoint returns user.id in the payload. On the owner's /wrapped page, data.user is undefined → fallback to window.location.href which is /wrapped (no user/year). Fix: import useAuth and use `useAuth().user?.id` for owner view, e.g. `const shareUserId = data?.user?.id || authUser?.id;`."
+}

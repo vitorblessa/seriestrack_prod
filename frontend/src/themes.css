@@ -1,0 +1,116 @@
+/* UI themes — applied via [data-theme="X"] attribute on <body>.
+   Default leaves the obsidian + coral aesthetic untouched. */
+
+:root {
+    --app-accent: #FF2A54;
+    --app-accent-hover: #FF4D71;
+    --app-accent-dark: #7c1531;
+    --app-accent-glow: rgba(255, 42, 84, 0.4);
+    --app-bg-base: #0A0A0C;
+    --app-bg-image:
+        radial-gradient(at 20% -10%, rgba(255, 42, 84, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(0, 168, 225, 0.05) 0px, transparent 50%);
+}
+
+/* OLED pure-black — no gradients, no glow */
+body[data-theme="oled"] {
+    background: #000 !important;
+    background-image: none !important;
+    --app-bg-base: #000;
+    --app-accent: #ffffff;
+    --app-accent-hover: #f0f0f0;
+    --app-accent-dark: #888;
+    --app-accent-glow: rgba(255, 255, 255, 0.15);
+}
+body[data-theme="oled"] ::selection { background: rgba(255, 255, 255, 0.3); }
+
+/* Netflix red on near-black */
+body[data-theme="netflix"] {
+    background: #0a0000 !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(229, 9, 20, 0.18) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(229, 9, 20, 0.08) 0, transparent 50%) !important;
+    --app-accent: #E50914;
+    --app-accent-hover: #F40612;
+    --app-accent-dark: #831010;
+    --app-accent-glow: rgba(229, 9, 20, 0.45);
+}
+
+/* Disney+ deep blue */
+body[data-theme="disney_plus"] {
+    background: #001A33 !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(20, 110, 245, 0.18) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(20, 110, 245, 0.08) 0, transparent 50%) !important;
+    --app-accent: #146EF5;
+    --app-accent-hover: #2C81FA;
+    --app-accent-dark: #0A3B82;
+    --app-accent-glow: rgba(20, 110, 245, 0.45);
+}
+
+/* HBO Max violet */
+body[data-theme="hbo_max"] {
+    background: #0C0028 !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(140, 78, 255, 0.22) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(140, 78, 255, 0.08) 0, transparent 50%) !important;
+    --app-accent: #8C4EFF;
+    --app-accent-hover: #A06EFF;
+    --app-accent-dark: #4A1F99;
+    --app-accent-glow: rgba(140, 78, 255, 0.45);
+}
+
+/* Prime Video cyan */
+body[data-theme="prime_video"] {
+    background: #001F2E !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(0, 168, 225, 0.20) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(0, 168, 225, 0.08) 0, transparent 50%) !important;
+    --app-accent: #00A8E1;
+    --app-accent-hover: #1FBDF0;
+    --app-accent-dark: #00567A;
+    --app-accent-glow: rgba(0, 168, 225, 0.45);
+}
+
+/* Apple TV+ — pristine white on pure black */
+body[data-theme="apple_tv"] {
+    background: #000 !important;
+    background-image: none !important;
+    --app-accent: #ffffff;
+    --app-accent-hover: #e8e8e8;
+    --app-accent-dark: #999;
+    --app-accent-glow: rgba(255, 255, 255, 0.2);
+}
+
+/* Paramount+ blue gradient */
+body[data-theme="paramount_plus"] {
+    background: #001028 !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(0, 100, 255, 0.18) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(0, 70, 200, 0.10) 0, transparent 50%) !important;
+    --app-accent: #0064FF;
+    --app-accent-hover: #2A7DFF;
+    --app-accent-dark: #003580;
+    --app-accent-glow: rgba(0, 100, 255, 0.45);
+}
+
+/* Globoplay — red/orange Brasil */
+body[data-theme="globoplay"] {
+    background: #1A0008 !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(255, 79, 0, 0.18) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(255, 0, 78, 0.10) 0, transparent 50%) !important;
+    --app-accent: #FF4F00;
+    --app-accent-hover: #FF6A2B;
+    --app-accent-dark: #8A2A00;
+    --app-accent-glow: rgba(255, 79, 0, 0.45);
+}
+
+/* Apply accent var to the primary call-to-action button on every theme */
+body[data-theme]:not([data-theme="default"]) .btn-primary {
+    background: linear-gradient(90deg, var(--app-accent), var(--app-accent-dark)) !important;
+    box-shadow: 0 0 24px var(--app-accent-glow) !important;
+}
+body[data-theme]:not([data-theme="default"]) .btn-primary:hover {
+    background: linear-gradient(90deg, var(--app-accent-hover), var(--app-accent-dark)) !important;
+}

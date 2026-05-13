@@ -9,6 +9,8 @@ from .streaming import router as streaming_router
 from .billing import router as billing_router
 from .ai import router as ai_router
 from .imports import router as imports_router
+from .preferences import router as preferences_router
+from .wrapped import router as wrapped_router
 
 
 api_router = APIRouter(prefix="/api")
@@ -21,6 +23,8 @@ api_router.include_router(streaming_router)
 api_router.include_router(billing_router)
 api_router.include_router(ai_router)
 api_router.include_router(imports_router)
+api_router.include_router(preferences_router)
+api_router.include_router(wrapped_router)
 
 
 @api_router.get("/")

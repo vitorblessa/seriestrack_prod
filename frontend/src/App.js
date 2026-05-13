@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "@/App.css";
+import "./themes.css";
 import { AuthProvider } from "./lib/auth";
+import { ThemeProvider } from "./lib/theme";
 import { Toaster } from "sonner";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { registerSW } from "./lib/push";
@@ -21,6 +23,7 @@ import Pricing from "./pages/Pricing";
 import BillingSuccess from "./pages/BillingSuccess";
 import AIRecommendations from "./pages/AIRecommendations";
 import AdvancedStats from "./pages/AdvancedStats";
+import Wrapped from "./pages/Wrapped";
 
 registerSW();
 
@@ -29,37 +32,42 @@ export default function App() {
         <div className="App">
             <BrowserRouter>
                 <AuthProvider>
-                    <Toaster
-                        theme="dark"
-                        position="bottom-right"
-                        toastOptions={{
-                            style: {
-                                background: "rgba(22,22,26,0.9)",
-                                border: "1px solid rgba(255,255,255,0.08)",
-                                color: "#fff",
-                                backdropFilter: "blur(12px)",
-                            },
-                        }}
-                    />
-                    <Routes>
-                        <Route path="/" element={<Splash />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                        <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
-                        <Route path="/series/:id" element={<ProtectedRoute><SeriesDetail /></ProtectedRoute>} />
-                        <Route path="/library" element={<ProtectedRoute><MyLibrary /></ProtectedRoute>} />
-                        <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-                        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-                        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                        <Route path="/auth/callback" element={<AuthCallback />} />
-                        <Route path="/u/:id" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
-                        <Route path="/pricing" element={<Pricing />} />
-                        <Route path="/billing/success" element={<ProtectedRoute><BillingSuccess /></ProtectedRoute>} />
-                        <Route path="/ai-recommendations" element={<ProtectedRoute><AIRecommendations /></ProtectedRoute>} />
-                        <Route path="/stats" element={<ProtectedRoute><AdvancedStats /></ProtectedRoute>} />
-                    </Routes>
+                    <ThemeProvider>
+                        <Toaster
+                            theme="dark"
+                            position="bottom-right"
+                            toastOptions={{
+                                style: {
+                                    background: "rgba(22,22,26,0.9)",
+                                    border: "1px solid rgba(255,255,255,0.08)",
+                                    color: "#fff",
+                                    backdropFilter: "blur(12px)",
+                                },
+                            }}
+                        />
+                        <Routes>
+                            <Route path="/" element={<Splash />} />
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/register" element={<Register />} />
+                            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                            <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+                            <Route path="/series/:id" element={<ProtectedRoute><SeriesDetail /></ProtectedRoute>} />
+                            <Route path="/library" element={<ProtectedRoute><MyLibrary /></ProtectedRoute>} />
+                            <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+                            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                            <Route path="/auth/callback" element={<AuthCallback />} />
+                            <Route path="/u/:id" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
+                            <Route path="/pricing" element={<Pricing />} />
+                            <Route path="/billing/success" element={<ProtectedRoute><BillingSuccess /></ProtectedRoute>} />
+                            <Route path="/ai-recommendations" element={<ProtectedRoute><AIRecommendations /></ProtectedRoute>} />
+                            <Route path="/stats" element={<ProtectedRoute><AdvancedStats /></ProtectedRoute>} />
+                            <Route path="/wrapped" element={<ProtectedRoute><Wrapped /></ProtectedRoute>} />
+                            <Route path="/wrapped/:year" element={<ProtectedRoute><Wrapped /></ProtectedRoute>} />
+                            <Route path="/wrapped/share/:userId/:year" element={<Wrapped />} />
+                        </Routes>
+                    </ThemeProvider>
                 </AuthProvider>
             </BrowserRouter>
         </div>

@@ -1,20 +1,44 @@
 import { useEffect, useRef, useState } from "react";
 import AppLayout from "../components/AppLayout";
-import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink } from "lucide-react";
+import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink, Palette, Crown, Lock } from "lucide-react";
 import { getPushStatus, subscribePush, unsubscribePush, sendTestPush } from "../lib/push";
 import { toast } from "sonner";
 import api from "../lib/api";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useTheme, THEME_LABELS, THEME_SWATCHES, FREE_THEMES, PRO_THEMES } from "../lib/theme";
 
 export default function Settings() {
     const { user } = useAuth();
+    const { theme, setTheme } = useTheme();
     const [status, setStatus] = useState(null);
     const [busy, setBusy] = useState(false);
     const [importing, setImporting] = useState(false);
     const [importResult, setImportResult] = useState(null);
     const fileRef = useRef(null);
     const isPro = user?.subscription_tier === "pro";
+
+    const handleThemeChange = async (t) => {
+        const requiresPro = PRO_THEMES.includes(t);
+        if (requiresPro && !isPro) {
+            toast.error("Tema exclusivo Pro", {
+                action: { label: "Upgrade", onClick: () => { window.location.href = "/pricing"; } },
+                duration: 6000,
+            });
+            return;
+        }
+        try {
+            await setTheme(t);
+            toast.success(`Tema "${THEME_LABELS[t]}" aplicado`);
+        } catch (e) {
+            const detail = e?.response?.data?.detail;
+            if (e?.response?.status === 402) {
+                toast.error(typeof detail === "object" ? detail.message : "Tema Pro");
+            } else {
+                toast.error("Erro ao salvar tema");
+            }
+        }
+    };
 
     const refresh = async () => {
         const s = await getPushStatus();
@@ -147,6 +171,69 @@ export default function Settings() {
             </section>
 
             <section className="px-6 md:px-10 mt-10 space-y-4 max-w-3xl">
+                <div className="glass rounded-2xl p-6 md:p-8" data-testid="theme-card">
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
+                            <Palette className="w-5 h-5 text-[#FF2A54]" />
+                        </div>
+                        <div className="flex-1">
+                            <h2 className="font-display text-xl font-bold flex items-center gap-2">
+                                Tema da interface
+                                {!isPro && <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-amber-200 font-bold">Pro</span>}
+                            </h2>
+                            <p className="text-white/60 text-sm mt-1">
+                                Escolha o visual. Temas com cores das plataformas são exclusivos do plano Pro.
+                            </p>
+                            <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" data-testid="theme-grid">
+                                {[...FREE_THEMES, ...PRO_THEMES].map((t) => {
+                                    const sw = THEME_SWATCHES[t];
+                                    const active = theme === t;
+                                    const requiresPro = PRO_THEMES.includes(t);
+                                    const locked = requiresPro && !isPro;
+                                    return (
+                                        <button
+                                            key={t}
+                                            onClick={() => handleThemeChange(t)}
+                                            data-testid={`theme-${t}`}
+                                            className={`relative aspect-[4/3] rounded-xl border-2 overflow-hidden text-left p-3 transition-all ${
+                                                active ? "border-white ring-2 ring-white/30" : "border-white/10 hover:border-white/30"
+                                            }`}
+                                            style={{ background: sw.bg }}
+                                        >
+                                            <div
+                                                className="absolute top-3 right-3 w-6 h-6 rounded-full border border-white/30"
+                                                style={{ background: sw.accent }}
+                                            />
+                                            {locked && (
+                                                <div className="absolute top-3 left-3">
+                                                    <div className="w-6 h-6 rounded-full bg-amber-400/30 backdrop-blur-md border border-amber-300/50 flex items-center justify-center">
+                                                        <Lock className="w-3 h-3 text-amber-100" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {active && (
+                                                <div className="absolute top-3 left-3">
+                                                    <div className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center">
+                                                        <Check className="w-3.5 h-3.5" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <span className="absolute bottom-3 left-3 right-3 text-xs font-bold uppercase tracking-wider truncate" style={{ color: sw.accent }}>
+                                                {THEME_LABELS[t]}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {!isPro && (
+                                <Link to="/pricing" className="mt-5 inline-flex items-center gap-2 text-xs font-bold text-[#FF2A54] hover:underline" data-testid="theme-upgrade-link">
+                                    <Crown className="w-3.5 h-3.5" /> Desbloquear todos os temas no Pro
+                                </Link>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="glass rounded-2xl p-6 md:p-8">
                     <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
