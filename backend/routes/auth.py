@@ -1,5 +1,6 @@
 """Auth: register / login / logout / me / Google OAuth (Emergent)."""
 from datetime import datetime, timezone
+from typing import Optional
 import httpx
 from fastapi import APIRouter, HTTPException, Response, Depends
 from core import (
@@ -60,27 +61,45 @@ async def me(user: dict = Depends(get_current_user)):
 # REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 @router.post("/auth/google")
 async def auth_google(payload: GoogleCallbackIn, response: Response):
-    """Exchange an Emergent session_id for our app's JWT."""
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as hc:
-            r = await hc.get(
-                EMERGENT_OAUTH_SESSION_ENDPOINT,
-                headers={"X-Session-ID": payload.session_id},
-            )
-        if r.status_code != 200:
-            raise HTTPException(401, "Invalid Google session")
-        info = r.json()
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.warning(f"emergent oauth fetch failed: {e}")
-        raise HTTPException(502, "Auth provider unreachable")
+    """Exchange an Emergent session_id for our app's JWT.
+    Retries once on transient network errors (common on mobile networks).
+    """
+    last_err: Optional[Exception] = None
+    info = None
+    for attempt in (1, 2):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as hc:
+                r = await hc.get(
+                    EMERGENT_OAUTH_SESSION_ENDPOINT,
+                    headers={"X-Session-ID": payload.session_id},
+                )
+            if r.status_code == 200:
+                info = r.json()
+                break
+            # Non-200 from provider — explicit auth failure, no retry
+            logger.warning(f"emergent oauth non-200 (attempt {attempt}): {r.status_code} {r.text[:200]}")
+            raise HTTPException(401, "Sessão Google inválida ou expirada. Tente novamente.")
+        except HTTPException:
+            raise
+        except (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError) as e:
+            last_err = e
+            logger.warning(f"emergent oauth network error (attempt {attempt}): {type(e).__name__}: {e}")
+            if attempt == 2:
+                raise HTTPException(503, "Não conseguimos confirmar com o Google agora. Tente em alguns segundos.")
+        except Exception as e:
+            last_err = e
+            logger.error(f"emergent oauth unexpected error: {type(e).__name__}: {e}")
+            raise HTTPException(502, "Erro inesperado ao validar sessão Google")
+
+    if not info:
+        # Shouldn't happen but covers static-analysis path
+        raise HTTPException(502, f"Auth provider unreachable: {last_err}")
 
     email = (info.get("email") or "").lower().strip()
     name = info.get("name") or "Usuário"
     picture = info.get("picture")
     if not email:
-        raise HTTPException(401, "No email returned from provider")
+        raise HTTPException(401, "Google não retornou email — tente novamente")
 
     existing = await db.users.find_one({"email": email})
     now = datetime.now(timezone.utc)

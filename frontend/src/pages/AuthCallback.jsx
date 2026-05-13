@@ -47,7 +47,19 @@ export default function AuthCallback() {
                     </div>
                     <h1 className="font-display text-2xl font-bold mt-4">Falha no login com Google</h1>
                     <p className="text-white/60 mt-2 text-sm">{error}</p>
-                    <Link to="/login" className="btn-primary mt-6 inline-flex">
+                    <p className="text-white/40 mt-3 text-xs">Sua sessão Google só vale uma vez — tente entrar de novo abaixo.</p>
+                    <button
+                        onClick={() => {
+                            // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+                            const redirectUrl = window.location.origin + "/auth/callback";
+                            window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+                        }}
+                        data-testid="retry-google-btn"
+                        className="btn-primary mt-6 inline-flex"
+                    >
+                        Tentar Google de novo
+                    </button>
+                    <Link to="/login" className="btn-glass mt-3 inline-flex text-sm" data-testid="back-to-login-link">
                         <ArrowLeft className="w-4 h-4" /> Voltar ao login
                     </Link>
                 </div>
