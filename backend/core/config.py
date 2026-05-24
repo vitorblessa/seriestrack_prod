@@ -43,10 +43,18 @@ TMDB_IMG = "https://image.tmdb.org/t/p"
 VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_PEM_PATH = os.environ.get('VAPID_PRIVATE_PEM_PATH', '')
 VAPID_SUBJECT = os.environ.get('VAPID_SUBJECT', 'mailto:admin@example.com')
+# pywebpush wants the PATH to the PEM (not the file contents) — passing contents
+# triggers ASN.1 parse errors on the EC curve. We expose the PATH and keep
+# VAPID_PRIVATE_PEM as a flag (boolean-ish) for backward compatibility.
 VAPID_PRIVATE_PEM = ''
 if VAPID_PRIVATE_PEM_PATH and os.path.exists(VAPID_PRIVATE_PEM_PATH):
-    with open(VAPID_PRIVATE_PEM_PATH, 'r') as f:
-        VAPID_PRIVATE_PEM = f.read()
+    # Just read once to validate readability; the real send_push uses the PATH.
+    try:
+        with open(VAPID_PRIVATE_PEM_PATH, 'r') as f:
+            VAPID_PRIVATE_PEM = f.read()
+    except Exception as e:
+        logger = logging.getLogger("seriestrack")
+        logger.warning(f"VAPID private key unreadable: {e}")
 
 # Google OAuth via Emergent
 EMERGENT_OAUTH_SESSION_ENDPOINT = os.environ.get(

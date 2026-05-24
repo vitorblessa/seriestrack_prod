@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from core import (
     db, logger, get_current_user, tmdb_get_tv,
-    VAPID_PUBLIC_KEY, VAPID_PRIVATE_PEM, VAPID_SUBJECT, PUSH_AVAILABLE,
+    VAPID_PUBLIC_KEY, VAPID_PRIVATE_PEM, VAPID_PRIVATE_PEM_PATH, VAPID_SUBJECT, PUSH_AVAILABLE,
 )
 from core.models import PushSubscriptionIn
 
@@ -47,23 +47,29 @@ async def push_unsubscribe(endpoint: str, user: dict = Depends(get_current_user)
 
 
 def _send_push(sub: dict, title: str, body: str, url: Optional[str] = None, icon: Optional[str] = None):
-    if not (PUSH_AVAILABLE and VAPID_PRIVATE_PEM):
+    if not (PUSH_AVAILABLE and VAPID_PRIVATE_PEM_PATH):
         return False, "push not configured"
     try:
+        # pywebpush expects the PATH to the PEM file (not the file contents),
+        # otherwise we hit an ASN.1 parse error on the EC curve.
         webpush(
             subscription_info={
                 "endpoint": sub["endpoint"],
                 "keys": sub["keys"],
             },
             data=json.dumps({"title": title, "body": body, "url": url, "icon": icon}),
-            vapid_private_key=VAPID_PRIVATE_PEM,
+            vapid_private_key=VAPID_PRIVATE_PEM_PATH,
             vapid_claims={"sub": VAPID_SUBJECT},
             ttl=60 * 60 * 24,
         )
         return True, None
     except WebPushException as e:
-        return False, str(e)
+        status = getattr(getattr(e, "response", None), "status_code", None)
+        msg = f"{status}: {getattr(e.response, 'text', '')[:200]}" if status else str(e)
+        logger.warning(f"webpush failed for {sub.get('endpoint','')[:60]}: {msg}")
+        return False, msg
     except Exception as e:
+        logger.warning(f"webpush unexpected error: {type(e).__name__}: {e}")
         return False, str(e)
 
 
@@ -75,14 +81,19 @@ async def push_test(user: dict = Depends(get_current_user)):
         raise HTTPException(400, "Sem inscrições ativas. Ative as notificações primeiro.")
     sent = 0
     failed = 0
+    last_err: Optional[str] = None
     for s in subs:
         ok, err = _send_push(s, "SeriesTrack 🎬", "Notificações ativadas com sucesso!", url="/dashboard")
         if ok:
             sent += 1
         else:
             failed += 1
+            last_err = err
             if err and ("410" in err or "404" in err):
                 await db.push_subscriptions.delete_one({"_id": s["_id"]})
+    if sent == 0 and failed > 0:
+        # Surface the underlying error so the UI doesn't show a silent fail.
+        raise HTTPException(502, f"Envio falhou: {last_err or 'erro desconhecido'}")
     return {"sent": sent, "failed": failed}
 
 
