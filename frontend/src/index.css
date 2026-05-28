@@ -36,6 +36,10 @@ html, body, #root {
     height: 100%;
     background: #0A0A0C;
     color: #ffffff;
+    /* Prevent any rogue horizontal scroll across the entire app. Carousels/rails opt-in
+       with overflow-x-auto on their own container — they don't push the whole page. */
+    overflow-x: hidden;
+    max-width: 100vw;
 }
 
 body {

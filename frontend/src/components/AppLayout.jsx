@@ -33,16 +33,16 @@ export default function AppLayout({ children }) {
     }, []);
 
     return (
-        <div className="min-h-screen bg-obsidian text-white">
+        <div className="min-h-screen bg-obsidian text-white overflow-x-hidden">
             <header className="sticky top-0 z-50 bg-[#0A0A0C]/70 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/5">
-                <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-4 flex items-center gap-8">
-                    <Link to="/dashboard" className="flex items-center gap-2 group" data-testid="brand-logo">
-                        <div className="relative">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_0_20px_rgba(255,42,84,0.4)]">
+                <div className="max-w-[1400px] mx-auto px-3 sm:px-6 md:px-10 py-3 sm:py-4 flex items-center gap-3 md:gap-8">
+                    <Link to="/dashboard" className="flex items-center gap-2 group min-w-0" data-testid="brand-logo">
+                        <div className="relative shrink-0">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_0_20px_rgba(255,42,84,0.4)]">
                                 <Tv className="w-5 h-5 text-white" strokeWidth={2.5} />
                             </div>
                         </div>
-                        <span className="font-display font-black text-xl tracking-tight">SeriesTrack</span>
+                        <span className="font-display font-black text-lg sm:text-xl tracking-tight truncate">SeriesTrack</span>
                     </Link>
 
                     <nav className="hidden md:flex items-center gap-1 ml-4">
@@ -65,7 +65,7 @@ export default function AppLayout({ children }) {
                         ))}
                     </nav>
 
-                    <div className="ml-auto flex items-center gap-2">
+                    <div className="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
                         {user?.subscription_tier !== "pro" && (
                             <button
                                 onClick={() => navigate("/pricing")}
@@ -84,7 +84,7 @@ export default function AppLayout({ children }) {
                         <button
                             onClick={() => navigate("/notifications")}
                             data-testid="nav-notifications-btn"
-                            className="relative p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
+                            className="relative p-2 sm:p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
                             title="Notificações"
                         >
                             <Bell className="w-4 h-4" />
@@ -97,7 +97,7 @@ export default function AppLayout({ children }) {
                         <button
                             onClick={() => navigate("/profile")}
                             data-testid="nav-profile-btn"
-                            className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
+                            className="flex items-center gap-2 p-1 md:pl-1 md:pr-3 md:py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
                             title="Perfil"
                         >
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center text-xs font-bold">
@@ -107,10 +107,11 @@ export default function AppLayout({ children }) {
                                 {user?.name || "Convidado"}
                             </span>
                         </button>
+                        {/* Settings + Logout only on desktop — mobile users use the in-app routes (/settings, /profile→logout) */}
                         <button
                             onClick={() => navigate("/settings")}
                             data-testid="nav-settings-btn"
-                            className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-white/60 hover:text-white"
+                            className="hidden md:inline-flex p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-white/60 hover:text-white"
                             title="Configurações"
                         >
                             <SettingsIcon className="w-4 h-4" />
@@ -118,7 +119,7 @@ export default function AppLayout({ children }) {
                         <button
                             onClick={logout}
                             data-testid="nav-logout-btn"
-                            className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-white/60 hover:text-white"
+                            className="hidden md:inline-flex p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-white/60 hover:text-white"
                             title="Sair"
                         >
                             <LogOut className="w-4 h-4" />
@@ -126,27 +127,29 @@ export default function AppLayout({ children }) {
                     </div>
                 </div>
 
-                {/* Mobile nav */}
-                <div className="md:hidden border-t border-white/5 px-3 py-2 flex justify-around overflow-x-auto scrollbar-hide">
-                    {navItems.map((it) => (
-                        <NavLink
-                            key={it.to}
-                            to={it.to}
-                            data-testid={`mobile-${it.testid}`}
-                            className={({ isActive }) =>
-                                `flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg text-[11px] font-semibold ${
-                                    isActive ? "text-white" : "text-white/50"
-                                }`
-                            }
-                        >
-                            <it.icon className="w-4 h-4" />
-                            {it.label}
-                        </NavLink>
-                    ))}
+                {/* Mobile nav — horizontal scroll keeps it from overflowing the viewport */}
+                <div className="md:hidden border-t border-white/5 overflow-x-auto scrollbar-hide">
+                    <div className="flex gap-1 px-3 py-2 w-max min-w-full justify-around">
+                        {navItems.map((it) => (
+                            <NavLink
+                                key={it.to}
+                                to={it.to}
+                                data-testid={`mobile-${it.testid}`}
+                                className={({ isActive }) =>
+                                    `flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold shrink-0 whitespace-nowrap ${
+                                        isActive ? "text-white" : "text-white/50"
+                                    }`
+                                }
+                            >
+                                <it.icon className="w-4 h-4" />
+                                {it.label}
+                            </NavLink>
+                        ))}
+                    </div>
                 </div>
             </header>
 
-            <main className="max-w-[1400px] mx-auto">{children}</main>
+            <main className="max-w-[1400px] mx-auto w-full">{children}</main>
 
             <footer className="border-t border-white/5 mt-24 py-10 px-6 text-center text-white/40 text-sm">
                 <p>SeriesTrack © 2026 — Powered by TMDB. Todas as séries dos seus streamings em um só lugar.</p>
