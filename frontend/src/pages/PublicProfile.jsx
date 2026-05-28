@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import api from "../lib/api";
 import AppLayout from "../components/AppLayout";
 import PosterCard from "../components/PosterCard";
-import { Loader2, User as UserIcon, Star, Calendar } from "lucide-react";
+import { Loader2, User as UserIcon, Star, Calendar, Crown } from "lucide-react";
 
 export default function PublicProfile() {
     const { id } = useParams();
@@ -54,7 +54,7 @@ export default function PublicProfile() {
             <section className="px-6 md:px-10 pt-10">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Perfil público</p>
                 <div className="mt-6 flex flex-col md:flex-row gap-6 items-start">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center text-3xl font-display font-black shadow-[0_0_40px_rgba(255,42,84,0.4)] shrink-0">
+                    <div className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl font-display font-black shrink-0 ${profile.is_pro ? "bg-gradient-to-br from-amber-400 to-[#FF2A54] ring-4 ring-amber-400/30 shadow-[0_0_40px_rgba(245,158,11,0.4)]" : "bg-gradient-to-br from-[#FF2A54] to-[#7c1531] shadow-[0_0_40px_rgba(255,42,84,0.4)]"}`}>
                         {profile.avatar_url ? (
                             <img src={profile.avatar_url} alt={profile.name} className="w-full h-full rounded-full object-cover" />
                         ) : (
@@ -62,7 +62,14 @@ export default function PublicProfile() {
                         )}
                     </div>
                     <div className="flex-1">
-                        <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight">{profile.name}</h1>
+                        <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight flex items-center gap-3 flex-wrap">
+                            {profile.name}
+                            {profile.is_pro && (
+                                <span data-testid="public-profile-pro-badge" className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400/20 to-[#FF2A54]/20 border border-amber-400/50 text-amber-200 text-xs font-bold uppercase tracking-wider">
+                                    <Crown className="w-3.5 h-3.5" /> Pro
+                                </span>
+                            )}
+                        </h1>
                         {profile.joined_at && (
                             <p className="text-white/50 mt-2 flex items-center gap-1 text-sm">
                                 <Calendar className="w-3.5 h-3.5" /> Membro desde {String(profile.joined_at).slice(0, 10)}

@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from core import db, logger, hash_password, close_tmdb
+from core.cron import start_scheduler, stop_scheduler, run_daily_push_pass
 from routes import api_router
 
 app = FastAPI(title="SeriesTrack API")
@@ -85,7 +86,17 @@ async def startup():
         except Exception as e:
             logger.warning(f"Lifetime Pro ensure failed for {owner_email}: {e}")
 
+    # Daily push notification cron (12:00 UTC)
+    try:
+        start_scheduler()
+    except Exception as e:
+        logger.warning(f"scheduler start failed: {e}")
+
 
 @app.on_event("shutdown")
 async def shutdown():
+    try:
+        stop_scheduler()
+    except Exception:
+        pass
     await close_tmdb()

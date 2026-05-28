@@ -198,6 +198,8 @@ async def upsert_review(payload: ReviewIn, user: dict = Depends(get_current_user
     doc = {
         "user_id": user_id,
         "user_name": user.get("name") or "Anônimo",
+        "user_avatar": user.get("avatar_url"),
+        "user_is_pro": await is_pro(user),
         "tmdb_id": payload.tmdb_id,
         "rating": payload.rating,
         "comment": payload.comment or "",
@@ -220,6 +222,32 @@ async def delete_review(tmdb_id: int, user: dict = Depends(get_current_user)):
 @router.get("/reviews/{tmdb_id}")
 async def list_reviews(tmdb_id: int):
     items = await db.reviews.find({"tmdb_id": tmdb_id}, {"_id": 0}).sort("updated_at", -1).to_list(200)
+    # Enrich each review with current is_pro status (cheap — reviews list is bounded at 200)
+    if items:
+        user_ids = list({r["user_id"] for r in items if r.get("user_id")})
+        users = await db.users.find(
+            {"_id": {"$in": [ObjectId(uid) for uid in user_ids]}},
+            {"_id": 1, "subscription_tier": 1, "subscription_renews_at": 1, "avatar_url": 1},
+        ).to_list(len(user_ids))
+        now = datetime.now(timezone.utc)
+        pro_map: dict = {}
+        avatar_map: dict = {}
+        for u in users:
+            uid = str(u["_id"])
+            avatar_map[uid] = u.get("avatar_url")
+            renews = u.get("subscription_renews_at")
+            try:
+                if isinstance(renews, str):
+                    renews = datetime.fromisoformat(renews)
+                if renews and renews.tzinfo is None:
+                    renews = renews.replace(tzinfo=timezone.utc)
+                pro_map[uid] = u.get("subscription_tier") == "pro" and renews and renews > now
+            except Exception:
+                pro_map[uid] = False
+        for r in items:
+            r["user_is_pro"] = bool(pro_map.get(r["user_id"], False))
+            if not r.get("user_avatar"):
+                r["user_avatar"] = avatar_map.get(r["user_id"])
     avg = None
     if items:
         avg = round(sum(r["rating"] for r in items) / len(items), 2)
@@ -250,6 +278,7 @@ async def public_profile(user_id: str):
         "id": user_id,
         "name": u.get("name"),
         "avatar_url": u.get("avatar_url"),
+        "is_pro": await is_pro(u),
         "joined_at": (u.get("created_at").isoformat() if isinstance(u.get("created_at"), datetime) else u.get("created_at")),
         "stats": counts,
         "recent_reviews": recent_reviews,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../lib/api";
-import { Star, Loader2, Trash2, MessageSquare } from "lucide-react";
+import { Star, Loader2, Trash2, MessageSquare, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../lib/auth";
 import { Link } from "react-router-dom";
@@ -128,11 +128,20 @@ export default function SeriesReviews({ tmdbId }) {
                     list.reviews.filter((r) => r.user_id !== (user?.id || "")).map((r, i) => (
                         <div key={i} className="glass rounded-xl p-4">
                             <div className="flex items-center justify-between flex-wrap gap-2">
-                                <Link to={`/u/${r.user_id}`} className="flex items-center gap-2 hover:underline">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center text-xs font-bold">
-                                        {(r.user_name || "?").charAt(0).toUpperCase()}
+                                <Link to={`/u/${r.user_id}`} className="flex items-center gap-2 hover:underline" data-testid={`review-author-${r.user_id}`}>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${r.user_is_pro ? "bg-gradient-to-br from-amber-400 to-[#FF2A54] ring-2 ring-amber-400/40" : "bg-gradient-to-br from-[#FF2A54] to-[#7c1531]"}`}>
+                                        {r.user_avatar
+                                            ? <img src={r.user_avatar} alt={r.user_name} className="w-full h-full rounded-full object-cover" />
+                                            : (r.user_name || "?").charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="font-semibold text-sm">{r.user_name}</span>
+                                    <span className="font-semibold text-sm flex items-center gap-1">
+                                        {r.user_name}
+                                        {r.user_is_pro && (
+                                            <span title="Assinante Pro" data-testid={`review-pro-badge-${r.user_id}`} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-[#FF2A54]">
+                                                <Crown className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                                            </span>
+                                        )}
+                                    </span>
                                 </Link>
                                 <div className="flex">
                                     {[1, 2, 3, 4, 5].map((n) => (

@@ -158,3 +158,13 @@ async def push_notify_today(user: dict = Depends(get_current_user)):
             continue
 
     return {"created": created, "pushed": pushed}
+
+
+@router.post("/push/cron/run")
+async def trigger_cron(user: dict = Depends(get_current_user)):
+    """Admin-only — manually fire the daily cron job. Useful for testing.
+    Restricted to users with is_owner=True (set via PRO_OWNERS env)."""
+    if not user.get("is_owner"):
+        raise HTTPException(403, "Apenas o dono pode disparar o cron manualmente")
+    from core.cron import run_daily_push_pass
+    return await run_daily_push_pass()

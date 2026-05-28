@@ -111,7 +111,20 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 ## Tested
 - Iteration 8 (cancel): 7/7 pytest pass (auto_renew shape, round-trip cancel→reactivate, idempotência, rejeição pra Free user em ambos endpoints, 401 sem auth, billing/me retorna auto_renew=null pra Free). UI smoke-testada via Playwright: clicar "Cancelar" → confirm → "Sim, cancelar" → estado pending visível → "Reativar" → estado active de novo.
 
-## P1 backlog (post Sprint-5)
+## Sprint 6 — Cron diário + Pro Badge (Feb 2026)
+38. **Daily push cron** via APScheduler (in-process, sem Redis): `/app/backend/core/cron.py` registra job `daily_push` que roda **12:00 UTC** (~ 9h BRT). Para cada user com pelo menos 1 push subscription, busca episódios em `next_episode_to_air` da biblioteca com status `watching`/`want` que estreiam hoje/amanhã e envia push. Idempotente via `notifications` collection (chave: user_id + tmdb_id + season + episode). Resiliente: erros por user são logados sem derrubar o job, subscriptions 410/404 são limpas automaticamente. Sched start/stop são chamados nos `app.on_event` startup/shutdown.
+39. **Endpoint admin** `POST /api/push/cron/run` (owner-only via `is_owner=true` flag) — dispara o cron manualmente para teste/debug.
+40. **Pro badge** em reviews + perfil público:
+    - `/api/reviews/{tmdb_id}` enriquece cada review com `user_is_pro` + `user_avatar` (cheap join contra `users` collection, bounded em 200 reviews).
+    - `/api/users/{user_id}/public` retorna `is_pro` direto.
+    - `POST /api/reviews` agora persiste `user_is_pro` e `user_avatar` no momento da criação (snapshot).
+    - Frontend `SeriesReviews.jsx` mostra coroa dourada (gradient amber→pink) ao lado do nome do reviewer Pro + anel dourado no avatar.
+    - Frontend `PublicProfile.jsx` mostra badge "👑 Pro" ao lado do nome do dono do perfil, com avatar ring dourado.
+
+## Tested
+- Iteration 9 (Sprint 6): 6/6 pytest pass (`test_sprint6_cron_badge.py`): user_is_pro flag em ambos Pro+Free reviews, public profile is_pro, cron route 401/403 quando sem owner, `run_daily_push_pass()` retorna shape correto. APScheduler logged "scheduler started — daily_push at 12:00 UTC" no startup. Manual curl: admin reviews salvas com `user_is_pro=true`, free reviews com `user_is_pro=false`.
+
+## P1 backlog (post Sprint-6)
 - [ ] Custom private lists (Pro: ilimitado, Free: 1) — pendente do Sprint 3.
 - [ ] Wrapped: cachear genres top-10 por tmdb_id em mongo (evita TMDB fetch a cada request).
 - [ ] Wrapped: implementar `top_streaming` (atualmente retorna array vazio).
