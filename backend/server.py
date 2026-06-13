@@ -33,6 +33,8 @@ async def startup():
             [("user_id", 1), ("tmdb_id", 1), ("season", 1), ("episode", 1)],
             unique=True,
         )
+        # Compound index supports the Wrapped year-range query
+        await db.progress.create_index([("user_id", 1), ("watched_at", 1)])
         await db.reviews.create_index([("user_id", 1), ("tmdb_id", 1)], unique=True)
         await db.reviews.create_index([("tmdb_id", 1), ("updated_at", -1)])
         await db.push_subscriptions.create_index([("user_id", 1), ("endpoint", 1)], unique=True)

@@ -86,7 +86,8 @@ class TestCron:
         We can't easily simulate without knowing the owner's password, so we
         just confirm the route returns a sensible non-empty result by directly
         invoking the helper (which is the same code path)."""
-        import asyncio, sys
+        import asyncio
+        import sys
         sys.path.insert(0, "/app/backend")
         from core.cron import run_daily_push_pass
         result = asyncio.run(run_daily_push_pass())

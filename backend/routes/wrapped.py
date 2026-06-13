@@ -29,12 +29,16 @@ def _date_range_for_year(year: int):
 async def _build_wrapped(user_id: str, year: int) -> dict:
     start, end = _date_range_for_year(year)
 
-    # Pull ALL progress for the year (date-string compare on watched_at[:10])
-    progress = await db.progress.find(
-        {"user_id": user_id},
+    # Filter at the database layer — only watched episodes in the target year.
+    # `watched_at` is stored as ISO-8601 string, so a string $gte/$lte works exactly like
+    # a date comparison (e.g. "2026-01-01" <= "2026-06-13T...Z" <= "2026-12-31").
+    year_progress = await db.progress.find(
+        {
+            "user_id": user_id,
+            "watched_at": {"$gte": start, "$lte": f"{end}T23:59:59Z"},
+        },
         {"_id": 0},
-    ).to_list(50000)
-    year_progress = [p for p in progress if start <= (p.get("watched_at") or "")[:10] <= end]
+    ).to_list(5000)
 
     if not year_progress:
         return {
