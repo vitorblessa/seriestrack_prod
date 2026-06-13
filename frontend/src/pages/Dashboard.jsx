@@ -179,15 +179,18 @@ export default function Dashboard() {
                     </div>
 
                     {availableProviders.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-5" data-testid="dashboard-provider-filters">
+                        <div
+                            className="flex md:flex-wrap items-center gap-2 mb-5 overflow-x-auto scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:overflow-visible"
+                            data-testid="dashboard-provider-filters"
+                        >
                             <button
                                 onClick={() => setProviderFilter("all")}
                                 data-testid="dashboard-filter-all"
-                                className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
+                                className={`shrink-0 px-2.5 py-1 md:px-3.5 md:py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
                                     providerFilter === "all" ? "bg-white text-black" : "bg-white/5 text-white/70 hover:bg-white/10"
                                 }`}
                             >
-                                Todos ({eventsOfKind.length})
+                                Todos <span className="opacity-60">({eventsOfKind.length})</span>
                             </button>
                             {availableProviders.map((p) => {
                                 const b = brandFor(p);
@@ -198,7 +201,7 @@ export default function Dashboard() {
                                         key={p}
                                         onClick={() => setProviderFilter(p)}
                                         data-testid={`dashboard-filter-${p.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
-                                        className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border ${
+                                        className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 md:px-3.5 md:py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all border whitespace-nowrap ${
                                             active ? "ring-2 ring-white/30" : ""
                                         }`}
                                         style={{
@@ -207,7 +210,14 @@ export default function Dashboard() {
                                             borderColor: active ? b.color : "rgba(255,255,255,0.1)",
                                         }}
                                     >
-                                        {p} ({count})
+                                        {!active && (
+                                            <span
+                                                className="w-2 h-2 rounded-full shrink-0"
+                                                style={{ background: b.color }}
+                                            />
+                                        )}
+                                        <span>{p}</span>
+                                        <span className="opacity-70">({count})</span>
                                     </button>
                                 );
                             })}

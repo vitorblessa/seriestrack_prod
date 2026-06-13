@@ -82,11 +82,14 @@ export default function CalendarPage() {
                 <p className="text-white/50 mt-2 max-w-2xl">Episódios das séries da sua biblioteca, organizados por data e por streaming.</p>
 
                 {/* Filters */}
-                <div className="mt-6 flex flex-wrap gap-2" data-testid="calendar-filters">
+                <div
+                    className="mt-6 flex md:flex-wrap items-center gap-2 overflow-x-auto scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0 md:overflow-visible"
+                    data-testid="calendar-filters"
+                >
                     <button
                         onClick={() => setFilter("all")}
                         data-testid="calendar-filter-all"
-                        className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
+                        className={`shrink-0 px-2.5 py-1 md:px-4 md:py-2 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                             filter === "all" ? "bg-white text-black" : "bg-white/5 text-white/70 hover:bg-white/10"
                         }`}
                     >
@@ -100,11 +103,14 @@ export default function CalendarPage() {
                                 key={p}
                                 onClick={() => setFilter(p)}
                                 data-testid={`calendar-filter-${p.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
-                                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
+                                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 md:px-4 md:py-2 rounded-full text-[11px] md:text-xs font-bold uppercase tracking-wider transition-all border whitespace-nowrap ${
                                     active ? "ring-2 ring-white/30" : ""
                                 }`}
                                 style={{ background: active ? b.color : "rgba(255,255,255,0.05)", color: active ? b.text : "rgba(255,255,255,0.7)", borderColor: active ? b.color : "rgba(255,255,255,0.1)" }}
                             >
+                                {!active && (
+                                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: b.color }} />
+                                )}
                                 {p}
                             </button>
                         );
