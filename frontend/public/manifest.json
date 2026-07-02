@@ -1,17 +1,47 @@
 {
+  "id": "/dashboard",
+  "lang": "pt-BR",
+  "dir": "ltr",
   "short_name": "SeriesTrack",
   "name": "SeriesTrack — Acompanhe suas séries",
   "description": "Acompanhe automaticamente o lançamento de episódios em todos os streamings.",
   "icons": [
     { "src": "favicon.ico", "sizes": "64x64", "type": "image/x-icon" },
-    { "src": "logo192.png", "type": "image/png", "sizes": "192x192", "purpose": "any maskable" },
-    { "src": "logo512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
+    { "src": "logo192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "logo192.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
+    { "src": "logo512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "logo512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
   ],
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait-primary",
   "theme_color": "#0A0A0C",
   "background_color": "#0A0A0C",
-  "categories": ["entertainment", "lifestyle"]
+  "categories": ["entertainment", "lifestyle", "utilities"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Buscar séries",
+      "short_name": "Buscar",
+      "description": "Descobrir novas séries e episódios",
+      "url": "/search",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Minha biblioteca",
+      "short_name": "Biblioteca",
+      "description": "Suas séries salvas",
+      "url": "/library",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Calendário",
+      "short_name": "Calendário",
+      "description": "Próximos episódios",
+      "url": "/calendar",
+      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+    }
+  ]
 }

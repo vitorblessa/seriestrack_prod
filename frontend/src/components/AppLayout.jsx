@@ -34,7 +34,10 @@ export default function AppLayout({ children }) {
 
     return (
         <div className="min-h-screen bg-obsidian text-white overflow-x-hidden">
-            <header className="sticky top-0 z-50 bg-[#0A0A0C]/70 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/5">
+            <header
+                className="sticky top-0 z-50 bg-[#0A0A0C]/70 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/5"
+                style={{ paddingTop: "env(safe-area-inset-top)" }}
+            >
                 <div className="max-w-[1400px] mx-auto px-3 sm:px-6 md:px-10 py-3 sm:py-4 flex items-center gap-3 md:gap-8">
                     <Link to="/dashboard" className="flex items-center gap-2 group min-w-0" data-testid="brand-logo">
                         <div className="relative shrink-0">

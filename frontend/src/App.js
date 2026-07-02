@@ -24,6 +24,7 @@ import BillingSuccess from "./pages/BillingSuccess";
 import AIRecommendations from "./pages/AIRecommendations";
 import AdvancedStats from "./pages/AdvancedStats";
 import Wrapped from "./pages/Wrapped";
+import InstallPromptBanner from "./components/InstallPromptBanner";
 
 registerSW();
 
@@ -45,6 +46,7 @@ export default function App() {
                                 },
                             }}
                         />
+                        <InstallPromptBanner />
                         <Routes>
                             <Route path="/" element={<Splash />} />
                             <Route path="/login" element={<Login />} />
