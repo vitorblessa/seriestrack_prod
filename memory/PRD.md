@@ -124,6 +124,11 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 ## Tested
 - Iteration 9 (Sprint 6): 6/6 pytest pass (`test_sprint6_cron_badge.py`): user_is_pro flag em ambos Pro+Free reviews, public profile is_pro, cron route 401/403 quando sem owner, `run_daily_push_pass()` retorna shape correto. APScheduler logged "scheduler started — daily_push at 12:00 UTC" no startup. Manual curl: admin reviews salvas com `user_is_pro=true`, free reviews com `user_is_pro=false`.
 
+## Sprint 7 — PWA polish (Feb 2026)
+36. **Emergent badge white-label** — badge é injetado com `display:inline-flex !important` inline, que vence CSS externo. Solução: em `index.js`, detecta PWA (`display-mode: standalone/fullscreen/minimal-ui/window-controls-overlay` ou `navigator.standalone`) e remove o elemento `#emergent-badge` do DOM 3x (imediato, +500ms, +2s) pra derrotar re-injeção.
+37. **Badge compacto no browser mobile** — em `< 640px`, o badge vira ícone circular 32x32 com opacity 60%, sem texto (via CSS overrides não-!important que vencem os inline styles sem !important).
+38. **Push background reconfirmado** — `sw.js` v19: handler `push` mostra notification via `self.registration.showNotification()` que roda mesmo com o app fechado (é essa a definição de push web). APScheduler `daily_push` em `core/cron.py` dispara às 12:00 UTC.
+
 ## P1 backlog (post Sprint-6)
 - [ ] Custom private lists (Pro: ilimitado, Free: 1) — pendente do Sprint 3.
 - [ ] Wrapped: cachear genres top-10 por tmdb_id em mongo (evita TMDB fetch a cada request).

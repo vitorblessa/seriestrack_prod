@@ -53,7 +53,7 @@ body {
 }
 
 /* Standalone PWA-only styling — hides any "hint" that this is a browser page. */
-@media (display-mode: standalone), (display-mode: window-controls-overlay) {
+@media (display-mode: standalone), (display-mode: window-controls-overlay), (display-mode: fullscreen), (display-mode: minimal-ui) {
     body {
         overscroll-behavior-y: contain;
         /* Disable pull-to-refresh so the app feels native (users can still swipe within scrollable containers). */
@@ -68,6 +68,29 @@ body {
     /* Hide the Emergent branding link when running as installed app —
        it links to an external page which breaks the "real app" illusion. */
     #emergent-badge {
+        display: none !important;
+    }
+}
+
+/* iOS Safari home-screen mode also reports navigator.standalone === true.
+   Belt-and-suspenders: hide the badge whenever the app is launched from Home Screen. */
+html.pwa-standalone #emergent-badge {
+    display: none !important;
+}
+
+/* Shrink the badge in mobile browsers too — a floating pill covers content on small screens.
+   Collapses to a small circular icon; user can still tap it. */
+@media (max-width: 640px) {
+    #emergent-badge {
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        justify-content: center !important;
+        bottom: 12px !important;
+        right: 12px !important;
+        opacity: 0.6;
+    }
+    #emergent-badge p {
         display: none !important;
     }
 }

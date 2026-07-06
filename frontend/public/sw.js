@@ -1,6 +1,6 @@
 // SeriesTrack Service Worker — handles push notifications + offline cache
 // Bump CACHE_NAME on UI changes that need to invalidate prior cached HTML/assets
-const CACHE_NAME = "seriestrack-v18";
+const CACHE_NAME = "seriestrack-v19";
 const APP_SHELL = ["/manifest.json", "/favicon.ico"];
 
 self.addEventListener("install", (event) => {
@@ -55,28 +55,42 @@ self.addEventListener("fetch", (event) => {
     );
 });
 
-// Push notification handler
+// Push notification handler — runs even when app is fully closed (that's the point of web push).
 self.addEventListener("push", (event) => {
     let data = { title: "SeriesTrack", body: "Você tem novidades" };
     try { if (event.data) data = event.data.json(); } catch {}
+    const isEpisode = !!data.tmdb_id || (data.body || "").includes("estreia");
     event.waitUntil(
         self.registration.showNotification(data.title || "SeriesTrack", {
             body: data.body || "",
             icon: data.icon || "/logo192.png",
-            badge: "/logo192.png",
-            data: { url: data.url || "/dashboard" },
-            vibrate: [80, 40, 80],
+            badge: "/logo192.png",              // small monochrome icon on Android status bar
+            image: data.image || data.icon,     // large hero image (Android expanded view)
+            data: { url: data.url || "/dashboard", tmdb_id: data.tmdb_id },
+            vibrate: [120, 60, 120],
+            // Group by series id so multiple episode notifications for the same show don't stack
+            tag: data.tmdb_id ? `series-${data.tmdb_id}` : (data.tag || "seriestrack"),
+            renotify: true,
+            // Episode alerts stay visible until user acts — feels more app-like than a fleeting toast
+            requireInteraction: isEpisode,
+            actions: isEpisode ? [
+                { action: "open", title: "Ver detalhes" },
+                { action: "dismiss", title: "Depois" },
+            ] : [],
         })
     );
 });
 
 self.addEventListener("notificationclick", (event) => {
     event.notification.close();
+    if (event.action === "dismiss") return;
     const url = (event.notification.data && event.notification.data.url) || "/dashboard";
     event.waitUntil(
         clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
             for (const w of wins) {
-                if (w.url.includes(url) && "focus" in w) return w.focus();
+                if ("focus" in w) {
+                    return w.focus().then((focused) => focused.navigate ? focused.navigate(url) : focused);
+                }
             }
             if (clients.openWindow) return clients.openWindow(url);
         })
