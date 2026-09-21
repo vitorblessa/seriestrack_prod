@@ -140,6 +140,32 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Discrete scrollbar for horizontal rails — only visible on hover (desktop),
+   fully hidden on touch/mobile so it doesn't cover posters. */
+.scrollbar-thin {
+    scrollbar-width: none; /* Firefox: hidden by default */
+    -ms-overflow-style: none;
+}
+.scrollbar-thin::-webkit-scrollbar {
+    height: 6px;
+    background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 999px;
+    transition: background 200ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+    .scrollbar-thin { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+    .scrollbar-thin:hover { scrollbar-color: rgba(255,255,255,0.25) transparent; }
+    .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.18);
+    }
+    .scrollbar-thin:hover::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.32);
+    }
+}
+
 /* Glass surfaces */
 .glass {
     background: rgba(22, 22, 26, 0.55);
