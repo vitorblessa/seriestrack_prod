@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import api from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { Tv, Bell, Calendar, Sparkles, ArrowRight, Play } from "lucide-react";
+import { Tv, Bell, Calendar, Sparkles, ArrowRight, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import PosterCard from "../components/PosterCard";
 
 const HERO_BG = "https://images.unsplash.com/photo-1755963969538-00dfa22a7c0b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwxfHxjaW5lbWF0aWMlMjBkYXJrJTIwZnV0dXJpc3RpYyUyMGNpdHl8ZW58MHx8fHwxNzc4MDk3ODUyfDA&ixlib=rb-4.1.0&q=85";
@@ -10,10 +10,41 @@ const HERO_BG = "https://images.unsplash.com/photo-1755963969538-00dfa22a7c0b?cr
 export default function Splash() {
     const { user } = useAuth();
     const [trending, setTrending] = useState([]);
+    const scrollerRef = useRef(null);
+    const [canLeft, setCanLeft] = useState(false);
+    const [canRight, setCanRight] = useState(false);
+    const [hovering, setHovering] = useState(false);
 
     useEffect(() => {
         api.get("/series/trending").then((r) => setTrending(r.data.slice(0, 10))).catch(() => {});
     }, []);
+
+    const updateEdges = useCallback(() => {
+        const el = scrollerRef.current;
+        if (!el) return;
+        const max = el.scrollWidth - el.clientWidth;
+        setCanLeft(el.scrollLeft > 4);
+        setCanRight(el.scrollLeft < max - 4);
+    }, []);
+
+    useEffect(() => {
+        const el = scrollerRef.current;
+        if (!el) return;
+        updateEdges();
+        el.addEventListener("scroll", updateEdges, { passive: true });
+        const ro = new ResizeObserver(updateEdges);
+        ro.observe(el);
+        return () => {
+            el.removeEventListener("scroll", updateEdges);
+            ro.disconnect();
+        };
+    }, [trending, updateEdges]);
+
+    const scrollBy = (dir) => {
+        const el = scrollerRef.current;
+        if (!el) return;
+        el.scrollBy({ left: Math.round(el.clientWidth * 0.85) * dir, behavior: "smooth" });
+    };
 
     return (
         <div className="min-h-screen bg-obsidian text-white overflow-hidden">
@@ -116,15 +147,63 @@ export default function Splash() {
 
             {/* Trending preview */}
             {trending.length > 0 && (
-                <section className="py-16 px-6 md:px-10 max-w-[1400px] mx-auto">
+                <section
+                    className="py-16 px-6 md:px-10 max-w-[1400px] mx-auto"
+                    onMouseEnter={() => setHovering(true)}
+                    onMouseLeave={() => setHovering(false)}
+                >
                     <div className="flex items-end justify-between mb-6">
                         <div>
                             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Em alta agora</p>
                             <h2 className="font-display text-3xl md:text-4xl font-bold mt-2">Trending da semana</h2>
                         </div>
                     </div>
-                    <div className="flex overflow-x-auto gap-5 pb-4 snap-x scrollbar-hide -mx-6 md:-mx-10 px-6 md:px-10">
-                        {trending.map((s) => <PosterCard key={s.id} show={s} />)}
+                    <div className="relative">
+                        <div
+                            ref={scrollerRef}
+                            data-testid="splash-trending-rail"
+                            className="flex overflow-x-auto gap-5 pb-4 snap-x scrollbar-thin -mx-6 md:-mx-10 px-6 md:px-10"
+                        >
+                            {trending.map((s) => <PosterCard key={s.id} show={s} />)}
+                        </div>
+
+                        {/* Desktop nav arrows */}
+                        <button
+                            type="button"
+                            aria-label="Anterior"
+                            data-testid="splash-trending-prev"
+                            onClick={() => scrollBy(-1)}
+                            className={`hidden md:flex absolute top-1/2 -translate-y-1/2 left-1 z-10 w-11 h-11 items-center justify-center rounded-full bg-black/70 backdrop-blur border border-white/10 text-white/90 hover:bg-black hover:scale-105 transition-all duration-200 ${
+                                hovering && canLeft ? "opacity-100" : "opacity-0 pointer-events-none"
+                            }`}
+                            style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                            type="button"
+                            aria-label="Próximo"
+                            data-testid="splash-trending-next"
+                            onClick={() => scrollBy(1)}
+                            className={`hidden md:flex absolute top-1/2 -translate-y-1/2 right-1 z-10 w-11 h-11 items-center justify-center rounded-full bg-black/70 backdrop-blur border border-white/10 text-white/90 hover:bg-black hover:scale-105 transition-all duration-200 ${
+                                hovering && canRight ? "opacity-100" : "opacity-0 pointer-events-none"
+                            }`}
+                            style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+
+                        {/* Edge fades */}
+                        <div
+                            className={`hidden md:block pointer-events-none absolute inset-y-0 left-0 w-12 -ml-6 md:-ml-10 bg-gradient-to-r from-[#0A0A0C] to-transparent transition-opacity duration-200 ${
+                                canLeft ? "opacity-100" : "opacity-0"
+                            }`}
+                        />
+                        <div
+                            className={`hidden md:block pointer-events-none absolute inset-y-0 right-0 w-12 -mr-6 md:-mr-10 bg-gradient-to-l from-[#0A0A0C] to-transparent transition-opacity duration-200 ${
+                                canRight ? "opacity-100" : "opacity-0"
+                            }`}
+                        />
                     </div>
                 </section>
             )}
