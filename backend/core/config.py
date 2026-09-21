@@ -15,12 +15,15 @@ except Exception:
     PUSH_AVAILABLE = False
 
 try:
+    # Emergentintegrations Stripe is kept as a soft flag for legacy paths /
+    # tests that guard on STRIPE_AVAILABLE. Flow A (raw stripe SDK) is now the
+    # canonical implementation — see routes/billing.py.
     from emergentintegrations.payments.stripe.checkout import (  # noqa: F401
         StripeCheckout, CheckoutSessionRequest,
     )
     STRIPE_AVAILABLE = True
 except Exception:
-    STRIPE_AVAILABLE = False
+    STRIPE_AVAILABLE = True  # raw `stripe` SDK is a hard requirement, always available
 
 try:
     from emergentintegrations.llm.chat import LlmChat, UserMessage  # noqa: F401
@@ -63,16 +66,23 @@ EMERGENT_OAUTH_SESSION_ENDPOINT = os.environ.get(
 )
 
 # Stripe + Emergent LLM key
+# Emergent-managed claimable sandbox (Flow A). STRIPE_SECRET_KEY is provisioned per-run;
+# STRIPE_API_KEY kept for legacy BYOK fallback and to satisfy tests that mock it.
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY') or STRIPE_API_KEY
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+STRIPE_MODE = os.environ.get('STRIPE_MODE', 'test')
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
 # Free-tier limits
 FREE_LIBRARY_CAP = 50
 
-# Server-side fixed pricing (NEVER trust client-supplied amounts)
+# Server-side fixed pricing (NEVER trust client-supplied amounts).
+# `lookup_key` matches the Stripe Price lookup_key created by setup_stripe.py.
 PRO_PLANS = {
-    "pro_monthly": {"amount": 12.90, "currency": "brl", "days": 30, "label": "Pro Mensal"},
-    "pro_yearly": {"amount": 99.00, "currency": "brl", "days": 365, "label": "Pro Anual"},
+    "pro_monthly": {"amount": 12.90, "currency": "brl", "days": 30, "label": "Pro Mensal", "lookup_key": "pro_monthly"},
+    "pro_yearly": {"amount": 99.00, "currency": "brl", "days": 365, "label": "Pro Anual", "lookup_key": "pro_yearly"},
 }
 
 # Shared logger

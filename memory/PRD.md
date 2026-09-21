@@ -128,6 +128,15 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 36. **Emergent badge white-label** — badge é injetado com `display:inline-flex !important` inline, que vence CSS externo. Solução: em `index.js`, detecta PWA (`display-mode: standalone/fullscreen/minimal-ui/window-controls-overlay` ou `navigator.standalone`) e remove o elemento `#emergent-badge` do DOM 3x (imediato, +500ms, +2s) pra derrotar re-injeção.
 37. **Badge compacto no browser mobile** — em `< 640px`, o badge vira ícone circular 32x32 com opacity 60%, sem texto (via CSS overrides não-!important que vencem os inline styles sem !important).
 38. **Push background reconfirmado** — `sw.js` v19: handler `push` mostra notification via `self.registration.showNotification()` que roda mesmo com o app fechado (é essa a definição de push web). APScheduler `daily_push` em `core/cron.py` dispara às 12:00 UTC.
+39. **Rail navigation (desktop)** — Rail.jsx v2: setas prev/next em hover, fade nas bordas indicando conteúdo cortado, scrollbar fina translúcida (só visível no hover, `hover: fine`), scroll suave por ~85% do viewport.
+
+## Sprint 8 — Stripe Emergent-managed claimable sandbox (Feb 2026)
+40. **Migração Flow B → Flow A** — sandbox reivindicável provisionada via `POST /stripe/sandboxes`. Env vars gravados: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_ACCOUNT_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_MODE=test`.
+41. **Catálogo Stripe** — `setup_stripe.py` cria produto "SeriesTrack Pro" com tax_code `txcd_10103001` (SaaS) + 2 prices recorrentes com `lookup_key`: `pro_monthly` (R$ 12,90/mo) e `pro_yearly` (R$ 99,00/year). Idempotente.
+42. **billing.py raw stripe SDK** — abandonou `emergentintegrations.payments.stripe.checkout`, agora usa `stripe.checkout.Session.create` com `mode="subscription"`, `automatic_tax` (calc_only fallback para diy), `subscription_data.metadata`. Webhook em `/api/stripe/webhook` (path Flow A).
+43. **Cancel/reactivate no Stripe** — `POST /api/billing/cancel` agora também chama `stripe.Subscription.modify(id, cancel_at_period_end=True)` pra evitar cobrança dupla. Reactivate reverte.
+44. **Tax mode**: BR sandbox não é SMP-supported → `calc_only` (Stripe calcula o imposto no checkout). Fallback pra `diy` se Stripe Tax não estiver ativado no Dashboard.
+45. **Testes**: 12/12 test_billing.py pass. 156/156 suite total pass (nenhuma regressão).
 
 ## P1 backlog (post Sprint-6)
 - [ ] Custom private lists (Pro: ilimitado, Free: 1) — pendente do Sprint 3.

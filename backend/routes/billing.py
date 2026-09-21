@@ -1,73 +1,111 @@
-"""Stripe billing (Checkout sessions, status polling, webhooks)."""
+"""Stripe billing via Emergent-managed claimable sandbox (Flow A).
+Uses raw `stripe` SDK + Stripe Prices with lookup_keys — no client-supplied amounts.
+Webhook path: /api/stripe/webhook (Flow A convention).
+"""
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends, Request
+
+import stripe
+
 from core import (
     db, logger, get_current_user, is_pro,
-    PRO_PLANS, STRIPE_API_KEY, STRIPE_AVAILABLE,
+    PRO_PLANS, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
 )
 from core.models import CheckoutIn
 
-try:
-    from emergentintegrations.payments.stripe.checkout import (
-        StripeCheckout, CheckoutSessionRequest,
-    )
-except Exception:
-    StripeCheckout = None  # type: ignore
-    CheckoutSessionRequest = None  # type: ignore
+# Configure the SDK once at import time. Sandbox keys are auto-injected on deploy;
+# preview keys already live in backend/.env.
+stripe.api_key = STRIPE_SECRET_KEY or "sk_test_emergent"
 
 router = APIRouter()
 
-
-def _stripe_client(request: Request) -> "StripeCheckout":
-    if not STRIPE_AVAILABLE:
-        raise HTTPException(503, "Pagamentos indisponíveis no momento")
-    if not STRIPE_API_KEY:
-        raise HTTPException(503, "Stripe não configurado")
-    host_url = str(request.base_url).rstrip("/")
-    webhook_url = f"{host_url}/api/webhook/stripe"
-    return StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+# Tax handling — BR sandbox is NOT SMP-supported, so Stripe Tax (calc_only) is used.
+# Change to "diy" to skip tax entirely, or "full" once the sandbox lands in an SMP country.
+TAX_MODE = "calc_only"
 
 
 @router.get("/billing/plans")
 async def billing_plans():
     return {"plans": [
-        {"id": k, "label": v["label"], "amount": v["amount"], "currency": v["currency"], "days": v["days"]}
+        {"id": k, "label": v["label"], "amount": v["amount"], "currency": v["currency"],
+         "days": v["days"], "lookup_key": v["lookup_key"]}
         for k, v in PRO_PLANS.items()
     ]}
 
 
 @router.post("/billing/checkout")
-async def billing_checkout(payload: CheckoutIn, request: Request, user: dict = Depends(get_current_user)):
+async def billing_checkout(payload: CheckoutIn, user: dict = Depends(get_current_user)):
     plan = PRO_PLANS.get(payload.plan)
     if not plan:
         raise HTTPException(400, "Plano inválido")
-    sc = _stripe_client(request)
+
+    # Resolve price by lookup_key so we never trust client amounts.
+    prices = stripe.Price.list(lookup_keys=[plan["lookup_key"]], active=True, limit=1).data
+    if not prices:
+        logger.error(f"Stripe price missing for lookup_key={plan['lookup_key']}. Run setup_stripe.py.")
+        raise HTTPException(500, "Preço não configurado — rode setup_stripe.py")
+    price = prices[0]
+
     origin = payload.origin_url.rstrip("/")
     success_url = f"{origin}/billing/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin}/pricing"
+
     metadata = {
         "user_id": str(user["_id"]),
         "user_email": user["email"],
         "plan": payload.plan,
         "days": str(plan["days"]),
+        "lookup_key": plan["lookup_key"],
     }
-    req = CheckoutSessionRequest(
-        amount=float(plan["amount"]),
-        currency=plan["currency"],
+
+    kwargs = dict(
+        line_items=[{"price": price.id, "quantity": 1}],
+        mode="subscription" if price.recurring else "payment",
         success_url=success_url,
         cancel_url=cancel_url,
         metadata=metadata,
+        # Attach the same metadata to the created subscription for downstream lookups.
+        subscription_data={"metadata": metadata} if price.recurring else None,
     )
+    # Strip None kwargs so Stripe doesn't reject them
+    kwargs = {k: v for k, v in kwargs.items() if v is not None}
+
     try:
-        session = await sc.create_checkout_session(req)
-    except Exception as e:
+        if TAX_MODE == "full":
+            try:
+                session = stripe.checkout.Session.create(**kwargs, managed_payments={"enabled": True})
+            except stripe.error.InvalidRequestError as e:
+                msg = (getattr(e, "user_message", "") or "").lower()
+                if "managed payments" in msg or "ineligible" in msg:
+                    session = stripe.checkout.Session.create(
+                        **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+                    )
+                else:
+                    raise
+        elif TAX_MODE == "calc_only":
+            try:
+                session = stripe.checkout.Session.create(
+                    **kwargs, automatic_tax={"enabled": True}, billing_address_collection="required",
+                )
+            except stripe.error.InvalidRequestError as e:
+                # Stripe Tax not enabled in the Dashboard yet — fall back to DIY so
+                # the sandbox is usable end-to-end without extra clicks.
+                msg = str(getattr(e, "user_message", "") or e).lower()
+                if "tax" in msg:
+                    logger.warning(f"Stripe Tax not enabled, falling back to DIY: {e}")
+                    session = stripe.checkout.Session.create(**kwargs)
+                else:
+                    raise
+        else:  # "diy"
+            session = stripe.checkout.Session.create(**kwargs)
+    except stripe.error.StripeError as e:
         logger.warning(f"stripe checkout error: {e}")
-        raise HTTPException(502, f"Erro ao criar sessão de pagamento: {e}")
+        raise HTTPException(502, f"Erro ao criar sessão de pagamento: {getattr(e, 'user_message', None) or str(e)}")
 
     await db.payment_transactions.insert_one({
-        "session_id": session.session_id,
+        "session_id": session.id,
         "user_id": str(user["_id"]),
         "user_email": user["email"],
         "plan": payload.plan,
@@ -76,12 +114,12 @@ async def billing_checkout(payload: CheckoutIn, request: Request, user: dict = D
         "days": plan["days"],
         "metadata": metadata,
         "status": "initiated",
-        "payment_status": "unpaid",
+        "payment_status": "pending",
         "credited": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     })
-    return {"url": session.url, "session_id": session.session_id}
+    return {"url": session.url, "session_id": session.id}
 
 
 async def _credit_pro(user_id: str, days: int) -> Optional[str]:
@@ -120,47 +158,56 @@ async def _credit_pro(user_id: str, days: int) -> Optional[str]:
 
 
 @router.get("/billing/status/{session_id}")
-async def billing_status(session_id: str, request: Request, user: dict = Depends(get_current_user)):
+async def billing_status(session_id: str, user: dict = Depends(get_current_user)):
     tx = await db.payment_transactions.find_one({"session_id": session_id, "user_id": str(user["_id"])}, {"_id": 0})
     if not tx:
         raise HTTPException(404, "Transação não encontrada")
 
-    sc = _stripe_client(request)
-    try:
-        st = await sc.get_checkout_status(session_id)
-    except Exception as e:
-        logger.warning(f"stripe status error: {e}")
-        raise HTTPException(502, f"Erro ao consultar Stripe: {e}")
+    # Webhook-fallback: ask Stripe inline while still pending. Whichever path completes first wins.
+    if tx.get("payment_status") != "paid":
+        try:
+            s = stripe.checkout.Session.retrieve(session_id)
+        except stripe.error.StripeError as e:
+            logger.warning(f"stripe status error: {e}")
+            raise HTTPException(502, f"Erro ao consultar Stripe: {e}")
 
-    new_status = st.status
-    new_payment_status = st.payment_status
+        new_status = s.status
+        new_payment_status = s.payment_status
+        update = {
+            "status": new_status,
+            "payment_status": new_payment_status,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "amount_total": s.amount_total,
+            "currency_received": s.currency,
+        }
+        if getattr(s, "subscription", None):
+            update["stripe_subscription_id"] = s.subscription
+        if getattr(s, "payment_intent", None):
+            update["stripe_payment_intent_id"] = s.payment_intent
 
-    update = {
-        "status": new_status,
-        "payment_status": new_payment_status,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-        "amount_total": st.amount_total,
-        "currency_received": st.currency,
-    }
+        credited = tx.get("credited", False)
+        if not credited and (new_payment_status == "paid" or new_status == "complete"):
+            days = int(tx.get("days") or 30)
+            new_renews = await _credit_pro(tx["user_id"], days)
+            update["credited"] = True
+            update["credited_at"] = datetime.now(timezone.utc).isoformat()
+            update["new_renews_at"] = new_renews
 
-    credited = tx.get("credited", False)
-    if not credited and new_payment_status == "paid":
-        days = int(tx.get("days") or 30)
-        new_renews = await _credit_pro(tx["user_id"], days)
-        update["credited"] = True
-        update["credited_at"] = datetime.now(timezone.utc).isoformat()
-        update["new_renews_at"] = new_renews
-
-    await db.payment_transactions.update_one({"session_id": session_id}, {"$set": update})
+        # Idempotent guard — same as webhook.
+        await db.payment_transactions.update_one(
+            {"session_id": session_id, "payment_status": {"$ne": "paid"}},
+            {"$set": update},
+        )
+        tx = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0}) or tx
 
     return {
-        "status": new_status,
-        "payment_status": new_payment_status,
-        "amount_total": st.amount_total,
-        "currency": st.currency,
+        "status": tx.get("status"),
+        "payment_status": tx.get("payment_status"),
+        "amount_total": tx.get("amount_total"),
+        "currency": tx.get("currency_received") or tx.get("currency"),
         "plan": tx.get("plan"),
-        "credited": update.get("credited", credited),
-        "new_renews_at": update.get("new_renews_at"),
+        "credited": tx.get("credited", False),
+        "new_renews_at": tx.get("new_renews_at"),
     }
 
 
@@ -180,7 +227,6 @@ async def billing_me(user: dict = Depends(get_current_user)):
             days_left = max(0, delta.days)
         except Exception:
             pass
-    # auto_renew defaults to True so existing Pro users aren't surprised
     auto_renew = user.get("auto_renew", True) if pro else None
     cancel_pending = bool(pro and auto_renew is False)
     return {
@@ -194,11 +240,23 @@ async def billing_me(user: dict = Depends(get_current_user)):
 
 @router.post("/billing/cancel")
 async def cancel_subscription(user: dict = Depends(get_current_user)):
-    """Self-service cancel — user keeps Pro until subscription_renews_at expires, then drops to Free.
-    No refund (one-time payment model). Idempotent: calling twice keeps the same state.
+    """Self-service cancel — user keeps Pro until subscription_renews_at expires.
+    Also cancels the Stripe subscription at period end so we don't double-charge.
     """
     if not await is_pro(user):
         raise HTTPException(400, "Você não tem uma assinatura Pro ativa")
+
+    # Cancel the active Stripe subscription at period end (if we have one on file).
+    tx = await db.payment_transactions.find_one(
+        {"user_id": str(user["_id"]), "stripe_subscription_id": {"$exists": True, "$ne": None}},
+        sort=[("created_at", -1)],
+    )
+    if tx and tx.get("stripe_subscription_id"):
+        try:
+            stripe.Subscription.modify(tx["stripe_subscription_id"], cancel_at_period_end=True)
+        except stripe.error.StripeError as e:
+            logger.warning(f"stripe subscription cancel failed: {e}")
+
     await db.users.update_one(
         {"_id": user["_id"]},
         {"$set": {"auto_renew": False, "canceled_at": datetime.now(timezone.utc).isoformat()}},
@@ -211,9 +269,20 @@ async def cancel_subscription(user: dict = Depends(get_current_user)):
 
 @router.post("/billing/reactivate")
 async def reactivate_subscription(user: dict = Depends(get_current_user)):
-    """Undo a pending cancel — user keeps Pro and will be reminded to renew."""
+    """Undo a pending cancel — resume auto-renew on the Stripe subscription too."""
     if not await is_pro(user):
         raise HTTPException(400, "Você não tem uma assinatura Pro ativa para reativar")
+
+    tx = await db.payment_transactions.find_one(
+        {"user_id": str(user["_id"]), "stripe_subscription_id": {"$exists": True, "$ne": None}},
+        sort=[("created_at", -1)],
+    )
+    if tx and tx.get("stripe_subscription_id"):
+        try:
+            stripe.Subscription.modify(tx["stripe_subscription_id"], cancel_at_period_end=False)
+        except stripe.error.StripeError as e:
+            logger.warning(f"stripe subscription reactivate failed: {e}")
+
     await db.users.update_one(
         {"_id": user["_id"]},
         {"$set": {"auto_renew": True}, "$unset": {"canceled_at": ""}},
@@ -221,34 +290,65 @@ async def reactivate_subscription(user: dict = Depends(get_current_user)):
     return {"ok": True, "auto_renew": True}
 
 
-@router.post("/webhook/stripe")
+# Flow A webhook path — Stripe is pre-registered to deliver here on deploy.
+@router.post("/stripe/webhook")
 async def stripe_webhook(request: Request):
-    if not STRIPE_AVAILABLE:
-        return {"received": False}
-    body = await request.body()
-    sig = request.headers.get("Stripe-Signature", "")
-    sc = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=str(request.base_url).rstrip("/") + "/api/webhook/stripe")
+    payload = await request.body()
+    sig = request.headers.get("stripe-signature", "")
     try:
-        ev = await sc.handle_webhook(body, sig)
-    except Exception as e:
-        logger.warning(f"stripe webhook verify failed: {e}")
+        event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
+    except stripe.error.SignatureVerificationError:
         raise HTTPException(400, "invalid signature")
+    except Exception as e:
+        logger.warning(f"stripe webhook parse err: {e}")
+        raise HTTPException(400, "invalid payload")
 
-    session_id = getattr(ev, "session_id", None)
-    if session_id:
+    obj = event["data"]["object"]
+    t = event["type"]
+
+    if t == "checkout.session.completed":
+        session_id = obj["id"]
         tx = await db.payment_transactions.find_one({"session_id": session_id})
-        if tx and ev.payment_status == "paid" and not tx.get("credited"):
+        if tx and not tx.get("credited"):
             days = int(tx.get("days") or 30)
             new_renews = await _credit_pro(tx["user_id"], days)
+            update = {
+                "status": "completed",
+                "payment_status": obj.get("payment_status", "paid"),
+                "credited": True,
+                "credited_at": datetime.now(timezone.utc).isoformat(),
+                "new_renews_at": new_renews,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            if obj.get("subscription"):
+                update["stripe_subscription_id"] = obj.get("subscription")
+            if obj.get("payment_intent"):
+                update["stripe_payment_intent_id"] = obj.get("payment_intent")
             await db.payment_transactions.update_one(
-                {"session_id": session_id},
-                {"$set": {
-                    "credited": True,
-                    "credited_at": datetime.now(timezone.utc).isoformat(),
-                    "new_renews_at": new_renews,
-                    "status": "complete",
-                    "payment_status": ev.payment_status,
-                    "updated_at": datetime.now(timezone.utc).isoformat(),
-                }},
+                {"session_id": session_id, "payment_status": {"$ne": "paid"}},
+                {"$set": update},
             )
-    return {"received": True, "event_type": getattr(ev, "event_type", None)}
+    elif t == "checkout.session.async_payment_succeeded":
+        await db.payment_transactions.update_one(
+            {"session_id": obj["id"]},
+            {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+    elif t == "checkout.session.async_payment_failed":
+        await db.payment_transactions.update_one(
+            {"session_id": obj["id"]},
+            {"$set": {"status": "failed", "payment_status": "failed",
+                      "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+    elif t == "checkout.session.expired":
+        await db.payment_transactions.update_one(
+            {"session_id": obj["id"]},
+            {"$set": {"status": "expired", "payment_status": "expired",
+                      "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+    elif t == "charge.refunded":
+        await db.payment_transactions.update_one(
+            {"stripe_payment_intent_id": obj.get("payment_intent")},
+            {"$set": {"status": "refunded", "payment_status": "refunded",
+                      "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+    return {"received": True, "event_type": t}

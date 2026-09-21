@@ -86,13 +86,13 @@ self.addEventListener("notificationclick", (event) => {
     if (event.action === "dismiss") return;
     const url = (event.notification.data && event.notification.data.url) || "/dashboard";
     event.waitUntil(
-        clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+        self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
             for (const w of wins) {
                 if ("focus" in w) {
                     return w.focus().then((focused) => focused.navigate ? focused.navigate(url) : focused);
                 }
             }
-            if (clients.openWindow) return clients.openWindow(url);
+            if (self.clients.openWindow) return self.clients.openWindow(url);
         })
     );
 });

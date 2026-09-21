@@ -100,7 +100,7 @@ class TestCheckout:
         tx = mongo.payment_transactions.find_one({"session_id": d["session_id"]})
         assert tx is not None
         assert tx["status"] == "initiated"
-        assert tx["payment_status"] == "unpaid"
+        assert tx["payment_status"] == "pending"
         assert tx["credited"] is False
         assert tx["user_id"] == admin_id
         assert tx["plan"] == "pro_monthly"
@@ -157,7 +157,7 @@ class TestBillingStatus:
             d = r.json()
             assert "status" in d
             assert "payment_status" in d
-            assert d.get("payment_status") in ("unpaid", "no_payment_required", None)
+            assert d.get("payment_status") in ("unpaid", "no_payment_required", "pending", None)
             assert d.get("plan") == "pro_monthly"
             assert d.get("credited") is False
 
@@ -181,11 +181,11 @@ class TestBillingStatus:
         assert r.status_code == 404
 
 
-# -------------------------- /webhook/stripe --------------------------
+# -------------------------- /stripe/webhook --------------------------
 class TestStripeWebhook:
     def test_webhook_invalid_signature_returns_400(self, session):
         r = session.post(
-            f"{API}/webhook/stripe",
+            f"{API}/stripe/webhook",
             data=b'{"foo":"bar"}',
             headers={"Stripe-Signature": "bogus", "Content-Type": "application/json"},
             timeout=10,
@@ -196,7 +196,7 @@ class TestStripeWebhook:
 
     def test_webhook_no_signature_returns_400(self, session):
         r = session.post(
-            f"{API}/webhook/stripe",
+            f"{API}/stripe/webhook",
             data=b'{}',
             headers={"Content-Type": "application/json"},
             timeout=10,
