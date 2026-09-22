@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import "@/App.css";
 import "./themes.css";
 import { AuthProvider } from "./lib/auth";
@@ -6,6 +7,7 @@ import { ThemeProvider } from "./lib/theme";
 import { Toaster } from "sonner";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { registerSW } from "./lib/push";
+import { installNativeBridge } from "./lib/native";
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -24,9 +26,22 @@ import BillingSuccess from "./pages/BillingSuccess";
 import AIRecommendations from "./pages/AIRecommendations";
 import AdvancedStats from "./pages/AdvancedStats";
 import Wrapped from "./pages/Wrapped";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import DeleteAccount from "./pages/DeleteAccount";
 import InstallPromptBanner from "./components/InstallPromptBanner";
 
 registerSW();
+
+/**
+ * Hook that installs the Capacitor bridge (back button + deep links + splash hide)
+ * once the router is mounted. No-op in the browser.
+ */
+function NativeBridge() {
+    const navigate = useNavigate();
+    useEffect(() => { installNativeBridge(navigate); }, [navigate]);
+    return null;
+}
 
 export default function App() {
     return (
@@ -34,6 +49,7 @@ export default function App() {
             <BrowserRouter>
                 <AuthProvider>
                     <ThemeProvider>
+                        <NativeBridge />
                         <Toaster
                             theme="dark"
                             position="bottom-right"
@@ -68,6 +84,9 @@ export default function App() {
                             <Route path="/wrapped" element={<ProtectedRoute><Wrapped /></ProtectedRoute>} />
                             <Route path="/wrapped/:year" element={<ProtectedRoute><Wrapped /></ProtectedRoute>} />
                             <Route path="/wrapped/share/:userId/:year" element={<Wrapped />} />
+                            <Route path="/privacy" element={<Privacy />} />
+                            <Route path="/terms" element={<Terms />} />
+                            <Route path="/delete-account" element={<DeleteAccount />} />
                         </Routes>
                     </ThemeProvider>
                 </AuthProvider>

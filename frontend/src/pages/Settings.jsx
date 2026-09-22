@@ -421,6 +421,25 @@ export default function Settings() {
                     </div>
                 </div>
             </section>
+
+            {/* Danger zone — account deletion + legal links */}
+            <section className="mt-10 px-4 sm:px-8 max-w-3xl mx-auto pb-16">
+                <div className="glass rounded-2xl p-6 border border-red-500/20">
+                    <h2 className="font-bold text-lg mb-1 text-red-300">Zona de perigo</h2>
+                    <p className="text-white/60 text-sm mb-4">Exclua sua conta permanentemente. Todos os dados serão removidos.</p>
+                    <Link
+                        to="/delete-account"
+                        data-testid="settings-delete-account-link"
+                        className="inline-flex items-center gap-2 border border-red-500/40 text-red-300 hover:bg-red-500/10 px-4 py-2 rounded-xl text-sm font-semibold transition"
+                    >
+                        Excluir minha conta
+                    </Link>
+                </div>
+                <div className="flex flex-wrap gap-4 mt-6 text-xs text-white/40 justify-center">
+                    <Link to="/privacy" className="hover:text-white/80" data-testid="settings-privacy-link">Política de Privacidade</Link>
+                    <Link to="/terms" className="hover:text-white/80" data-testid="settings-terms-link">Termos de Uso</Link>
+                </div>
+            </section>
             <div className="h-20" />
         </AppLayout>
     );

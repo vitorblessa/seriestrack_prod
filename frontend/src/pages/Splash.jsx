@@ -228,6 +228,11 @@ export default function Splash() {
 
             <footer className="border-t border-white/5 py-10 px-6 text-center text-white/40 text-sm">
                 <p>SeriesTrack © 2026 — Powered by TMDB. Feito para fãs de série.</p>
+                <div className="flex justify-center gap-6 mt-3 text-xs">
+                    <Link to="/privacy" className="hover:text-white/80">Privacidade</Link>
+                    <Link to="/terms" className="hover:text-white/80">Termos</Link>
+                    <Link to="/delete-account" className="hover:text-white/80">Excluir conta</Link>
+                </div>
             </footer>
         </div>
     );

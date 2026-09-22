@@ -130,6 +130,21 @@ Crie um aplicativo moderno chamado SeriesTrack, focado em acompanhar automaticam
 38. **Push background reconfirmado** — `sw.js` v19: handler `push` mostra notification via `self.registration.showNotification()` que roda mesmo com o app fechado (é essa a definição de push web). APScheduler `daily_push` em `core/cron.py` dispara às 12:00 UTC.
 39. **Rail navigation (desktop)** — Rail.jsx v2: setas prev/next em hover, fade nas bordas indicando conteúdo cortado, scrollbar fina translúcida (só visível no hover, `hover: fine`), scroll suave por ~85% do viewport.
 
+## Sprint 9 — Google Play Store readiness (Feb 2026)
+46. **Capacitor 7 nativo** — `@capacitor/core|cli|android|app|splash-screen|status-bar|browser@^7` (v8 requer Node 22, ambiente Emergent tem Node 20).
+47. **capacitor.config.ts** — appId=`com.vitorblessa.seriestrack`, webDir=`build`, androidScheme=`https`, SplashScreen+StatusBar plugins configurados com brand `#0A0A0C` obsidian.
+48. **Android scaffold** — pasta `frontend/android/` com Gradle, targetSdk **36**, compileSdk **36**, minSdk 23, versionName `1.0.0`, versionCode `1`. `minifyEnabled true`, `shrinkResources true` no release build type.
+49. **AndroidManifest** — permissões mínimas (`INTERNET`, `POST_NOTIFICATIONS`, `VIBRATE`), auto-backup desativado (`data_extraction_rules.xml`), Network Security Config nega cleartext em release/permite localhost só em debug.
+50. **Deep links** — custom scheme `seriestrack://series/123` + App Link `https://show-notify.emergent.host/*` (autoVerify=true).
+51. **Native bridge (`lib/native.js`)** — back button do Android → `history.back()` com fallback pra `exitApp()` na raiz. Deep link listener converte URL nativa em rota React. Splash auto-hide após 300ms. StatusBar dark não-overlaying. Todas as chamadas guardadas por `Capacitor.isNativePlatform()` — bundle rodável no browser sem mudanças.
+52. **Signing config** — lê keystore de env vars (`ANDROID_KEYSTORE_PATH|PASSWORD|KEY_ALIAS|KEY_PASSWORD`). Nunca commitado. `.gitignore` bloqueia `*.jks`, `*.keystore`, `*.pem`, `*.p12`, `local.properties`, build outputs.
+53. **Ícones + splash gerados via Pillow** — mipmap-mdpi..xxxhdpi (48px..192px) + adaptive icon foreground/background (obsidian). Splash 2732×2732 com logo centralizado.
+54. **Security hardening backend** — `ADMIN_PASSWORD` default hardcoded removido. Em `APP_ENV=production`, servidor recusa seed do admin se `ADMIN_PASSWORD` não estiver setado. CORS agora env-driven (`CORS_ORIGINS`).
+55. **DELETE /api/auth/me** — Play Store requirement. Purga library/progress/reviews/notifications/push_subs/preferences/import_jobs/ai_cache. Anonimiza payment_transactions (retenção fiscal 5 anos BR). Cancela subscription Stripe. Logs `account deleted user_id=`.
+56. **Rotas legais públicas** — `/privacy`, `/terms`, `/delete-account` renderizadas sem auth (HTTP 200). LGPD/GDPR compliant. Links no footer da Splash e no Settings.
+57. **Docs** — `docs/GOOGLE_PLAY_RELEASE.md` (workflow completo build→publish), `docs/GOOGLE_PLAY_CHECKLIST.md` (checkboxes PASS/WARN/BLOCKED), `docs/google-play-data-safety.md` (form Play Console).
+58. **Testes** — `test_delete_account.py` (4 testes: purge cascade, auth required, token dies, rotas legais). 160/160 pass total.
+
 ## Sprint 8 — Stripe Emergent-managed claimable sandbox (Feb 2026)
 40. **Migração Flow B → Flow A** — sandbox reivindicável provisionada via `POST /stripe/sandboxes`. Env vars gravados: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_ACCOUNT_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_MODE=test`.
 41. **Catálogo Stripe** — `setup_stripe.py` cria produto "SeriesTrack Pro" com tax_code `txcd_10103001` (SaaS) + 2 prices recorrentes com `lookup_key`: `pro_monthly` (R$ 12,90/mo) e `pro_yearly` (R$ 99,00/year). Idempotente.

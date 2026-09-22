@@ -64,6 +64,62 @@ async def me(user: dict = Depends(get_current_user)):
     return serialize_user(user)
 
 
+@router.delete("/auth/me")
+async def delete_account(response: Response, user: dict = Depends(get_current_user)):
+    """Google Play required: permanent account deletion.
+    Removes user + ALL associated data. Payment transactions are retained
+    for legal/tax purposes but disassociated from the user (user_id -> deleted-<id>).
+    """
+    from bson import ObjectId
+    user_oid = user["_id"] if isinstance(user["_id"], ObjectId) else ObjectId(user["_id"])
+    user_id_str = str(user_oid)
+
+    # Cancel any active Stripe subscription first (best-effort).
+    try:
+        sub_id = user.get("stripe_subscription_id")
+        if sub_id:
+            import stripe
+            from core import STRIPE_SECRET_KEY
+            stripe.api_key = STRIPE_SECRET_KEY
+            try:
+                stripe.Subscription.delete(sub_id)
+            except Exception as se:
+                logger.warning(f"stripe cancel on delete failed for {sub_id}: {se}")
+    except Exception:
+        pass
+
+    # Purge personal data.
+    for coll_name, filt in [
+        ("library", {"user_id": user_id_str}),
+        ("progress", {"user_id": user_id_str}),
+        ("reviews", {"user_id": user_id_str}),
+        ("notifications", {"user_id": user_id_str}),
+        ("push_subscriptions", {"user_id": user_id_str}),
+        ("user_preferences", {"user_id": user_id_str}),
+        ("import_jobs", {"user_id": user_id_str}),
+        ("ai_recommendations_cache", {"user_id": user_id_str}),
+    ]:
+        try:
+            await db[coll_name].delete_many(filt)
+        except Exception as e:
+            logger.warning(f"delete_account: {coll_name} purge failed: {e}")
+
+    # Retain payment records but anonymise (Brazilian tax law requires 5-year retention).
+    try:
+        await db.payment_transactions.update_many(
+            {"user_id": user_id_str},
+            {"$set": {"user_id": f"deleted-{user_id_str}", "user_deleted_at": datetime.now(timezone.utc).isoformat()}},
+        )
+    except Exception as e:
+        logger.warning(f"delete_account: payment anonymise failed: {e}")
+
+    # Finally, delete the user record itself.
+    await db.users.delete_one({"_id": user_oid})
+    clear_auth_cookies(response)
+    logger.info(f"account deleted user_id={user_id_str}")
+    return {"deleted": True}
+
+
 # REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 @router.post("/auth/google")
 async def auth_google(payload: GoogleCallbackIn, response: Response):

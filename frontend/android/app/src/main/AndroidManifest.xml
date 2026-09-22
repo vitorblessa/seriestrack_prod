@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        SeriesTrack — Android manifest.
+        Permission policy:
+        - INTERNET: mandatory, the app is a WebView bundle that calls the SeriesTrack API over HTTPS.
+        - POST_NOTIFICATIONS (API 33+): only needed if/when we ship FCM push. Declared so the
+          in-app "Enable notifications" prompt can request it at runtime with proper context.
+          Runtime request happens ONLY when the user toggles "Ativar notificações" in Settings,
+          NEVER on first launch.
+        - VIBRATE: used by push notification channel default vibration pattern.
+        No storage / camera / location / contacts / mic permissions — the app doesn't use them.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="false">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Custom scheme deep link: seriestrack://series/123 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="seriestrack" />
+            </intent-filter>
+
+            <!-- App Links: HTTPS deep links from the production domain. Requires
+                 assetlinks.json hosted at https://show-notify.emergent.host/.well-known/assetlinks.json
+                 with the app's SHA-256 signing fingerprint. Documented in
+                 docs/GOOGLE_PLAY_RELEASE.md — until that file is deployed, autoVerify
+                 gracefully degrades to a chooser instead of failing. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="show-notify.emergent.host" />
+            </intent-filter>
+
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+    </application>
+</manifest>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    SeriesTrack Network Security Config.
+    Production: cleartext (HTTP) is disabled — all API traffic MUST use HTTPS.
+    The debug variant of this file (in src/debug/res/xml/) permits cleartext for localhost so
+    developers can point at a local backend.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -13,9 +13,13 @@ from routes import api_router
 app = FastAPI(title="SeriesTrack API")
 app.include_router(api_router)
 
+# CORS: comma-separated allowlist via env. Default "*" for preview/dev only.
+# Production MUST set CORS_ORIGINS to an explicit domain list.
+_cors_raw = os.environ.get("CORS_ORIGINS", "*").strip()
+_cors_list = ["*"] if _cors_raw == "*" else [o.strip() for o in _cors_raw.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_list,
     allow_credentials=False,  # cross-origin uses Authorization: Bearer, not cookies
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,19 +47,29 @@ async def startup():
     except Exception as e:
         logger.warning(f"index creation: {e}")
 
-    # Seed admin
+    # Seed admin — production requires ADMIN_PASSWORD env var, no insecure default.
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@seriestrack.app").lower()
-    admin_pw = os.environ.get("ADMIN_PASSWORD", "Admin@123")
+    admin_pw = os.environ.get("ADMIN_PASSWORD")
+    is_prod = os.environ.get("APP_ENV", "development").lower() == "production"
     existing = await db.users.find_one({"email": admin_email})
     if not existing:
-        await db.users.insert_one({
-            "email": admin_email,
-            "password_hash": hash_password(admin_pw),
-            "name": "Admin",
-            "avatar_url": None,
-            "created_at": datetime.now(timezone.utc),
-        })
-        logger.info(f"Seeded admin user {admin_email}")
+        if not admin_pw:
+            if is_prod:
+                # Fail fast: never seed a default admin in production.
+                logger.error("ADMIN_PASSWORD unset in production — refusing to seed admin.")
+            else:
+                # Dev/preview convenience: seed with a well-known default and log a loud warning.
+                admin_pw = "Admin@123"
+                logger.warning("ADMIN_PASSWORD unset — seeding admin with dev default (NOT for production).")
+        if admin_pw:
+            await db.users.insert_one({
+                "email": admin_email,
+                "password_hash": hash_password(admin_pw),
+                "name": "Admin",
+                "avatar_url": None,
+                "created_at": datetime.now(timezone.utc),
+            })
+            logger.info(f"Seeded admin user {admin_email}")
 
     # Lifetime Pro accounts — env-driven so we can roll the list without code changes.
     # Format: comma-separated emails, e.g. PRO_OWNERS=foo@bar.com,baz@qux.com

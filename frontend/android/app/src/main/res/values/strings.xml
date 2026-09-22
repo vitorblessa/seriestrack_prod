@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SeriesTrack</string>
+    <string name="title_activity_main">SeriesTrack</string>
+    <string name="package_name">com.vitorblessa.seriestrack</string>
+    <!-- Custom scheme used by @capacitor/app deep-link handler.
+         Must match capacitor.config.ts and the seriestrack:// intent-filter in AndroidManifest.xml. -->
+    <string name="custom_url_scheme">seriestrack</string>
+</resources>

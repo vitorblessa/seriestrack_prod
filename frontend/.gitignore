@@ -21,3 +21,17 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Android — never commit build outputs or signing material.
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/local.properties
+/android/app/release/
+/android/app/debug/
+*.jks
+*.keystore
+*.pem
+*.p12
+release-key.properties
+/android/app/google-services.json
