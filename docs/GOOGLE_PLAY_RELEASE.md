@@ -79,6 +79,41 @@ cd android
 
 Output: `frontend/android/app/build/outputs/bundle/release/app-release.aab`
 
+### 5a. Alternative: build via GitHub Actions (recommended)
+
+The repository ships a workflow at `.github/workflows/android-release.yml` that builds a signed AAB automatically. **You never need to install JDK/Android SDK locally.**
+
+**One-time setup** — Settings → Secrets and variables → Actions → New repository secret:
+
+| Secret | Value |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 seriestrack-release.jks` output |
+| `ANDROID_KEYSTORE_PASSWORD` | Your keystore password |
+| `ANDROID_KEY_ALIAS` | e.g. `seriestrack` |
+| `ANDROID_KEY_PASSWORD` | Alias password |
+| `REACT_APP_BACKEND_URL` | `https://show-notify.emergent.host` |
+| `PLAY_SERVICE_ACCOUNT_JSON` (optional) | Play Console API service account JSON for auto-upload |
+
+**Trigger a release build:**
+
+```bash
+# Bump version in frontend/android/app/build.gradle first
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow will:
+1. Install Node 20, JDK 21, Android SDK 36, Gradle
+2. Run `yarn build` with your production `REACT_APP_BACKEND_URL`
+3. Run `npx cap sync android`
+4. Decode the keystore from the base64 secret
+5. Run `./gradlew bundleRelease` with signing
+6. Upload the AAB as an artifact (30-day retention)
+7. Upload `mapping.txt` for R8 deobfuscation (90-day retention)
+8. If `PLAY_SERVICE_ACCOUNT_JSON` is set → upload to Play Console Internal track as draft
+
+**Manual trigger** (Actions tab → "Android Release Build" → Run workflow): supports optional `versionName` / `versionCode` overrides without editing gradle.
+
 ## 6. Test the AAB locally with bundletool
 
 ```bash
