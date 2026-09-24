@@ -37,7 +37,7 @@ class ProgressBulkIn(BaseModel):
 
 
 class GoogleCallbackIn(BaseModel):
-    session_id: str
+    credential: str  # Google ID token (JWT) from Google Identity Services
 
 
 class ReviewIn(BaseModel):

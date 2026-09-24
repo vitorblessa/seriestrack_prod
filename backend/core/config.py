@@ -59,11 +59,18 @@ if VAPID_PRIVATE_PEM_PATH and os.path.exists(VAPID_PRIVATE_PEM_PATH):
         logger = logging.getLogger("seriestrack")
         logger.warning(f"VAPID private key unreadable: {e}")
 
-# Google OAuth via Emergent
+# Google OAuth via Emergent (legacy — kept only so the var doesn't error if still set;
+# no longer used now that /auth/google verifies Google ID tokens directly, see routes/auth.py)
 EMERGENT_OAUTH_SESSION_ENDPOINT = os.environ.get(
     'EMERGENT_OAUTH_SESSION_ENDPOINT',
     'https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data',
 )
+
+# Google OAuth Client ID (from Google Cloud Console). Required for "Continuar com
+# Google" — the frontend uses it to get an ID token, and this backend verifies that
+# token's audience matches it.
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+
 
 # Stripe + Emergent LLM key
 # Emergent-managed claimable sandbox (Flow A). STRIPE_SECRET_KEY is provisioned per-run;

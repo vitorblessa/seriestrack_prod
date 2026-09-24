@@ -92,6 +92,9 @@ Isso gera uma chave pública e uma privada. Guarde os dois valores.
 5. Em **Environment Variables**, adicione:
    `REACT_APP_BACKEND_URL` = a URL do Render do passo 5 (ex:
    `https://seriestrack-backend.onrender.com`)
+   Adicione também `REACT_APP_GOOGLE_CLIENT_ID` com o Client ID do Google
+   Cloud Console (veja "Login com Google" mais abaixo), se quiser esse
+   login ativo.
 6. Deploy. Você recebe uma URL tipo `https://seriestrack-prod.vercel.app`.
 
 ## 7. Conectar os dois (CORS)
@@ -119,11 +122,22 @@ Este projeto foi originalmente construído e rodado dentro da plataforma
 **Emergent**, que fornece dois atalhos proprietários que não existem em
 hospedagem genérica:
 
-- **Login "Continuar com Google"**: usa um endpoint da Emergent
-  (`EMERGENT_OAUTH_SESSION_ENDPOINT`) para trocar o login do Google por uma
-  sessão. Fora da Emergent, esse botão provavelmente não vai funcionar até
-  ser reescrito para usar OAuth do Google diretamente. **Login por
-  e-mail/senha não é afetado** e continua funcionando normalmente.
+## Login com Google
+
+O login com Google não depende mais da Emergent — usa o fluxo oficial do
+Google (Identity Services) direto:
+
+1. Crie um OAuth Client ID em https://console.cloud.google.com → APIs &
+   Services → Credentials → Create Credentials → OAuth client ID → Web
+   application. Em "Authorized JavaScript origins", adicione a URL do seu
+   frontend (ex: `https://seriestrack-prod.vercel.app`). Não precisa de
+   "Redirect URIs".
+2. O `GOOGLE_CLIENT_ID` do backend já vem preenchido no `render.yaml`.
+3. No Vercel, adicione a variável `REACT_APP_GOOGLE_CLIENT_ID` com o mesmo
+   Client ID (veja o passo 6 acima) e faça um redeploy do frontend.
+
+Se o "Client ID" mudar no futuro, atualize nos dois lugares (Render e
+Vercel).
 - **Recurso de IA** (`backend/routes/ai.py`): dependia do pacote privado
   `emergentintegrations`, que só existe no índice pip interno da Emergent (não
   está no PyPI público — por isso foi removido do `requirements.txt` neste

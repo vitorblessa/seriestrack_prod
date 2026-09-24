@@ -1,12 +1,12 @@
-"""Auth: register / login / logout / me / Google OAuth (Emergent)."""
+"""Auth: register / login / logout / me / Google OAuth."""
 from datetime import datetime, timezone
-from typing import Optional
-import httpx
 from fastapi import APIRouter, HTTPException, Response, Depends
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 from core import (
     db, logger, hash_password, verify_password, create_token,
     set_auth_cookies, clear_auth_cookies, serialize_user, get_current_user,
-    ensure_owner_pro, EMERGENT_OAUTH_SESSION_ENDPOINT,
+    ensure_owner_pro, GOOGLE_CLIENT_ID,
 )
 from core.models import RegisterIn, LoginIn, GoogleCallbackIn
 
@@ -120,46 +120,30 @@ async def delete_account(response: Response, user: dict = Depends(get_current_us
     return {"deleted": True}
 
 
-# REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 @router.post("/auth/google")
 async def auth_google(payload: GoogleCallbackIn, response: Response):
-    """Exchange an Emergent session_id for our app's JWT.
-    Retries once on transient network errors (common on mobile networks).
-    """
-    last_err: Optional[Exception] = None
-    info = None
-    for attempt in (1, 2):
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as hc:
-                r = await hc.get(
-                    EMERGENT_OAUTH_SESSION_ENDPOINT,
-                    headers={"X-Session-ID": payload.session_id},
-                )
-            if r.status_code == 200:
-                info = r.json()
-                break
-            # Non-200 from provider — explicit auth failure, no retry
-            logger.warning(f"emergent oauth non-200 (attempt {attempt}): {r.status_code} {r.text[:200]}")
-            raise HTTPException(401, "Sessão Google inválida ou expirada. Tente novamente.")
-        except HTTPException:
-            raise
-        except (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError) as e:
-            last_err = e
-            logger.warning(f"emergent oauth network error (attempt {attempt}): {type(e).__name__}: {e}")
-            if attempt == 2:
-                raise HTTPException(503, "Não conseguimos confirmar com o Google agora. Tente em alguns segundos.")
-        except Exception as e:
-            last_err = e
-            logger.error(f"emergent oauth unexpected error: {type(e).__name__}: {e}")
-            raise HTTPException(502, "Erro inesperado ao validar sessão Google")
+    """Verify a Google ID token (from Google Identity Services on the frontend)
+    and exchange it for our app's JWT."""
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(503, "Login com Google não configurado no servidor.")
 
-    if not info:
-        # Shouldn't happen but covers static-analysis path
-        raise HTTPException(502, f"Auth provider unreachable: {last_err}")
+    try:
+        idinfo = google_id_token.verify_oauth2_token(
+            payload.credential, google_requests.Request(), GOOGLE_CLIENT_ID,
+        )
+    except ValueError as e:
+        logger.warning(f"google id_token verification failed: {e}")
+        raise HTTPException(401, "Sessão Google inválida ou expirada. Tente novamente.")
+    except Exception as e:
+        logger.error(f"google id_token unexpected error: {type(e).__name__}: {e}")
+        raise HTTPException(502, "Erro inesperado ao validar login com Google")
 
-    email = (info.get("email") or "").lower().strip()
-    name = info.get("name") or "Usuário"
-    picture = info.get("picture")
+    if not idinfo.get("email_verified", False):
+        raise HTTPException(401, "E-mail do Google não verificado.")
+
+    email = (idinfo.get("email") or "").lower().strip()
+    name = idinfo.get("name") or "Usuário"
+    picture = idinfo.get("picture")
     if not email:
         raise HTTPException(401, "Google não retornou email — tente novamente")
 
