@@ -19,7 +19,12 @@ distro==1.9.0
 dnspython==2.8.0
 ecdsa==0.19.2
 email-validator==2.3.0
-emergentintegrations==0.1.0
+# emergentintegrations==0.1.0  # Removed: private package only available inside the Emergent
+# platform's pip index, not on public PyPI. `pip install` fails on Render/Railway/etc without
+# this line commented out. The code already import-guards it (see backend/core/config.py) and
+# falls back gracefully — Stripe billing uses the raw `stripe` SDK (already in this file) and
+# is unaffected; the AI chat route (routes/ai.py) will report itself unavailable until it's
+# rewired to call OpenAI/Gemini directly (both SDKs are already listed below).
 fastapi==0.110.1
 fastuuid==0.14.0
 filelock==3.29.0
