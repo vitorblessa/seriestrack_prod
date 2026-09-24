@@ -67,11 +67,12 @@ Isso gera uma chave pública e uma privada. Guarde os dois valores.
    que o `web-push` gera.
 5. Clique em **Apply**. O primeiro deploy demora alguns minutos.
 
-   > A versão do Python usada pelo Render é fixada em `backend/runtime.txt`
-   > (`python-3.12.3`). Sem isso, o build falha com um conflito de
-   > dependências entre `google-api-core` e `grpcio-status`, porque a versão
-   > padrão de Python do Render é mais nova do que as versões pinadas no
-   > `requirements.txt` suportam.
+   > A versão do Python é fixada em `3.12.3` via variável de ambiente
+   > `PYTHON_VERSION` (já definida no `render.yaml`) e também em
+   > `backend/.python-version`, como reforço. Sem isso, o build falha com um
+   > conflito de dependências entre `google-api-core` e `grpcio-status`,
+   > porque o Render usa Python 3.14 por padrão, mais novo do que as versões
+   > pinadas no `requirements.txt` suportam.
 6. Quando terminar, você terá uma URL tipo
    `https://seriestrack-backend.onrender.com`. Teste abrindo
    `https://seriestrack-backend.onrender.com/api/` (ou o endpoint de health
