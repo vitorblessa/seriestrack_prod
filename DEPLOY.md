@@ -57,13 +57,21 @@ Isso gera uma chave pública e uma privada. Guarde os dois valores.
    O Render vai detectar o `render.yaml` na raiz automaticamente.
 3. Preencha as variáveis marcadas como obrigatórias no painel (as que não têm
    um valor padrão): `MONGO_URL`, `TMDB_READ_TOKEN`, `ADMIN_PASSWORD`,
-   `CORS_ORIGINS` (deixe em branco por enquanto, ajustamos no passo 7),
+   `CORS_ORIGINS` (pode usar `*` por enquanto, ajustamos no passo 7),
    `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `VAPID_PUBLIC_KEY`.
-4. Para a chave privada do VAPID: em **Environment → Secret Files**, adicione
-   um arquivo com o conteúdo da chave privada (ex: `vapid_private.pem`). O
-   Render mostra o caminho onde ele fica montado — cole esse caminho em
-   `VAPID_PRIVATE_PEM_PATH`.
+4. Para a chave privada do VAPID: cole o valor da chave privada gerada por
+   `npx web-push generate-vapid-keys` diretamente em `VAPID_PRIVATE_PEM_PATH`
+   (apesar do nome sugerir um caminho de arquivo, o `pywebpush` usado neste
+   projeto aceita a string da chave diretamente — não precisa subir arquivo
+   nenhum). Não cole o conteúdo de um `.pem` completo aqui, só a string curta
+   que o `web-push` gera.
 5. Clique em **Apply**. O primeiro deploy demora alguns minutos.
+
+   > A versão do Python usada pelo Render é fixada em `backend/runtime.txt`
+   > (`python-3.12.3`). Sem isso, o build falha com um conflito de
+   > dependências entre `google-api-core` e `grpcio-status`, porque a versão
+   > padrão de Python do Render é mais nova do que as versões pinadas no
+   > `requirements.txt` suportam.
 6. Quando terminar, você terá uma URL tipo
    `https://seriestrack-backend.onrender.com`. Teste abrindo
    `https://seriestrack-backend.onrender.com/api/` (ou o endpoint de health
