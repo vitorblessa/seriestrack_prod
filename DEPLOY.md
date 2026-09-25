@@ -148,9 +148,10 @@ Precisa de configuração extra no mesmo OAuth Client do login:
 
 1. **Ative a API**: console.cloud.google.com → APIs & Services → Library →
    procure "Google Calendar API" → Enable.
-2. **Adicione o escopo**: APIs & Services → OAuth consent screen → Edit →
-   Scopes → Add or Remove Scopes → marque
-   `.../auth/calendar.events` → Save.
+2. **Adicione o escopo**: APIs & Services → OAuth consent screen (ou
+   "Acesso a dados" na tela nova) → Add or Remove Scopes → marque
+   `.../auth/calendar` (acesso completo — necessário porque criamos um
+   calendário novo, não só eventos) → Save.
 3. **Adicione o redirect URI**: APIs & Services → Credentials → abra o mesmo
    OAuth Client ID do login → em "Authorized redirect URIs", adicione
    `https://seriestrack-prod.vercel.app/calendar/google/callback`.

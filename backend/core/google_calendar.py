@@ -15,7 +15,7 @@ from .db import db
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 REVOKE_URL = "https://oauth2.googleapis.com/revoke"
 CALENDAR_API = "https://www.googleapis.com/calendar/v3"
-CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events"
+CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar"
 CALENDAR_NAME = "SeriesTrack"
 
 _http: Optional[httpx.AsyncClient] = None
