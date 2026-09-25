@@ -1,4 +1,4 @@
-"""Pro-tier features: AI recommendations (Claude Sonnet 4.5), preview rec, advanced stats."""
+"""Pro-tier features: AI recommendations (Gemini), preview rec, advanced stats."""
 import re
 import json
 import time
@@ -9,14 +9,15 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, HTTPException, Depends
 from core import (
     db, logger, get_current_user, require_pro, tmdb, tmdb_get_tv,
-    TMDB_LANG, TMDB_IMG, EMERGENT_LLM_KEY, LLM_AVAILABLE,
+    TMDB_LANG, TMDB_IMG, GEMINI_API_KEY, GEMINI_MODEL, LLM_AVAILABLE,
 )
 
 try:
-    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    from google import genai
+    from google.genai import types as genai_types
 except Exception:
-    LlmChat = None  # type: ignore
-    UserMessage = None  # type: ignore
+    genai = None  # type: ignore
+    genai_types = None  # type: ignore
 
 router = APIRouter()
 
@@ -80,7 +81,7 @@ def _ai_recs_cache_key(user_id: str, lib: list, reviews: list) -> str:
 
 @router.post("/ai/recommendations")
 async def ai_recommendations(user: dict = Depends(require_pro)):
-    if not LLM_AVAILABLE or not EMERGENT_LLM_KEY:
+    if not LLM_AVAILABLE or not GEMINI_API_KEY:
         raise HTTPException(503, "Recomendações IA indisponíveis no momento")
     user_id = str(user["_id"])
 
@@ -114,13 +115,18 @@ async def ai_recommendations(user: dict = Depends(require_pro)):
     )
 
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"recs-{user_id}",
-            system_message=system,
-        ).with_model("anthropic", "claude-sonnet-4-5-20250929")
-        msg = UserMessage(text=prompt)
-        raw = await chat.send_message(msg)
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        resp = await client.aio.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                system_instruction=system,
+                response_mime_type="application/json",
+                temperature=0.8,
+                max_output_tokens=1024,
+            ),
+        )
+        raw = resp.text
     except Exception as e:
         logger.warning(f"LLM recs failed: {e}")
         raise HTTPException(502, "Erro ao gerar recomendações")

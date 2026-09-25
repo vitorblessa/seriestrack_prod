@@ -26,10 +26,11 @@ except Exception:
     STRIPE_AVAILABLE = True  # raw `stripe` SDK is a hard requirement, always available
 
 try:
-    from emergentintegrations.llm.chat import LlmChat, UserMessage  # noqa: F401
-    LLM_AVAILABLE = True
+    import google.genai  # noqa: F401
+    _GENAI_SDK_AVAILABLE = True
 except Exception:
-    LLM_AVAILABLE = False
+    _GENAI_SDK_AVAILABLE = False
+LLM_AVAILABLE = _GENAI_SDK_AVAILABLE and bool(os.environ.get('GEMINI_API_KEY'))
 
 # JWT
 JWT_SECRET = os.environ['JWT_SECRET']
@@ -80,7 +81,9 @@ STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY') or STRIPE_API_KEY
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 STRIPE_MODE = os.environ.get('STRIPE_MODE', 'test')
-EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')  # legacy, no longer used (see GEMINI_API_KEY)
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
 # Free-tier limits
 FREE_LIBRARY_CAP = 50

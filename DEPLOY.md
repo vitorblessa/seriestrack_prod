@@ -138,14 +138,21 @@ Google (Identity Services) direto:
 
 Se o "Client ID" mudar no futuro, atualize nos dois lugares (Render e
 Vercel).
-- **Recurso de IA** (`backend/routes/ai.py`): dependia do pacote privado
-  `emergentintegrations`, que só existe no índice pip interno da Emergent (não
-  está no PyPI público — por isso foi removido do `requirements.txt` neste
-  commit, senão o `pip install` quebra em qualquer outro host). O código já
-  trata essa ausência sem quebrar: a rota de IA simplesmente responde "
-  indisponível" até alguém reescrevê-la para chamar OpenAI ou Gemini
-  diretamente (os pacotes `openai` e `google-generativeai` já estão no
-  `requirements.txt`).
+## Recomendações por IA (Google Gemini)
+
+O recurso de IA usa o Gemini diretamente (chave gratuita, sem cartão):
+
+1. Vá em https://aistudio.google.com/apikey e clique em "Create API key".
+   Pode usar o mesmo projeto do Google Cloud do login (item anterior) ou
+   criar um novo — não precisa estar ligado ao mesmo projeto.
+2. Copie a chave gerada (começa com `AIza...`).
+3. No Render, edite a variável `GEMINI_API_KEY` e cole a chave. Salve — o
+   serviço reinicia sozinho.
+
+Não precisa mexer no frontend nem no Vercel para isso — a chamada é só do
+backend para a API do Gemini. O plano gratuito do Gemini tem um limite de
+requisições por minuto/dia (suficiente para uso pessoal); se ultrapassar,
+o endpoint de recomendações vai retornar erro até o limite resetar.
 
 Tudo o resto (biblioteca de séries, calendário, progresso, avaliações,
 notificações push, cobrança Pro via Stripe, exportações) usa apenas

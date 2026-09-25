@@ -27,6 +27,10 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         value: 915970909757-v0heesi45pik9a10evd6ei27nvspcdan.apps.googleusercontent.com
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
