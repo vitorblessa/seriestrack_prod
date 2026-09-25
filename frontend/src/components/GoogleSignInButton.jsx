@@ -6,17 +6,25 @@ import api, { formatApiError } from "../lib/api";
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
 /**
- * Renders the app's custom-styled Google button, backed by a hidden, officially
- * rendered Google Identity Services button (clicks are forwarded to it). This
- * keeps our own look while using Google's real sign-in flow, which returns a
- * signed ID token we verify server-side in POST /auth/google.
+ * Renders the app's custom-styled Google button with the real, officially
+ * rendered Google Identity Services button stacked invisibly on top of it
+ * (same position/size), so a real user tap/click always lands directly on
+ * Google's own interactive element.
+ *
+ * We used to render the real button off-screen and forward a synthetic
+ * .click() to it from our visible button. That works on desktop but is
+ * unreliable on mobile browsers, which require the click that opens an
+ * OAuth popup to be a genuine, trusted user gesture on the real target —
+ * a programmatic click doesn't reliably count. Overlaying the real button
+ * (invisible but truly on top) avoids that problem entirely: nothing is
+ * simulated, the tap the user makes IS the click on Google's button.
  */
 export default function GoogleSignInButton({ className, children }) {
-    const hiddenBtnRef = useRef(null);
+    const containerRef = useRef(null);
+    const overlayRef = useRef(null);
     const { setSession } = useAuth();
     const navigate = useNavigate();
     const [error, setError] = useState("");
-    const [ready, setReady] = useState(false);
 
     useEffect(() => {
         if (!GOOGLE_CLIENT_ID) {
@@ -27,7 +35,7 @@ export default function GoogleSignInButton({ className, children }) {
         let cancelled = false;
 
         const init = () => {
-            if (cancelled || !window.google?.accounts?.id || !hiddenBtnRef.current) return;
+            if (cancelled || !window.google?.accounts?.id || !overlayRef.current) return;
             window.google.accounts.id.initialize({
                 client_id: GOOGLE_CLIENT_ID,
                 callback: async (response) => {
@@ -40,12 +48,14 @@ export default function GoogleSignInButton({ className, children }) {
                     }
                 },
             });
-            window.google.accounts.id.renderButton(hiddenBtnRef.current, {
+            const measured = containerRef.current?.offsetWidth || 320;
+            const width = Math.max(240, Math.min(400, Math.round(measured)));
+            window.google.accounts.id.renderButton(overlayRef.current, {
                 type: "standard",
                 theme: "outline",
                 size: "large",
+                width,
             });
-            setReady(true);
         };
 
         // The GSI script is loaded from public/index.html; it may not be ready yet.
@@ -65,19 +75,17 @@ export default function GoogleSignInButton({ className, children }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleClick = () => {
-        if (error) return;
-        const realBtn = hiddenBtnRef.current?.querySelector('div[role="button"]');
-        if (realBtn) realBtn.click();
-    };
-
     return (
-        <div>
-            <button type="button" data-testid="google-login-button" onClick={handleClick} className={className} disabled={!ready && !error}>
+        <div ref={containerRef} className="relative">
+            {/* Visual-only — the real tap target is the invisible Google button stacked on top */}
+            <div className={className} aria-hidden="true">
                 {children}
-            </button>
-            {/* Real Google button, kept off-screen — its click is forwarded from the button above */}
-            <div ref={hiddenBtnRef} style={{ position: "absolute", opacity: 0, pointerEvents: "none", top: -9999, left: -9999 }} />
+            </div>
+            <div
+                ref={overlayRef}
+                className="absolute inset-0 overflow-hidden z-10"
+                style={{ opacity: 0 }}
+            />
             {error ? <p className="mt-2 text-xs text-red-400 text-center">{error}</p> : null}
         </div>
     );
