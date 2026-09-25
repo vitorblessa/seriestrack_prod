@@ -7,7 +7,10 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Response
 from core import (
     db, logger, get_current_user, tmdb, tmdb_get_tv,
     JWT_SECRET, JWT_ALGO, TMDB_LANG, TMDB_IMG, TMDB_REGION,
+    GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALENDAR_REDIRECT_URI,
 )
+from core import google_calendar as gcal
+from core.models import GoogleCalendarConnectIn
 
 router = APIRouter()
 
@@ -219,3 +222,81 @@ async def calendar_ical(request: Request, token: Optional[str] = None):
         media_type="text/calendar; charset=utf-8",
         headers={"Content-Disposition": 'attachment; filename="seriestrack.ics"'},
     )
+
+
+# ---------------------- Google Calendar push sync ----------------------
+@router.get("/calendar/google/status")
+async def google_calendar_status(user: dict = Depends(get_current_user)):
+    connected = bool(user.get("google_calendar_refresh_token"))
+    return {
+        "connected": connected,
+        "calendar_id": user.get("google_calendar_id") if connected else None,
+        "configured": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+    }
+
+
+@router.post("/calendar/google/connect")
+async def google_calendar_connect(payload: GoogleCalendarConnectIn, user: dict = Depends(get_current_user)):
+    if not (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET):
+        raise HTTPException(503, "Integração com Google Calendar não configurada no servidor.")
+    if GOOGLE_CALENDAR_REDIRECT_URI and payload.redirect_uri != GOOGLE_CALENDAR_REDIRECT_URI:
+        raise HTTPException(400, "redirect_uri não confere com o configurado no servidor.")
+    try:
+        tokens = await gcal.exchange_code(payload.code, payload.redirect_uri)
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+
+    refresh_token = tokens["refresh_token"]
+    access_token = tokens["access_token"]
+    try:
+        calendar_id = await gcal.ensure_calendar(access_token, user.get("google_calendar_id"))
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {
+            "google_calendar_refresh_token": refresh_token,
+            "google_calendar_id": calendar_id,
+            "google_calendar_connected_at": datetime.now(timezone.utc).isoformat(),
+        }},
+    )
+
+    user = await db.users.find_one({"_id": user["_id"]})
+    synced = await _sync_all_series(user)
+    return {"ok": True, "calendar_id": calendar_id, "synced": synced}
+
+
+@router.delete("/calendar/google/connect")
+async def google_calendar_disconnect(user: dict = Depends(get_current_user)):
+    rt = user.get("google_calendar_refresh_token")
+    if rt:
+        await gcal.revoke(rt)
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {"$unset": {"google_calendar_refresh_token": "", "google_calendar_id": ""}},
+    )
+    return {"ok": True}
+
+
+async def _sync_all_series(user: dict) -> int:
+    items = await db.library.find(
+        {"user_id": str(user["_id"]), "status": {"$in": ["watching", "want"]}}
+    ).to_list(500)
+    import asyncio
+    shows = await asyncio.gather(*(tmdb_get_tv(it["tmdb_id"]) for it in items))
+    n = 0
+    for it, show in zip(items, shows):
+        if not show:
+            continue
+        await gcal.sync_series(user, it["tmdb_id"], it.get("name") or show.get("name") or "Série", show)
+        n += 1
+    return n
+
+
+@router.post("/calendar/google/sync")
+async def google_calendar_sync(user: dict = Depends(get_current_user)):
+    if not user.get("google_calendar_refresh_token"):
+        raise HTTPException(400, "Conecte o Google Calendar primeiro.")
+    synced = await _sync_all_series(user)
+    return {"ok": True, "synced": synced}

@@ -138,6 +138,34 @@ Google (Identity Services) direto:
 
 Se o "Client ID" mudar no futuro, atualize nos dois lugares (Render e
 Vercel).
+
+## Sincronização automática com Google Calendar
+
+Diferente do link .ics (que o Google atualiza sozinho, devagar), esta
+sincronização usa a API do Google Calendar diretamente para criar/atualizar/
+remover eventos assim que uma série é adicionada ou removida da biblioteca.
+Precisa de configuração extra no mesmo OAuth Client do login:
+
+1. **Ative a API**: console.cloud.google.com → APIs & Services → Library →
+   procure "Google Calendar API" → Enable.
+2. **Adicione o escopo**: APIs & Services → OAuth consent screen → Edit →
+   Scopes → Add or Remove Scopes → marque
+   `.../auth/calendar.events` → Save.
+3. **Adicione o redirect URI**: APIs & Services → Credentials → abra o mesmo
+   OAuth Client ID do login → em "Authorized redirect URIs", adicione
+   `https://seriestrack-prod.vercel.app/calendar/google/callback`.
+4. **Copie o Client Secret** (na mesma tela do Client ID) e cole em
+   `GOOGLE_CLIENT_SECRET` no Render — diferente do Client ID, esse valor é
+   sensível e só é usado no backend.
+5. `GOOGLE_CALENDAR_REDIRECT_URI` já vem preenchido no `render.yaml` com a
+   URL certa; se o domínio do frontend mudar, atualize os dois (aqui e no
+   passo 3 do Google Cloud) juntos.
+
+O botão fica em **Configurações → Google Calendar (sincronização
+automática)**. Ele cria um calendário separado chamado "SeriesTrack" na
+conta do usuário (não mexe no calendário principal), e tem um botão
+"Sincronizar agora" para reenviar tudo manualmente quando quiser.
+
 ## Recomendações por IA (Google Gemini)
 
 O recurso de IA usa o Gemini diretamente (chave gratuita, sem cartão):

@@ -72,6 +72,12 @@ EMERGENT_OAUTH_SESSION_ENDPOINT = os.environ.get(
 # token's audience matches it.
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 
+# Google Calendar sync (separate consent from login — needs the offline/refresh-token
+# authorization-code flow, so it needs the OAuth client's secret too). See
+# core/google_calendar.py and routes/calendar_routes.py.
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+GOOGLE_CALENDAR_REDIRECT_URI = os.environ.get('GOOGLE_CALENDAR_REDIRECT_URI', '')
+
 
 # Stripe + Emergent LLM key
 # Emergent-managed claimable sandbox (Flow A). STRIPE_SECRET_KEY is provisioned per-run;

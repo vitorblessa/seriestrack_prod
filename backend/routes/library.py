@@ -7,6 +7,7 @@ from core import (
     db, logger, get_current_user, is_pro, tmdb, tmdb_get_tv,
     TMDB_LANG, TMDB_IMG, FREE_LIBRARY_CAP,
 )
+from core import google_calendar as gcal
 from core.models import LibraryUpsertIn, ProgressIn, ProgressBulkIn, ReviewIn
 
 router = APIRouter()
@@ -82,12 +83,27 @@ async def upsert_library(payload: LibraryUpsertIn, user: dict = Depends(get_curr
         "created_at": now,
     })
 
+    # Best-effort push to the user's connected Google Calendar — never blocks
+    # or fails the library add itself.
+    if user.get("google_calendar_refresh_token") and payload.status in ("watching", "want"):
+        try:
+            show = await tmdb_get_tv(payload.tmdb_id)
+            if show:
+                await gcal.sync_series(user, payload.tmdb_id, name or show.get("name") or "Série", show)
+        except Exception as e:
+            logger.warning(f"google calendar sync on add failed for {payload.tmdb_id}: {e}")
+
     return {"ok": True}
 
 
 @router.delete("/library/{tmdb_id}")
 async def remove_library(tmdb_id: int, user: dict = Depends(get_current_user)):
     await db.library.delete_one({"user_id": str(user["_id"]), "tmdb_id": tmdb_id})
+    if user.get("google_calendar_refresh_token"):
+        try:
+            await gcal.remove_series(user, tmdb_id)
+        except Exception as e:
+            logger.warning(f"google calendar remove failed for {tmdb_id}: {e}")
     return {"ok": True}
 
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import AppLayout from "../components/AppLayout";
-import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink, Palette, Crown, Lock } from "lucide-react";
+import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink, Palette, Crown, Lock, RefreshCw, Unlink } from "lucide-react";
 import { getPushStatus, subscribePush, unsubscribePush, sendTestPush } from "../lib/push";
 import { toast } from "sonner";
 import api from "../lib/api";
@@ -160,6 +160,57 @@ export default function Settings() {
             toast.success("URL revogada — quem tinha o link perdeu acesso");
         } catch {
             toast.error("Erro ao revogar");
+        }
+    };
+
+    // ---------------------- Google Calendar (sincronização automática) ----------------------
+    const [gcalStatus, setGcalStatus] = useState(null);
+    const [gcalBusy, setGcalBusy] = useState(false);
+
+    useEffect(() => {
+        api.get("/calendar/google/status").then(({ data }) => setGcalStatus(data)).catch(() => {});
+    }, []);
+
+    const connectGoogleCalendar = () => {
+        const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+        if (!clientId) {
+            toast.error("Login com Google não configurado neste ambiente.");
+            return;
+        }
+        const redirectUri = window.location.origin + "/calendar/google/callback";
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: "code",
+            scope: "https://www.googleapis.com/auth/calendar.events",
+            access_type: "offline",
+            prompt: "consent",
+        });
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    };
+
+    const syncGoogleCalendarNow = async () => {
+        setGcalBusy(true);
+        try {
+            const { data } = await api.post("/calendar/google/sync");
+            toast.success(`${data.synced} série(s) sincronizada(s) com o Google Calendar`);
+        } catch (e) {
+            toast.error(e?.response?.data?.detail || "Erro ao sincronizar");
+        } finally {
+            setGcalBusy(false);
+        }
+    };
+
+    const disconnectGoogleCalendar = async () => {
+        setGcalBusy(true);
+        try {
+            await api.delete("/calendar/google/connect");
+            setGcalStatus((s) => ({ ...s, connected: false, calendar_id: null }));
+            toast.success("Google Calendar desconectado");
+        } catch {
+            toast.error("Erro ao desconectar");
+        } finally {
+            setGcalBusy(false);
         }
     };
 
@@ -417,6 +468,44 @@ export default function Settings() {
                                 </ol>
                                 <p className="mt-2 text-emerald-300/80">🔒 URL com token isolado (só lê o calendário, não dá acesso à conta). Pode revogar quando quiser.</p>
                             </details>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass rounded-2xl p-6 md:p-8" data-testid="google-calendar-sync-card">
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
+                            <CalendarDays className="w-5 h-5 text-[#FF2A54]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h2 className="font-display text-xl font-bold">Google Calendar (sincronização automática)</h2>
+                            <p className="text-white/60 text-sm mt-1">
+                                Diferente do link acima — aqui os eventos aparecem na hora que você adiciona ou remove uma série,
+                                sem esperar o Google atualizar sozinho. Cria um calendário separado chamado "SeriesTrack".
+                            </p>
+
+                            {gcalStatus?.connected ? (
+                                <>
+                                    <div className="mt-4 flex items-center gap-2 text-emerald-300/90 text-sm font-semibold">
+                                        <Check className="w-4 h-4" /> Conectado
+                                    </div>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <button onClick={syncGoogleCalendarNow} disabled={gcalBusy} className="btn-primary text-sm" data-testid="gcal-sync-btn">
+                                            {gcalBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                                            Sincronizar agora
+                                        </button>
+                                        <button onClick={disconnectGoogleCalendar} disabled={gcalBusy} className="btn-glass text-sm" data-testid="gcal-disconnect-btn">
+                                            <Unlink className="w-4 h-4" /> Desconectar
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="mt-4">
+                                    <button onClick={connectGoogleCalendar} className="btn-primary text-sm" data-testid="gcal-connect-btn">
+                                        <CalendarDays className="w-4 h-4" /> Conectar Google Calendar
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

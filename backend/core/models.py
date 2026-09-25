@@ -40,6 +40,11 @@ class GoogleCallbackIn(BaseModel):
     credential: str  # Google ID token (JWT) from Google Identity Services
 
 
+class GoogleCalendarConnectIn(BaseModel):
+    code: str  # OAuth authorization code (offline access, calendar.events scope)
+    redirect_uri: str  # must exactly match what was used to request the code
+
+
 class ReviewIn(BaseModel):
     tmdb_id: int
     rating: int = Field(ge=1, le=5)
