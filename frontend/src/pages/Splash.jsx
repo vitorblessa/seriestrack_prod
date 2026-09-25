@@ -126,12 +126,28 @@ export default function Splash() {
                 </div>
             </section>
 
+            {/* What is SeriesTrack */}
+            <section className="px-6 md:px-10 max-w-[1400px] mx-auto pt-4">
+                <div className="max-w-3xl">
+                    <h2 className="font-display text-2xl md:text-3xl font-bold">O que é o SeriesTrack?</h2>
+                    <p className="mt-4 text-white/70 leading-relaxed">
+                        SeriesTrack é um aplicativo web gratuito para quem acompanha séries de TV.
+                        Você cria uma conta, monta sua biblioteca pessoal com as séries que assiste
+                        (Netflix, Prime Video, Disney+, Max, Apple TV+, Paramount+, Crunchyroll e outros),
+                        e o app avisa automaticamente quando um novo episódio ou temporada estreia —
+                        por notificação push e, opcionalmente, sincronizando as datas de lançamento
+                        direto num calendário separado ("SeriesTrack") na sua conta do Google Calendar.
+                        Também oferece recomendações de séries geradas por IA com base no seu histórico.
+                    </p>
+                </div>
+            </section>
+
             {/* Features */}
             <section className="py-24 px-6 md:px-10 max-w-[1400px] mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {[
                         { icon: Tv, title: "Biblioteca pessoal", desc: "Organize séries em Assistindo, Pausadas, Finalizadas e Quero assistir." },
-                        { icon: Calendar, title: "Calendário de estreias", desc: "Veja episódios do dia, semana e mês com filtros por streaming." },
+                        { icon: Calendar, title: "Calendário de estreias", desc: "Veja episódios do dia, semana e mês com filtros por streaming, e sincronize automaticamente com seu Google Calendar." },
                         { icon: Bell, title: "Alertas inteligentes", desc: "Notificações quando novos episódios saírem ou novas temporadas estrearem." },
                     ].map((f) => (
                         <div key={f.title} className="glass rounded-2xl p-8 hover:border-white/20 transition-all">
