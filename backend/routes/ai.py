@@ -123,7 +123,8 @@ async def ai_recommendations(user: dict = Depends(require_pro)):
                 system_instruction=system,
                 response_mime_type="application/json",
                 temperature=0.8,
-                max_output_tokens=1024,
+                max_output_tokens=2048,
+                thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
             ),
         )
         raw = resp.text
