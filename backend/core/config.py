@@ -82,7 +82,7 @@ STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 STRIPE_MODE = os.environ.get('STRIPE_MODE', 'test')
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')  # legacy, no longer used (see GEMINI_API_KEY)
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.0-flash')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
 # Free-tier limits

@@ -74,7 +74,7 @@ export default function AIRecommendations() {
                         IA que conhece seu gosto
                     </h1>
                     <p className="text-white/70 mt-5 text-lg max-w-md mx-auto">
-                        Claude Sonnet 4.5 analisa sua biblioteca e avaliações para sugerir 5 séries que você vai amar — com explicação personalizada do porquê.
+                        Google Gemini analisa sua biblioteca e avaliações para sugerir 5 séries que você vai amar — com explicação personalizada do porquê.
                     </p>
                     <Link to="/pricing" className="btn-primary mt-10 inline-flex" data-testid="ai-paywall-cta">
                         <Crown className="w-4 h-4" /> Fazer upgrade pra Pro
@@ -96,7 +96,7 @@ export default function AIRecommendations() {
                             Pra você assistir agora
                         </h1>
                         <p className="text-white/60 mt-2 max-w-2xl">
-                            Geradas com Claude Sonnet 4.5 baseadas no que você já tem na biblioteca e nas suas avaliações.
+                            Geradas com Google Gemini baseadas no que você já tem na biblioteca e nas suas avaliações.
                         </p>
                     </div>
                     <button onClick={load} disabled={loading} className="btn-glass text-sm" data-testid="ai-regenerate-btn">

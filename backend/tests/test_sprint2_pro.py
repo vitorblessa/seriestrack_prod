@@ -205,7 +205,7 @@ class TestAIRecommendations:
         if data.get("reason") == "no_history":
             pytest.skip("admin has no library/reviews — cannot validate rec shape")
         assert "recommendations" in data
-        assert data.get("model") == "claude-sonnet-4-5"
+        assert data.get("model")  # now the configured Gemini model, not a fixed string
         recs = data["recommendations"]
         assert isinstance(recs, list)
         assert 1 <= len(recs) <= 5, f"expected up to 5 recs, got {len(recs)}"

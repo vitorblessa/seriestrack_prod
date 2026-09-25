@@ -177,7 +177,7 @@ async def ai_recommendations(user: dict = Depends(require_pro)):
     for e in out:
         e["in_library"] = e["tmdb_id"] in lib_ids
 
-    result = {"recommendations": out, "model": "claude-sonnet-4-5"}
+    result = {"recommendations": out, "model": GEMINI_MODEL}
     _ai_recs_cache[cache_key] = (result, time.time() + _AI_RECS_TTL)
     if len(_ai_recs_cache) > 500:
         for k, _ in sorted(_ai_recs_cache.items(), key=lambda x: x[1][1])[:100]:
