@@ -28,7 +28,7 @@ export default function Terms() {
 
                 <h2 className="font-bold text-xl mt-8">6. Assinatura Pro</h2>
                 <ul className="list-disc pl-6 space-y-2">
-                    <li>A assinatura Pro é cobrada mensalmente (R$ 12,90) ou anualmente (R$ 99,00) via Stripe.</li>
+                    <li>A assinatura Pro é cobrada mensalmente (R$ 10,90) ou anualmente (R$ 89,00) via Stripe.</li>
                     <li>Renovação automática, cancelável a qualquer momento em Configurações → Assinatura.</li>
                     <li>O cancelamento encerra ao fim do ciclo atual — sem reembolso proporcional.</li>
                     <li>Reembolsos totais podem ser solicitados em até 7 dias após a primeira cobrança, conforme o Código de Defesa do Consumidor (Art. 49).</li>

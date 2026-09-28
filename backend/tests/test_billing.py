@@ -61,10 +61,10 @@ class TestPlans:
         assert "pro_yearly" in plans
         m = plans["pro_monthly"]
         y = plans["pro_yearly"]
-        assert m["amount"] == 12.90
+        assert m["amount"] == 10.90
         assert m["currency"].lower() == "brl"
         assert m["days"] == 30
-        assert y["amount"] == 99.00
+        assert y["amount"] == 89.00
         assert y["currency"].lower() == "brl"
         assert y["days"] == 365
 
@@ -104,7 +104,7 @@ class TestCheckout:
         assert tx["credited"] is False
         assert tx["user_id"] == admin_id
         assert tx["plan"] == "pro_monthly"
-        assert float(tx["amount"]) == 12.90
+        assert float(tx["amount"]) == 10.90
         assert tx["days"] == 30
 
     def test_checkout_yearly(self, session, auth_headers, admin_id, mongo):
@@ -117,7 +117,7 @@ class TestCheckout:
         tx = mongo.payment_transactions.find_one({"session_id": d["session_id"]})
         assert tx is not None
         assert tx["plan"] == "pro_yearly"
-        assert float(tx["amount"]) == 99.00
+        assert float(tx["amount"]) == 89.00
         assert tx["days"] == 365
         assert tx["user_id"] == admin_id
 

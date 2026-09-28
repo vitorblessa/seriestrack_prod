@@ -97,8 +97,8 @@ FREE_LIBRARY_CAP = 50
 # Server-side fixed pricing (NEVER trust client-supplied amounts).
 # `lookup_key` matches the Stripe Price lookup_key created by setup_stripe.py.
 PRO_PLANS = {
-    "pro_monthly": {"amount": 12.90, "currency": "brl", "days": 30, "label": "Pro Mensal", "lookup_key": "pro_monthly"},
-    "pro_yearly": {"amount": 99.00, "currency": "brl", "days": 365, "label": "Pro Anual", "lookup_key": "pro_yearly"},
+    "pro_monthly": {"amount": 10.90, "currency": "brl", "days": 30, "label": "Pro Mensal", "lookup_key": "pro_monthly"},
+    "pro_yearly": {"amount": 89.00, "currency": "brl", "days": 365, "label": "Pro Anual", "lookup_key": "pro_yearly"},
 }
 
 # Shared logger

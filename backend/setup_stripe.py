@@ -16,8 +16,8 @@ CATALOG = [
         "name": "SeriesTrack Pro",
         "tax_code": "txcd_10103001",  # SaaS
         "prices": [
-            {"lookup_key": "pro_monthly", "amount": 1290, "currency": "brl", "interval": "month"},
-            {"lookup_key": "pro_yearly", "amount": 9900, "currency": "brl", "interval": "year"},
+            {"lookup_key": "pro_monthly", "amount": 1090, "currency": "brl", "interval": "month"},
+            {"lookup_key": "pro_yearly", "amount": 8900, "currency": "brl", "interval": "year"},
         ],
     },
 ]
