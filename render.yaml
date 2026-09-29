@@ -30,7 +30,7 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_CALENDAR_REDIRECT_URI
-        value: https://seriestrack-prod.vercel.app/calendar/google/callback
+        value: https://www.series-track.com/calendar/google/callback
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL

@@ -95,14 +95,14 @@ Isso gera uma chave pública e uma privada. Guarde os dois valores.
    Adicione também `REACT_APP_GOOGLE_CLIENT_ID` com o Client ID do Google
    Cloud Console (veja "Login com Google" mais abaixo), se quiser esse
    login ativo.
-6. Deploy. Você recebe uma URL tipo `https://seriestrack-prod.vercel.app`.
+6. Deploy. Você recebe uma URL tipo `https://www.series-track.com`.
 
 ## 7. Conectar os dois (CORS)
 
 Volte no Render, no serviço do backend, e edite a variável `CORS_ORIGINS`
 para a URL exata do Vercel (sem barra no final):
 ```
-CORS_ORIGINS=https://seriestrack-prod.vercel.app
+CORS_ORIGINS=https://www.series-track.com
 ```
 Salve — o Render reinicia o serviço automaticamente.
 
@@ -130,7 +130,7 @@ Google (Identity Services) direto:
 1. Crie um OAuth Client ID em https://console.cloud.google.com → APIs &
    Services → Credentials → Create Credentials → OAuth client ID → Web
    application. Em "Authorized JavaScript origins", adicione a URL do seu
-   frontend (ex: `https://seriestrack-prod.vercel.app`). Não precisa de
+   frontend (ex: `https://www.series-track.com`). Não precisa de
    "Redirect URIs".
 2. O `GOOGLE_CLIENT_ID` do backend já vem preenchido no `render.yaml`.
 3. No Vercel, adicione a variável `REACT_APP_GOOGLE_CLIENT_ID` com o mesmo
@@ -154,7 +154,7 @@ Precisa de configuração extra no mesmo OAuth Client do login:
    calendário novo, não só eventos) → Save.
 3. **Adicione o redirect URI**: APIs & Services → Credentials → abra o mesmo
    OAuth Client ID do login → em "Authorized redirect URIs", adicione
-   `https://seriestrack-prod.vercel.app/calendar/google/callback`.
+   `https://www.series-track.com/calendar/google/callback`.
 4. **Copie o Client Secret** (na mesma tela do Client ID) e cole em
    `GOOGLE_CLIENT_SECRET` no Render — diferente do Client ID, esse valor é
    sensível e só é usado no backend.
