@@ -38,6 +38,13 @@ export default function GoogleSignInButton({ className, children }) {
             if (cancelled || !window.google?.accounts?.id || !overlayRef.current) return;
             window.google.accounts.id.initialize({
                 client_id: GOOGLE_CLIENT_ID,
+                // FedCM replaces the old third-party-cookie popup handoff with a
+                // browser-mediated API. Firefox (with tracking protection) and
+                // future Chrome versions block the legacy popup flow — without
+                // this, the account picker opens but the credential never makes
+                // it back to our callback. Firefox 133+ and modern Chrome both
+                // support FedCM; browsers that don't fall back automatically.
+                use_fedcm_for_button: true,
                 callback: async (response) => {
                     try {
                         const { data } = await api.post("/auth/google", { credential: response.credential });
