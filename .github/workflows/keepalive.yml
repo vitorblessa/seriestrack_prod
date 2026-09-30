@@ -1,0 +1,43 @@
+name: Backend Keepalive
+
+# Pings the production backend every 10 minutes with a real
+# login -> authenticated request -> logout cycle, so Render's free tier
+# never spins the service down from inactivity (cold start otherwise
+# takes ~30-50s on the next real user request).
+#
+# Required GitHub secrets (Settings -> Secrets and variables -> Actions):
+#
+#   KEEPALIVE_EMAIL      Test account email (auto-registered on first run)
+#   KEEPALIVE_PASSWORD   Test account password
+#
+# Optional:
+#   KEEPALIVE_BACKEND_URL   Overrides the default backend URL below.
+#
+# Note: GitHub disables scheduled workflows automatically after 60 days
+# with no commits to the repo. As long as the project keeps getting
+# pushes, this isn't a concern; if the repo ever goes fully idle for
+# that long, re-enable it from the Actions tab (or push any commit).
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install requests
+
+      - name: Login / authenticated request / logout cycle
+        env:
+          BACKEND_URL: ${{ secrets.KEEPALIVE_BACKEND_URL || 'https://seriestrack-backend-zfla.onrender.com' }}
+          KEEPALIVE_EMAIL: ${{ secrets.KEEPALIVE_EMAIL }}
+          KEEPALIVE_PASSWORD: ${{ secrets.KEEPALIVE_PASSWORD }}
+        run: python scripts/keepalive_login.py
