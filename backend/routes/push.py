@@ -2,10 +2,11 @@
 import json
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from core import (
     db, logger, get_current_user, tmdb_get_tv,
     VAPID_PUBLIC_KEY, VAPID_PRIVATE_PEM, VAPID_PRIVATE_PEM_PATH, VAPID_SUBJECT, PUSH_AVAILABLE,
+    CRON_SECRET,
 )
 from core.models import PushSubscriptionIn
 
@@ -162,9 +163,26 @@ async def push_notify_today(user: dict = Depends(get_current_user)):
 
 @router.post("/push/cron/run")
 async def trigger_cron(user: dict = Depends(get_current_user)):
-    """Admin-only — manually fire the daily cron job. Useful for testing.
+    """Admin-only — force-run the daily cron job right now, bypassing the
+    once-per-day guard. Useful for testing.
     Restricted to users with is_owner=True (set via PRO_OWNERS env)."""
     if not user.get("is_owner"):
         raise HTTPException(403, "Apenas o dono pode disparar o cron manualmente")
     from core.cron import run_daily_push_pass
     return await run_daily_push_pass()
+
+
+@router.post("/push/cron/ping")
+async def cron_ping(x_cron_secret: Optional[str] = Header(None, alias="X-Cron-Secret")):
+    """Unauthenticated (shared-secret-guarded) trigger meant to be called by
+    the external keepalive pinger every ~10 minutes alongside its login
+    cycle. Safe to call as often as you like — run_daily_push_pass_if_due()
+    only actually executes the sweep once per UTC day, so this is a no-op
+    on every call except (at most) one per day. This is the fix for push
+    notifications silently not going out on days Render's free tier happened
+    to be asleep right at the scheduled 12:00 UTC trigger.
+    """
+    if not CRON_SECRET or x_cron_secret != CRON_SECRET:
+        raise HTTPException(403, "forbidden")
+    from core.cron import run_daily_push_pass_if_due
+    return await run_daily_push_pass_if_due()

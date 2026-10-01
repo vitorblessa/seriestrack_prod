@@ -13,11 +13,21 @@ against a dedicated test account every time it runs, which:
 It is meant to run on a schedule (see .github/workflows/keepalive.yml,
 every 10 minutes) — this file has no scheduling logic of its own.
 
+After the login cycle, it also pings POST /push/cron/ping (guarded by a
+shared secret, CRON_SECRET) — a safety net for the daily episode-release
+push notifications. Those are normally fired by an in-process scheduler at
+12:00 UTC, which only works if the backend happens to be alive at that
+exact moment; this ping lets the backend opportunistically catch up if it
+was asleep or restarting right then. It's a no-op on every call except (at
+most) once per day, so calling it every 10 minutes is cheap and safe.
+
 Env vars:
   BACKEND_URL        e.g. https://seriestrack-backend-zfla.onrender.com
   KEEPALIVE_EMAIL    test account email (auto-registered on first run
                       if it doesn't exist yet)
   KEEPALIVE_PASSWORD test account password
+  CRON_SECRET        shared secret for POST /push/cron/ping (optional —
+                      if unset, that step is just skipped with a log line)
 """
 import os
 import sys
@@ -28,6 +38,7 @@ import requests
 BACKEND_URL = os.environ.get("BACKEND_URL", "").rstrip("/")
 EMAIL = os.environ.get("KEEPALIVE_EMAIL", "")
 PASSWORD = os.environ.get("KEEPALIVE_PASSWORD", "")
+CRON_SECRET = os.environ.get("CRON_SECRET", "")
 NAME = "Keepalive Bot"
 
 # Render free-tier cold start can take ~30-50s if the service was asleep.
@@ -115,6 +126,25 @@ def main() -> None:
         log(f"logout failed: {r.status_code} {r.text[:300]}")
         sys.exit(1)
     log("logout ok — cycle complete")
+
+    # 4. Opportunistic daily-push safety net (no-op most of the time — see
+    # module docstring). Not fatal if it fails: the login cycle above already
+    # did its job of keeping the backend warm.
+    if CRON_SECRET:
+        try:
+            r = requests.post(
+                f"{BACKEND_URL}/api/push/cron/ping",
+                headers={"X-Cron-Secret": CRON_SECRET},
+                timeout=TIMEOUT,
+            )
+            if r.status_code < 300:
+                log(f"cron ping: {r.json()}")
+            else:
+                log(f"cron ping failed (non-fatal): {r.status_code} {r.text[:300]}")
+        except requests.exceptions.RequestException as e:
+            log(f"cron ping failed (non-fatal): {e}")
+    else:
+        log("CRON_SECRET not set — skipping daily-push safety net ping")
 
 
 if __name__ == "__main__":

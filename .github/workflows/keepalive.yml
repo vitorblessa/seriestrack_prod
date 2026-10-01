@@ -9,6 +9,10 @@ name: Backend Keepalive
 #
 #   KEEPALIVE_EMAIL      Test account email (auto-registered on first run)
 #   KEEPALIVE_PASSWORD   Test account password
+#   CRON_SECRET          Must match the CRON_SECRET env var set on the Render
+#                        backend — lets this ping opportunistically trigger
+#                        the daily push-notification sweep as a safety net
+#                        (see scripts/keepalive_login.py for why).
 #
 # Optional:
 #   KEEPALIVE_BACKEND_URL   Overrides the default backend URL below.
@@ -40,4 +44,5 @@ jobs:
           BACKEND_URL: ${{ secrets.KEEPALIVE_BACKEND_URL || 'https://seriestrack-backend-zfla.onrender.com' }}
           KEEPALIVE_EMAIL: ${{ secrets.KEEPALIVE_EMAIL }}
           KEEPALIVE_PASSWORD: ${{ secrets.KEEPALIVE_PASSWORD }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: python scripts/keepalive_login.py

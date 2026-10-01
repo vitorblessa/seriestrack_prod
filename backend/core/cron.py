@@ -16,6 +16,12 @@ from routes.push import _send_push
 
 _scheduler: Optional[AsyncIOScheduler] = None
 
+# Tracks the UTC calendar date the daily sweep last actually ran, in a tiny
+# single-document collection — lets an opportunistic caller (the keepalive
+# ping, see run_daily_push_pass_if_due) safely run "at most once per day"
+# without needing its own cron infrastructure.
+_CRON_STATE_ID = "daily_push"
+
 
 async def run_daily_push_pass() -> dict:
     """Iterate all users with push subs, send notifications for today/tomorrow's episodes."""
@@ -99,14 +105,43 @@ async def run_daily_push_pass() -> dict:
     return {"users": len(user_ids), "created": total_created, "pushed": total_pushed, "elapsed_s": elapsed}
 
 
+async def run_daily_push_pass_if_due() -> dict:
+    """Opportunistic version of run_daily_push_pass(), safe to call as often
+    as every few minutes (e.g. from an external keepalive pinger): it only
+    actually runs the sweep once per UTC calendar day.
+
+    Why this exists: the APScheduler job below only fires if the process
+    happens to be alive at exactly 12:00 UTC. On Render's free tier that
+    used to be unreliable (the service sleeps after ~15 min idle, so a cold
+    instance simply never hits that trigger). This is the safety net —
+    anything that pings the backend regularly can call this and the daily
+    push will go out even if the exact-time trigger was missed that day.
+    """
+    today = datetime.now(timezone.utc).date().isoformat()
+    state = await db.cron_state.find_one({"_id": _CRON_STATE_ID})
+    if state and state.get("last_run_date") == today:
+        return {"skipped": True, "reason": "already ran today", "date": today}
+
+    result = await run_daily_push_pass()
+    await db.cron_state.update_one(
+        {"_id": _CRON_STATE_ID},
+        {"$set": {"last_run_date": today, "last_run_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return {"skipped": False, "date": today, **result}
+
+
 def start_scheduler():
     global _scheduler
     if _scheduler is not None:
         return _scheduler
     _scheduler = AsyncIOScheduler(timezone="UTC")
-    # 12:00 UTC daily = 9:00 BRT — sweet spot for "today's episodes" notifications
+    # 12:00 UTC daily = 9:00 BRT — sweet spot for "today's episodes" notifications.
+    # Goes through the _if_due wrapper so this and the keepalive's opportunistic
+    # ping (routes/push.py: POST /push/cron/ping) share the same "ran today"
+    # bookkeeping and never double-send.
     _scheduler.add_job(
-        run_daily_push_pass,
+        run_daily_push_pass_if_due,
         trigger=CronTrigger(hour=12, minute=0),
         id="daily_push",
         replace_existing=True,

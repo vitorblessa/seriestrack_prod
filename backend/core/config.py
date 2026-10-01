@@ -91,6 +91,13 @@ EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')  # legacy, no longer u
 GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.8-flash')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
+# Shared secret that lets the external keepalive pinger opportunistically
+# trigger the daily push sweep (POST /push/cron/ping) without a user login.
+# Safety net for Render free-tier: if the process happened to be asleep or
+# mid-restart at the scheduled 12:00 UTC APScheduler trigger, this catches it
+# on the next ping instead of silently skipping that day's notifications.
+CRON_SECRET = os.environ.get('CRON_SECRET', '')
+
 # Free-tier limits
 FREE_LIBRARY_CAP = 50
 
