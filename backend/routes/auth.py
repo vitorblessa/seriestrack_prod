@@ -64,6 +64,32 @@ async def me(user: dict = Depends(get_current_user)):
     return serialize_user(user)
 
 
+@router.get("/auth/admin/search_users")
+async def admin_search_users(q: str, user: dict = Depends(get_current_user)):
+    """Owner-only — case-insensitive partial match on email, so typos in a
+    user-supplied email can be tracked down to the real registered account.
+    Returns at most 20 matches with just enough info to identify the right
+    one (no password hashes, no sensitive fields)."""
+    if not user.get("is_owner"):
+        raise HTTPException(403, "Apenas o dono pode buscar usuários")
+
+    import re
+    safe = re.escape(q.strip())
+    cursor = db.users.find(
+        {"email": {"$regex": safe, "$options": "i"}},
+        {"email": 1, "name": 1, "created_at": 1, "subscription_tier": 1,
+         "subscription_renews_at": 1, "google_linked": 1},
+    ).limit(20)
+    results = await cursor.to_list(20)
+    for r in results:
+        r["_id"] = str(r["_id"])
+        if isinstance(r.get("created_at"), datetime):
+            r["created_at"] = r["created_at"].isoformat()
+        if isinstance(r.get("subscription_renews_at"), datetime):
+            r["subscription_renews_at"] = r["subscription_renews_at"].isoformat()
+    return {"count": len(results), "users": results}
+
+
 @router.delete("/auth/me")
 async def delete_account(response: Response, user: dict = Depends(get_current_user)):
     """Google Play required: permanent account deletion.
