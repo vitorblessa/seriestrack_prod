@@ -68,28 +68,102 @@ def do_login(page, email: str, password: str) -> None:
     log(f"Login OK — página atual: {page.url}")
 
 
-def click_logout(page) -> bool:
-    """Tenta achar e clicar no botão de sair, abrindo menus se preciso."""
-    candidates = page.get_by_role("button", name=LOGOUT_TEXT).or_(
-        page.get_by_role("link", name=LOGOUT_TEXT)
-    ).or_(page.get_by_text(LOGOUT_TEXT))
+# Páginas onde o "Sair" costuma ficar, caso não esteja no dashboard
+ACCOUNT_PATHS = ["/perfil", "/profile", "/conta", "/account",
+                 "/configuracoes", "/settings", "/ajustes"]
 
-    if candidates.first.is_visible():
-        candidates.first.click()
+
+def _logout_locator(page):
+    """Qualquer elemento visível que pareça 'sair': texto, aria-label, title ou href."""
+    return (
+        page.get_by_role("button", name=LOGOUT_TEXT)
+        .or_(page.get_by_role("link", name=LOGOUT_TEXT))
+        .or_(page.get_by_role("menuitem", name=LOGOUT_TEXT))
+        .or_(page.get_by_text(LOGOUT_TEXT))
+        .or_(page.locator(
+            '[aria-label*="sair" i], [aria-label*="logout" i], [aria-label*="sign out" i], '
+            '[title*="sair" i], [title*="logout" i], '
+            'a[href*="logout" i], a[href*="signout" i], a[href*="sair" i], '
+            '[data-testid*="logout" i]'
+        ))
+    )
+
+
+def _try_click_visible(page) -> bool:
+    loc = _logout_locator(page)
+    for i in range(min(loc.count(), 10)):
+        el = loc.nth(i)
+        try:
+            if el.is_visible():
+                el.click(timeout=5_000)
+                return True
+        except Exception:  # noqa: BLE001
+            continue
+    return False
+
+
+def _open_menus_and_try(page) -> bool:
+    """Abre menus de perfil/conta (inclusive avatares sem texto) e procura o 'Sair'."""
+    menus = (
+        page.get_by_role("button", name=MENU_TEXT)
+        .or_(page.get_by_role("link", name=MENU_TEXT))
+        .or_(page.locator(
+            'header button, nav button, [aria-haspopup="menu"], [aria-haspopup="true"], '
+            'button:has(img), [class*="avatar" i]'
+        ))
+    )
+    for i in range(min(menus.count(), 12)):
+        try:
+            m = menus.nth(i)
+            if not m.is_visible():
+                continue
+            m.click(timeout=5_000)
+            page.wait_for_timeout(800)
+            if _try_click_visible(page):
+                return True
+            page.keyboard.press("Escape")  # fecha o menu antes de tentar o próximo
+        except Exception:  # noqa: BLE001
+            continue
+    return False
+
+
+def _log_clickables(page) -> None:
+    """Lista botões/links visíveis para descobrir o nome do botão de sair."""
+    try:
+        items = page.evaluate("""() => [...document.querySelectorAll(
+                'button, a, [role=button], [role=menuitem]')]
+            .filter(e => e.offsetParent !== null)
+            .map(e => [e.tagName.toLowerCase(),
+                       (e.innerText || '').trim().slice(0, 40),
+                       e.getAttribute('aria-label') || '',
+                       e.getAttribute('title') || '',
+                       e.getAttribute('href') || ''].join(' | '))
+            .slice(0, 60)""")
+        log(f"Elementos clicáveis em {page.url} (tag | texto | aria-label | title | href):")
+        for it in items:
+            log(f"   {it}")
+    except Exception as e:  # noqa: BLE001
+        log(f"Não consegui listar elementos: {e}")
+
+
+def click_logout(page) -> bool:
+    """Procura o botão de sair no dashboard, em menus e nas páginas de conta."""
+    page.wait_for_timeout(1_500)  # dá tempo do app React terminar de renderizar
+    if _try_click_visible(page) or _open_menus_and_try(page):
         return True
 
-    # Abre menus de perfil/conta e procura de novo
-    menus = page.get_by_role("button", name=MENU_TEXT).or_(
-        page.get_by_role("link", name=MENU_TEXT)
-    )
-    for i in range(min(menus.count(), 5)):
+    _log_clickables(page)  # diagnóstico da tela pós-login
+
+    for path in ACCOUNT_PATHS:
         try:
-            menus.nth(i).click(timeout=5_000)
+            page.goto(BASE_URL + path, wait_until="networkidle", timeout=15_000)
+            if "/login" in page.url:  # rota protegida jogou para o login: sessão perdida
+                return False
             page.wait_for_timeout(1_000)
-            if candidates.first.is_visible():
-                candidates.first.click()
+            if _try_click_visible(page) or _open_menus_and_try(page):
+                log(f"Botão 'Sair' encontrado em {path}")
                 return True
-        except PWTimeout:
+        except Exception:  # noqa: BLE001
             continue
     return False
 
