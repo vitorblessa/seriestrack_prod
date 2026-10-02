@@ -211,6 +211,34 @@ async def billing_status(session_id: str, user: dict = Depends(get_current_user)
     }
 
 
+@router.post("/billing/admin/grant_pro")
+async def admin_grant_pro(email: str, days: int = 365, user: dict = Depends(get_current_user)):
+    """Owner-only — manually grant/extend Pro for a user by email, bypassing
+    Stripe entirely. Useful for comping an account (friends, support cases,
+    manual payment outside Stripe, etc.). Uses the same idempotent
+    _credit_pro() helper the webhook/checkout-status paths use, so repeated
+    calls just extend from whichever is later: now or their current
+    subscription_renews_at."""
+    if not user.get("is_owner"):
+        raise HTTPException(403, "Apenas o dono pode conceder Pro manualmente")
+
+    target = await db.users.find_one({"email": email.strip().lower()})
+    if not target:
+        raise HTTPException(404, f"Nenhum usuário encontrado com o e-mail {email}")
+
+    new_renews = await _credit_pro(str(target["_id"]), days)
+    if not new_renews:
+        raise HTTPException(500, "Falha ao conceder Pro")
+
+    return {
+        "ok": True,
+        "email": target["email"],
+        "user_id": str(target["_id"]),
+        "days_granted": days,
+        "subscription_renews_at": new_renews,
+    }
+
+
 @router.get("/billing/me")
 async def billing_me(user: dict = Depends(get_current_user)):
     pro = await is_pro(user)
