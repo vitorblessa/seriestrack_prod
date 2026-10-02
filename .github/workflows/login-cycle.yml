@@ -2,8 +2,8 @@ name: SeriesTrack login cycle
 
 on:
   schedule:
-    - cron: "*/10 * * * *"   # a cada 10 minutos (UTC)
-  workflow_dispatch:          # permite rodar manualmente pela aba Actions
+    - cron: "*/5 * * * *"   # a cada 5 minutos (UTC)
+  workflow_dispatch:         # permite rodar manualmente pela aba Actions
 
 concurrency:
   group: series-track-login
@@ -11,12 +11,12 @@ concurrency:
 
 jobs:
   cycle:
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
