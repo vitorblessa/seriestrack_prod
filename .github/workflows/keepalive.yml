@@ -23,8 +23,6 @@ name: Backend Keepalive
 # that long, re-enable it from the Actions tab (or push any commit).
 
 on:
-  schedule:
-    - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
 jobs:
