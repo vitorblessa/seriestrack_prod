@@ -1,9 +1,14 @@
 name: Backend Keepalive
 
-# Pings the production backend every 10 minutes with a real
+# Pings the production backend with a real
 # login -> authenticated request -> logout cycle, so Render's free tier
 # never spins the service down from inactivity (cold start otherwise
 # takes ~30-50s on the next real user request).
+#
+# Trigger: dispatched every 10 minutes by cron-job.org via the GitHub API
+# (POST .../actions/workflows/<this-file>.yml/dispatches, body {"ref":"main"}).
+# GitHub's own `schedule` was removed because it delayed/skipped runs.
+# Can also be run manually from the Actions tab.
 #
 # Required GitHub secrets (Settings -> Secrets and variables -> Actions):
 #
@@ -16,22 +21,22 @@ name: Backend Keepalive
 #
 # Optional:
 #   KEEPALIVE_BACKEND_URL   Overrides the default backend URL below.
-#
-# Note: GitHub disables scheduled workflows automatically after 60 days
-# with no commits to the repo. As long as the project keeps getting
-# pushes, this isn't a concern; if the repo ever goes fully idle for
-# that long, re-enable it from the Actions tab (or push any commit).
 
 on:
   workflow_dispatch: {}
 
+concurrency:
+  group: backend-keepalive
+  cancel-in-progress: false
+
 jobs:
   ping:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
