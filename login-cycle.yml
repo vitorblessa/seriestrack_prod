@@ -10,7 +10,7 @@ concurrency:
 jobs:
   cycle:
     runs-on: ubuntu-24.04
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v5
 

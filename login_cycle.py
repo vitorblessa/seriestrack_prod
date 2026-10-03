@@ -25,6 +25,7 @@ BASE_URL = "https://www.series-track.com"
 LOGIN_URL = f"{BASE_URL}/login"
 TIMEOUT_MS = 30_000
 NAV_TIMEOUT_MS = 45_000
+LOGIN_WAIT_MS = 90_000  # tempo máximo esperando o servidor aceitar o login
 MAX_ATTEMPTS = 2  # tenta o ciclo de novo se o site estiver lento/instável
 
 # Textos possíveis do botão de sair (pt/en)
@@ -46,6 +47,22 @@ def _settle(page, timeout_ms: int = 10_000) -> None:
         pass
 
 
+def _visible_error_text(page) -> str:
+    """Tenta ler a mensagem de erro que o site mostrou no formulário."""
+    try:
+        return page.evaluate("""() => {
+            const sel = '[role=alert], [aria-live], .error, [class*="error" i], '
+                      + '[class*="toast" i], [class*="alert" i], [class*="message" i]';
+            const txt = [...document.querySelectorAll(sel)]
+                .filter(e => e.offsetParent !== null)
+                .map(e => (e.innerText || '').trim())
+                .filter(Boolean);
+            return [...new Set(txt)].join(' | ').slice(0, 300);
+        }""")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def do_login(page, email: str, password: str) -> None:
     log("Abrindo página de login…")
     # 'domcontentloaded' em vez de 'networkidle': o app pode ficar com requisições
@@ -58,24 +75,49 @@ def do_login(page, email: str, password: str) -> None:
     pwd_input = page.locator('input[type="password"]').first
 
     email_input.wait_for(state="visible", timeout=TIMEOUT_MS)
-    email_input.fill(email)
-    pwd_input.fill(password)
+    _settle(page, 15_000)  # deixa o app React terminar de montar o formulário
+
+    # Preenche digitando de verdade, para o React registrar os valores
+    email_input.click()
+    email_input.fill("")
+    email_input.press_sequentially(email, delay=30)
+    pwd_input.click()
+    pwd_input.fill("")
+    pwd_input.press_sequentially(password, delay=30)
+
+    if email_input.input_value() != email or not pwd_input.input_value():
+        raise RuntimeError("Os campos de e-mail/senha não ficaram preenchidos.")
+
+    # Registra as respostas da API durante o login, para diagnóstico
+    api_responses = []
+
+    def _on_response(resp):
+        if resp.request.method in ("POST", "PUT") and resp.request.resource_type in ("xhr", "fetch"):
+            api_responses.append(f"{resp.status} {resp.request.method} {resp.url}")
+
+    page.on("response", _on_response)
 
     submit = page.locator(
         'button[type="submit"], button:has-text("Entrar"), button:has-text("Login"), '
         'button:has-text("Acessar"), button:has-text("Sign in")'
     ).first
     submit.click()
+    log("Formulário enviado, aguardando resposta do servidor…")
 
-    # Sucesso = saiu da tela /login (ou o campo de senha sumiu)
+    # Sucesso = saiu da tela /login. Espera longa: a API pode estar "acordando".
     try:
-        page.wait_for_url(lambda url: "/login" not in url, timeout=TIMEOUT_MS)
+        page.wait_for_url(lambda url: "/login" not in url, timeout=LOGIN_WAIT_MS)
     except PWTimeout:
-        if pwd_input.is_visible():
-            raise RuntimeError(
-                "Login não confirmado: ainda na tela de login. "
-                "Verifique as credenciais ou se surgiu captcha/2FA."
-            )
+        for r in api_responses:
+            log(f"   API: {r}")
+        if not api_responses:
+            log("   API: nenhuma resposta recebida (servidor lento/fora do ar?)")
+        msg = _visible_error_text(page)
+        if msg:
+            log(f"   Mensagem na tela: {msg}")
+        raise RuntimeError("Login não confirmado: ainda na tela de login.")
+    finally:
+        page.remove_listener("response", _on_response)
     _settle(page)
     log(f"Login OK — página atual: {page.url}")
 
