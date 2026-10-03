@@ -24,6 +24,8 @@ from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 BASE_URL = "https://www.series-track.com"
 LOGIN_URL = f"{BASE_URL}/login"
 TIMEOUT_MS = 30_000
+NAV_TIMEOUT_MS = 45_000
+MAX_ATTEMPTS = 2  # tenta o ciclo de novo se o site estiver lento/instável
 
 # Textos possíveis do botão de sair (pt/en)
 LOGOUT_TEXT = re.compile(r"^\s*(sair|logout|log out|sign out|desconectar)\s*$", re.I)
@@ -36,9 +38,19 @@ def log(msg: str) -> None:
     print(f"[{ts}] {msg}", flush=True)
 
 
+def _settle(page, timeout_ms: int = 10_000) -> None:
+    """Espera a rede acalmar, mas sem falhar se ela nunca ficar 100% ociosa."""
+    try:
+        page.wait_for_load_state("networkidle", timeout=timeout_ms)
+    except PWTimeout:
+        pass
+
+
 def do_login(page, email: str, password: str) -> None:
     log("Abrindo página de login…")
-    page.goto(LOGIN_URL, wait_until="networkidle", timeout=TIMEOUT_MS)
+    # 'domcontentloaded' em vez de 'networkidle': o app pode ficar com requisições
+    # abertas (API acordando, analytics) e o networkidle nunca chega.
+    page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
 
     email_input = page.locator(
         'input[type="email"], input[name*="email" i], input[autocomplete="username"]'
@@ -64,7 +76,7 @@ def do_login(page, email: str, password: str) -> None:
                 "Login não confirmado: ainda na tela de login. "
                 "Verifique as credenciais ou se surgiu captcha/2FA."
             )
-    page.wait_for_load_state("networkidle", timeout=TIMEOUT_MS)
+    _settle(page)
     log(f"Login OK — página atual: {page.url}")
 
 
@@ -156,7 +168,8 @@ def click_logout(page) -> bool:
 
     for path in ACCOUNT_PATHS:
         try:
-            page.goto(BASE_URL + path, wait_until="networkidle", timeout=15_000)
+            page.goto(BASE_URL + path, wait_until="domcontentloaded", timeout=15_000)
+            _settle(page, 5_000)
             if "/login" in page.url:  # rota protegida jogou para o login: sessão perdida
                 return False
             page.wait_for_timeout(1_000)
@@ -204,20 +217,27 @@ def main() -> int:
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(locale="pt-BR")
-        page = context.new_page()
         try:
-            do_login(page, email, password)
-            do_logout(page, context)
-            log("Ciclo concluído com sucesso.")
-            return 0
-        except Exception as e:  # noqa: BLE001
-            log(f"FALHA no ciclo: {e}")
-            try:
-                page.screenshot(path="erro.png", full_page=True)
-                log("Screenshot salvo em erro.png")
-            except Exception:  # noqa: BLE001
-                pass
+            for attempt in range(1, MAX_ATTEMPTS + 1):
+                context = browser.new_context(locale="pt-BR")
+                page = context.new_page()
+                try:
+                    do_login(page, email, password)
+                    do_logout(page, context)
+                    log("Ciclo concluído com sucesso.")
+                    return 0
+                except Exception as e:  # noqa: BLE001
+                    log(f"FALHA na tentativa {attempt}/{MAX_ATTEMPTS}: {e}")
+                    try:
+                        page.screenshot(path="erro.png", full_page=True)
+                        log("Screenshot salvo em erro.png")
+                    except Exception:  # noqa: BLE001
+                        pass
+                    if attempt < MAX_ATTEMPTS:
+                        log("Aguardando 10s para tentar de novo…")
+                        page.wait_for_timeout(10_000)
+                finally:
+                    context.close()
             return 1
         finally:
             browser.close()
