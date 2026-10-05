@@ -45,7 +45,8 @@ export default function AppLayout({ children }) {
                                 <Tv className="w-5 h-5 text-white" strokeWidth={2.5} />
                             </div>
                         </div>
-                        <span className="font-display font-black text-lg sm:text-xl tracking-tight whitespace-nowrap">SeriesTrack</span>
+                        {/* Icon-only between md and lg (tight desktop widths) — full wordmark from lg up, same as nav labels */}
+                        <span className="hidden lg:inline font-display font-black text-lg sm:text-xl tracking-tight whitespace-nowrap">SeriesTrack</span>
                     </Link>
 
                     <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 ml-2 lg:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-hide">
