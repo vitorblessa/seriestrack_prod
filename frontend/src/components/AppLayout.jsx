@@ -45,11 +45,11 @@ export default function AppLayout({ children }) {
                                 <Tv className="w-5 h-5 text-white" strokeWidth={2.5} />
                             </div>
                         </div>
-                        {/* Icon-only between md and xl (tight/laptop desktop widths) — full wordmark from xl up, same as nav labels */}
-                        <span className="hidden xl:inline font-display font-black text-lg sm:text-xl tracking-tight whitespace-nowrap">SeriesTrack</span>
+                        {/* Icon-only up to 2xl (covers scaled/laptop desktop widths) — full wordmark only on genuinely wide screens */}
+                        <span className="hidden 2xl:inline font-display font-black text-lg sm:text-xl tracking-tight whitespace-nowrap">SeriesTrack</span>
                     </Link>
 
-                    <nav className="hidden md:flex items-center gap-0.5 xl:gap-1 ml-2 xl:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-hide">
+                    <nav className="hidden md:flex items-center gap-0.5 2xl:gap-1 ml-2 2xl:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-hide">
                         {navItems.map((it) => (
                             <NavLink
                                 key={it.to}
@@ -57,7 +57,7 @@ export default function AppLayout({ children }) {
                                 data-testid={it.testid}
                                 title={it.label}
                                 className={({ isActive }) =>
-                                    `flex items-center gap-2 px-2.5 xl:px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap shrink-0 ${
+                                    `flex items-center gap-2 px-2.5 2xl:px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap shrink-0 ${
                                         isActive
                                             ? "bg-white text-black"
                                             : "text-white/60 hover:text-white hover:bg-white/5"
@@ -65,8 +65,8 @@ export default function AppLayout({ children }) {
                                 }
                             >
                                 <it.icon className="w-4 h-4 shrink-0" />
-                                {/* Icon-only between md and xl (tight/laptop widths) — full label from xl up */}
-                                <span className="hidden xl:inline">{it.label}</span>
+                                {/* Icon-only up to 2xl (covers scaled/laptop widths) — full label only on genuinely wide screens */}
+                                <span className="hidden 2xl:inline">{it.label}</span>
                             </NavLink>
                         ))}
                     </nav>
@@ -76,15 +76,15 @@ export default function AppLayout({ children }) {
                             <button
                                 onClick={() => navigate("/pricing")}
                                 data-testid="nav-upgrade-btn"
-                                className="hidden md:inline-flex items-center gap-1.5 px-2.5 lg:px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#FF2A54] to-[#7c1531] hover:from-[#FF4D71] hover:to-[#7c1531] text-white text-xs font-black uppercase tracking-wider shadow-[0_0_20px_rgba(255,42,84,0.3)] whitespace-nowrap shrink-0"
+                                className="hidden md:inline-flex items-center gap-1.5 px-2.5 xl:px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#FF2A54] to-[#7c1531] hover:from-[#FF4D71] hover:to-[#7c1531] text-white text-xs font-black uppercase tracking-wider shadow-[0_0_20px_rgba(255,42,84,0.3)] whitespace-nowrap shrink-0"
                                 title="Fazer upgrade para Pro"
                             >
-                                <Crown className="w-3.5 h-3.5" /> Upgrade
+                                <Crown className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Upgrade</span>
                             </button>
                         )}
                         {user?.subscription_tier === "pro" && (
-                            <span data-testid="nav-pro-badge" className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-[#FF2A54]/20 border border-amber-400/40 text-amber-200 text-xs font-bold uppercase tracking-wider">
-                                <Crown className="w-3.5 h-3.5" /> Pro
+                            <span data-testid="nav-pro-badge" className="hidden md:inline-flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-[#FF2A54]/20 border border-amber-400/40 text-amber-200 text-xs font-bold uppercase tracking-wider whitespace-nowrap shrink-0">
+                                <Crown className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Pro</span>
                             </span>
                         )}
                         <button
@@ -109,7 +109,7 @@ export default function AppLayout({ children }) {
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center text-xs font-bold">
                                 {(user?.name || "?").charAt(0).toUpperCase()}
                             </div>
-                            <span className="hidden md:inline text-xs font-semibold text-white/80 max-w-[100px] truncate">
+                            <span className="hidden xl:inline text-xs font-semibold text-white/80 max-w-[100px] truncate">
                                 {user?.name || "Convidado"}
                             </span>
                         </button>
