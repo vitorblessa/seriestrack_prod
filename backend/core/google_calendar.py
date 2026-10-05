@@ -84,6 +84,15 @@ async def _get_access_token_for_user(user: dict) -> Optional[str]:
         return None
 
 
+async def get_access_token_for_user(user: dict) -> Optional[str]:
+    """Public entry point for callers that sync several series in one request
+    (e.g. _sync_all_series, run_daily_calendar_sync) — fetch ONE access token
+    up front and pass it into each sync_series() call, instead of each one
+    refreshing its own (which multiplies Google OAuth round-trips and can
+    push a multi-series sync past Render's request timeout)."""
+    return await _get_access_token_for_user(user)
+
+
 async def ensure_calendar(access_token: str, existing_calendar_id: Optional[str]) -> str:
     """Return the id of the user's 'SeriesTrack' secondary calendar, creating it
     if needed. Keeping a separate calendar (rather than writing into the user's
@@ -113,20 +122,21 @@ def _event_body(summary: str, description: str, date_str: str, end_date_str: str
 
 
 async def upsert_event(
-    user: dict, calendar_id: str, google_event_id: Optional[str],
+    access_token: str, calendar_id: str, google_event_id: Optional[str],
     summary: str, description: str, date_str: str, end_date_str: str, url: str,
 ) -> tuple[Optional[str], Optional[str], Optional[dict]]:
-    """Create or update one event. Returns (google_event_id, error_message, info) —
-    event_id is None if the user isn't connected / the call failed, in which
-    case error_message explains why (surfaced up through sync_series so
-    callers — and the person — can see WHY an episode silently didn't sync,
-    instead of it just quietly not showing up in Google Calendar). `info`
-    echoes back exactly what Google confirmed it stored (status, start date,
-    htmlLink, which calendarId) — lets us verify the event landed on the
-    right date/calendar instead of just trusting a 200 response."""
-    access_token = await _get_access_token_for_user(user)
-    if not access_token:
-        return None, "no valid Google access token (reconnect Calendar?)", None
+    """Create or update one event. Takes an already-refreshed access_token
+    (see sync_series/_sync_all_series — refresh ONCE per sync, not once per
+    event, which used to add 1-2 extra Google OAuth round-trips per episode
+    and could push a multi-series sync past Render's request timeout, 502ing
+    the whole sync). Returns (google_event_id, error_message, info) —
+    event_id is None if the call failed, in which case error_message
+    explains why (surfaced up through sync_series so callers — and the
+    person — can see WHY an episode silently didn't sync, instead of it just
+    quietly not showing up in Google Calendar). `info` echoes back exactly
+    what Google confirmed it stored (status, start date, htmlLink, which
+    calendarId) — lets us verify the event landed on the right date/calendar
+    instead of just trusting a 200 response."""
     hc = await _client()
     headers = {"Authorization": f"Bearer {access_token}"}
     body = _event_body(summary, description, date_str, end_date_str, url)
@@ -182,17 +192,31 @@ async def delete_event(user: dict, calendar_id: str, google_event_id: str):
         logger.warning(f"google calendar delete_event error: {e}")
 
 
-async def sync_series(user: dict, tmdb_id: int, series_name: str, show: dict) -> list[dict]:
+async def sync_series(user: dict, tmdb_id: int, series_name: str, show: dict, access_token: Optional[str] = None) -> list[dict]:
     """Push (create/update) the 1-2 events (most recent aired + next upcoming
     episode) for one series into the user's connected Google Calendar. Mirrors
     the pair the .ics feed already exposes. Best-effort: swallows all errors so
     a Calendar hiccup never breaks adding a series to the library — but
     returns a per-episode result list (ok/error) so callers can surface WHY
-    something didn't sync, instead of it just silently not appearing."""
+    something didn't sync, instead of it just silently not appearing.
+
+    Pass a pre-refreshed access_token when syncing multiple series in one
+    request (see _sync_all_series / run_daily_calendar_sync) — refreshing
+    once up front instead of once per series/episode avoids piling up Google
+    OAuth round-trips that can push a big sync past Render's request
+    timeout. If omitted, refreshes one token for just this single series
+    (fine for the add-to-library call site, which only syncs one show)."""
     results: list[dict] = []
     calendar_id = user.get("google_calendar_id")
     if not calendar_id or not user.get("google_calendar_refresh_token"):
         return results
+    if not access_token:
+        access_token = await _get_access_token_for_user(user)
+    if not access_token:
+        return [{
+            "series": series_name, "season": None, "episode": None, "air_date": None, "kind": None,
+            "ok": False, "error": "no valid Google access token (reconnect Calendar?)", "google": None,
+        }]
     from datetime import datetime, timedelta
 
     for ep, kind in [(show.get("next_episode_to_air"), "upcoming"), (show.get("last_episode_to_air"), "recent")]:
@@ -208,7 +232,7 @@ async def sync_series(user: dict, tmdb_id: int, series_name: str, show: dict) ->
         description = ep.get("overview") or ""
         url = f"https://www.themoviedb.org/tv/{tmdb_id}"
         google_event_id, error, info = await upsert_event(
-            user, calendar_id,
+            access_token, calendar_id,
             existing.get("google_event_id") if existing else None,
             summary, description,
             d.strftime("%Y-%m-%d"), (d + timedelta(days=1)).strftime("%Y-%m-%d"),

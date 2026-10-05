@@ -157,6 +157,12 @@ async def run_daily_calendar_sync() -> dict:
     total_series = 0
     for user in users:
         try:
+            # One token refresh per USER (not per series) — same reasoning as
+            # _sync_all_series in routes/calendar_routes.py.
+            access_token = await gcal.get_access_token_for_user(user)
+            if not access_token:
+                logger.warning(f"[cron] daily_calendar_sync: no valid token for user={user.get('_id')}, skipping")
+                continue
             items = await db.library.find(
                 {"user_id": str(user["_id"]), "status": {"$in": ["watching", "want"]}}
             ).to_list(500)
@@ -165,7 +171,7 @@ async def run_daily_calendar_sync() -> dict:
                     show = await tmdb_get_tv(it["tmdb_id"])
                     if not show:
                         continue
-                    await gcal.sync_series(user, it["tmdb_id"], it.get("name") or show.get("name") or "Série", show)
+                    await gcal.sync_series(user, it["tmdb_id"], it.get("name") or show.get("name") or "Série", show, access_token=access_token)
                     total_series += 1
                 except Exception as e:
                     logger.warning(f"[cron] daily_calendar_sync series={it.get('tmdb_id')} user={user.get('_id')} failed: {e}")

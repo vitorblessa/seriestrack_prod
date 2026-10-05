@@ -285,13 +285,19 @@ async def _sync_all_series(user: dict) -> tuple[int, list[dict]]:
     ).to_list(500)
     import asyncio
     shows = await asyncio.gather(*(tmdb_get_tv(it["tmdb_id"]) for it in items))
+    # One Google OAuth token refresh for the whole sync, not one per series —
+    # with enough series in the library, per-series refreshing added up to
+    # enough extra round-trips to push the request past Render's timeout.
+    access_token = await gcal.get_access_token_for_user(user)
+    if not access_token:
+        return 0, [{"series": None, "ok": False, "error": "no valid Google access token (reconnect Calendar?)", "google": None}]
     n = 0
     details: list[dict] = []
     for it, show in zip(items, shows):
         if not show:
             details.append({"series": it.get("name") or f"tmdb:{it['tmdb_id']}", "ok": False, "error": "falha ao buscar dados do TMDB"})
             continue
-        results = await gcal.sync_series(user, it["tmdb_id"], it.get("name") or show.get("name") or "Série", show)
+        results = await gcal.sync_series(user, it["tmdb_id"], it.get("name") or show.get("name") or "Série", show, access_token=access_token)
         details.extend(results)
         n += 1
     return n, details
