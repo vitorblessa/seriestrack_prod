@@ -48,22 +48,24 @@ export default function AppLayout({ children }) {
                         <span className="font-display font-black text-lg sm:text-xl tracking-tight truncate">SeriesTrack</span>
                     </Link>
 
-                    <nav className="hidden md:flex items-center gap-1 ml-4">
+                    <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 ml-2 lg:ml-4 min-w-0">
                         {navItems.map((it) => (
                             <NavLink
                                 key={it.to}
                                 to={it.to}
                                 data-testid={it.testid}
+                                title={it.label}
                                 className={({ isActive }) =>
-                                    `flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                                    `flex items-center gap-2 px-2.5 lg:px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap shrink-0 ${
                                         isActive
                                             ? "bg-white text-black"
                                             : "text-white/60 hover:text-white hover:bg-white/5"
                                     }`
                                 }
                             >
-                                <it.icon className="w-4 h-4" />
-                                {it.label}
+                                <it.icon className="w-4 h-4 shrink-0" />
+                                {/* Icon-only between md and lg (tight widths) — full label from lg up */}
+                                <span className="hidden lg:inline">{it.label}</span>
                             </NavLink>
                         ))}
                     </nav>
@@ -73,7 +75,7 @@ export default function AppLayout({ children }) {
                             <button
                                 onClick={() => navigate("/pricing")}
                                 data-testid="nav-upgrade-btn"
-                                className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#FF2A54] to-[#7c1531] hover:from-[#FF4D71] hover:to-[#7c1531] text-white text-xs font-black uppercase tracking-wider shadow-[0_0_20px_rgba(255,42,84,0.3)]"
+                                className="hidden md:inline-flex items-center gap-1.5 px-2.5 lg:px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#FF2A54] to-[#7c1531] hover:from-[#FF4D71] hover:to-[#7c1531] text-white text-xs font-black uppercase tracking-wider shadow-[0_0_20px_rgba(255,42,84,0.3)] whitespace-nowrap shrink-0"
                                 title="Fazer upgrade para Pro"
                             >
                                 <Crown className="w-3.5 h-3.5" /> Upgrade
