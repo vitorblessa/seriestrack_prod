@@ -45,11 +45,11 @@ export default function AppLayout({ children }) {
                                 <Tv className="w-5 h-5 text-white" strokeWidth={2.5} />
                             </div>
                         </div>
-                        {/* Icon-only between md and lg (tight desktop widths) — full wordmark from lg up, same as nav labels */}
-                        <span className="hidden lg:inline font-display font-black text-lg sm:text-xl tracking-tight whitespace-nowrap">SeriesTrack</span>
+                        {/* Icon-only between md and xl (tight/laptop desktop widths) — full wordmark from xl up, same as nav labels */}
+                        <span className="hidden xl:inline font-display font-black text-lg sm:text-xl tracking-tight whitespace-nowrap">SeriesTrack</span>
                     </Link>
 
-                    <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 ml-2 lg:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-hide">
+                    <nav className="hidden md:flex items-center gap-0.5 xl:gap-1 ml-2 xl:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-hide">
                         {navItems.map((it) => (
                             <NavLink
                                 key={it.to}
@@ -57,7 +57,7 @@ export default function AppLayout({ children }) {
                                 data-testid={it.testid}
                                 title={it.label}
                                 className={({ isActive }) =>
-                                    `flex items-center gap-2 px-2.5 lg:px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap shrink-0 ${
+                                    `flex items-center gap-2 px-2.5 xl:px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap shrink-0 ${
                                         isActive
                                             ? "bg-white text-black"
                                             : "text-white/60 hover:text-white hover:bg-white/5"
@@ -65,8 +65,8 @@ export default function AppLayout({ children }) {
                                 }
                             >
                                 <it.icon className="w-4 h-4 shrink-0" />
-                                {/* Icon-only between md and lg (tight widths) — full label from lg up */}
-                                <span className="hidden lg:inline">{it.label}</span>
+                                {/* Icon-only between md and xl (tight/laptop widths) — full label from xl up */}
+                                <span className="hidden xl:inline">{it.label}</span>
                             </NavLink>
                         ))}
                     </nav>
