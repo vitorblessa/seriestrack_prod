@@ -39,14 +39,22 @@ export default function AppLayout({ children }) {
                 style={{ paddingTop: "env(safe-area-inset-top)" }}
             >
                 <div className="max-w-[1400px] mx-auto px-3 sm:px-6 md:px-10 py-3 sm:py-4 flex items-center gap-3 md:gap-8">
-                    <Link to="/dashboard" className="flex items-center gap-2 group shrink-0" data-testid="brand-logo" title="SeriesTrack">
+                    <Link to="/dashboard" className="group/nav flex items-center shrink-0" data-testid="brand-logo" title="SeriesTrack">
                         <div className="relative shrink-0">
                             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_0_20px_rgba(255,42,84,0.4)]">
                                 <Tv className="w-5 h-5 text-white" strokeWidth={2.5} />
                             </div>
                         </div>
-                        {/* Icon-only up to 2xl (covers scaled/laptop desktop widths) — full wordmark only on genuinely wide screens */}
-                        <span className="hidden 2xl:inline font-display font-black text-lg sm:text-xl tracking-tight whitespace-nowrap">SeriesTrack</span>
+                        {/* Icon-only up to 2xl — wordmark always shown from 2xl up, and slides out on hover/focus below that */}
+                        <span
+                            className="max-w-0 2xl:max-w-[160px] opacity-0 2xl:opacity-100 ml-0 2xl:ml-2
+                                overflow-hidden whitespace-nowrap transition-all duration-200 ease-out
+                                group-hover/nav:max-w-[160px] group-hover/nav:opacity-100 group-hover/nav:ml-2
+                                group-focus-visible/nav:max-w-[160px] group-focus-visible/nav:opacity-100 group-focus-visible/nav:ml-2
+                                font-display font-black text-lg sm:text-xl tracking-tight"
+                        >
+                            SeriesTrack
+                        </span>
                     </Link>
 
                     <nav className="hidden md:flex items-center gap-0.5 2xl:gap-1 ml-2 2xl:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-hide">
@@ -57,7 +65,7 @@ export default function AppLayout({ children }) {
                                 data-testid={it.testid}
                                 title={it.label}
                                 className={({ isActive }) =>
-                                    `flex items-center gap-2 px-2.5 2xl:px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap shrink-0 ${
+                                    `group/nav flex items-center px-2.5 2xl:px-4 py-2 rounded-full text-sm font-semibold transition-all shrink-0 ${
                                         isActive
                                             ? "bg-white text-black"
                                             : "text-white/60 hover:text-white hover:bg-white/5"
@@ -65,8 +73,15 @@ export default function AppLayout({ children }) {
                                 }
                             >
                                 <it.icon className="w-4 h-4 shrink-0" />
-                                {/* Icon-only up to 2xl (covers scaled/laptop widths) — full label only on genuinely wide screens */}
-                                <span className="hidden 2xl:inline">{it.label}</span>
+                                {/* Icon-only up to 2xl — label always shown from 2xl up, and slides out on hover/focus below that */}
+                                <span
+                                    className="max-w-0 2xl:max-w-[120px] opacity-0 2xl:opacity-100 ml-0 2xl:ml-2
+                                        overflow-hidden whitespace-nowrap transition-all duration-200 ease-out
+                                        group-hover/nav:max-w-[120px] group-hover/nav:opacity-100 group-hover/nav:ml-2
+                                        group-focus-visible/nav:max-w-[120px] group-focus-visible/nav:opacity-100 group-focus-visible/nav:ml-2"
+                                >
+                                    {it.label}
+                                </span>
                             </NavLink>
                         ))}
                     </nav>
