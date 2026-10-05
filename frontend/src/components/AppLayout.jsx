@@ -39,7 +39,7 @@ export default function AppLayout({ children }) {
                 style={{ paddingTop: "env(safe-area-inset-top)" }}
             >
                 <div className="max-w-[1400px] mx-auto px-3 sm:px-6 md:px-10 py-3 sm:py-4 flex items-center gap-3 md:gap-8">
-                    <Link to="/dashboard" className="flex items-center gap-2 group shrink-0" data-testid="brand-logo">
+                    <Link to="/dashboard" className="flex items-center gap-2 group shrink-0" data-testid="brand-logo" title="SeriesTrack">
                         <div className="relative shrink-0">
                             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_0_20px_rgba(255,42,84,0.4)]">
                                 <Tv className="w-5 h-5 text-white" strokeWidth={2.5} />
