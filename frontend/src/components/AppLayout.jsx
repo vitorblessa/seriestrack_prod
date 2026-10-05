@@ -48,7 +48,7 @@ export default function AppLayout({ children }) {
                         <span className="font-display font-black text-lg sm:text-xl tracking-tight whitespace-nowrap">SeriesTrack</span>
                     </Link>
 
-                    <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 ml-2 lg:ml-4 min-w-0">
+                    <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 ml-2 lg:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-hide">
                         {navItems.map((it) => (
                             <NavLink
                                 key={it.to}
