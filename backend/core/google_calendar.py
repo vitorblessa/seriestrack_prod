@@ -96,7 +96,17 @@ async def get_access_token_for_user(user: dict) -> Optional[str]:
 async def ensure_calendar(access_token: str, existing_calendar_id: Optional[str]) -> str:
     """Return the id of the user's 'SeriesTrack' secondary calendar, creating it
     if needed. Keeping a separate calendar (rather than writing into the user's
-    primary one) means they can hide/delete it independently."""
+    primary one) means they can hide/delete it independently.
+
+    Before creating a new one, checks the user's calendarList for an existing
+    calendar named CALENDAR_NAME. Without this, disconnecting and reconnecting
+    Calendar (which clears the stored calendar_id) would always mint a BRAND
+    NEW secondary calendar — leaving the old one as an invisible "orphan" that
+    the person never subscribed to in their Google Calendar UI, while new
+    events kept going to it. (Observed directly: events synced successfully
+    per the Google API, but never showed up because they landed on a second,
+    unchecked "SeriesTrack" calendar instead of the one visible in the
+    sidebar.)"""
     hc = await _client()
     headers = {"Authorization": f"Bearer {access_token}"}
     if existing_calendar_id:
@@ -104,6 +114,18 @@ async def ensure_calendar(access_token: str, existing_calendar_id: Optional[str]
         if r.status_code == 200:
             return existing_calendar_id
         # Fall through and (re)create if it 404'd (user deleted it on Google's side)
+
+    # No stored id (or it's stale) — look for a pre-existing "SeriesTrack"
+    # calendar we own before minting a duplicate.
+    r = await hc.get(
+        f"{CALENDAR_API}/users/me/calendarList",
+        headers=headers, params={"minAccessRole": "owner"},
+    )
+    if r.status_code == 200:
+        for entry in r.json().get("items", []):
+            if entry.get("summary") == CALENDAR_NAME and entry.get("accessRole") == "owner":
+                return entry["id"]
+
     r = await hc.post(f"{CALENDAR_API}/calendars", headers=headers, json={"summary": CALENDAR_NAME})
     if r.status_code not in (200, 201):
         logger.warning(f"google calendar create failed: {r.status_code} {r.text[:300]}")
