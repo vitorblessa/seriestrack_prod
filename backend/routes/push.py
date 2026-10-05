@@ -176,13 +176,16 @@ async def trigger_cron(user: dict = Depends(get_current_user)):
 async def cron_ping(x_cron_secret: Optional[str] = Header(None, alias="X-Cron-Secret")):
     """Unauthenticated (shared-secret-guarded) trigger meant to be called by
     the external keepalive pinger every ~10 minutes alongside its login
-    cycle. Safe to call as often as you like — run_daily_push_pass_if_due()
-    only actually executes the sweep once per UTC day, so this is a no-op
-    on every call except (at most) one per day. This is the fix for push
-    notifications silently not going out on days Render's free tier happened
-    to be asleep right at the scheduled 12:00 UTC trigger.
+    cycle. Safe to call as often as you like — both _if_due() sweeps below
+    only actually execute once per UTC day each, so this is a no-op on every
+    call except (at most) once per day per sweep. Safety net for both the
+    daily push notifications AND the daily Google Calendar re-sync, in case
+    Render's free tier happened to be asleep right at their scheduled times
+    (12:00 / 12:30 UTC).
     """
     if not CRON_SECRET or x_cron_secret != CRON_SECRET:
         raise HTTPException(403, "forbidden")
-    from core.cron import run_daily_push_pass_if_due
-    return await run_daily_push_pass_if_due()
+    from core.cron import run_daily_push_pass_if_due, run_daily_calendar_sync_if_due
+    push_result = await run_daily_push_pass_if_due()
+    calendar_result = await run_daily_calendar_sync_if_due()
+    return {"push": push_result, "calendar_sync": calendar_result}
