@@ -263,7 +263,7 @@ async def google_calendar_connect(payload: GoogleCalendarConnectIn, user: dict =
     )
 
     user = await db.users.find_one({"_id": user["_id"]})
-    synced = await _sync_all_series(user)
+    synced, _details = await _sync_all_series(user)
     return {"ok": True, "calendar_id": calendar_id, "synced": synced}
 
 
@@ -279,24 +279,28 @@ async def google_calendar_disconnect(user: dict = Depends(get_current_user)):
     return {"ok": True}
 
 
-async def _sync_all_series(user: dict) -> int:
+async def _sync_all_series(user: dict) -> tuple[int, list[dict]]:
     items = await db.library.find(
         {"user_id": str(user["_id"]), "status": {"$in": ["watching", "want"]}}
     ).to_list(500)
     import asyncio
     shows = await asyncio.gather(*(tmdb_get_tv(it["tmdb_id"]) for it in items))
     n = 0
+    details: list[dict] = []
     for it, show in zip(items, shows):
         if not show:
+            details.append({"series": it.get("name") or f"tmdb:{it['tmdb_id']}", "ok": False, "error": "falha ao buscar dados do TMDB"})
             continue
-        await gcal.sync_series(user, it["tmdb_id"], it.get("name") or show.get("name") or "Série", show)
+        results = await gcal.sync_series(user, it["tmdb_id"], it.get("name") or show.get("name") or "Série", show)
+        details.extend(results)
         n += 1
-    return n
+    return n, details
 
 
 @router.post("/calendar/google/sync")
 async def google_calendar_sync(user: dict = Depends(get_current_user)):
     if not user.get("google_calendar_refresh_token"):
         raise HTTPException(400, "Conecte o Google Calendar primeiro.")
-    synced = await _sync_all_series(user)
-    return {"ok": True, "synced": synced}
+    synced, details = await _sync_all_series(user)
+    failed = [d for d in details if not d.get("ok")]
+    return {"ok": True, "synced": synced, "events": details, "failed_count": len(failed)}

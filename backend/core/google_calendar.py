@@ -115,13 +115,15 @@ def _event_body(summary: str, description: str, date_str: str, end_date_str: str
 async def upsert_event(
     user: dict, calendar_id: str, google_event_id: Optional[str],
     summary: str, description: str, date_str: str, end_date_str: str, url: str,
-) -> Optional[str]:
-    """Create or update one event. Returns the Google event id (store it so we
-    can update/delete this exact event later), or None if the user isn't
-    connected / the call failed (best-effort — never raises)."""
+) -> tuple[Optional[str], Optional[str]]:
+    """Create or update one event. Returns (google_event_id, error_message) —
+    event_id is None if the user isn't connected / the call failed, in which
+    case error_message explains why (surfaced up through sync_series so
+    callers — and the person — can see WHY an episode silently didn't sync,
+    instead of it just quietly not showing up in Google Calendar)."""
     access_token = await _get_access_token_for_user(user)
     if not access_token:
-        return None
+        return None, "no valid Google access token (reconnect Calendar?)"
     hc = await _client()
     headers = {"Authorization": f"Bearer {access_token}"}
     body = _event_body(summary, description, date_str, end_date_str, url)
@@ -132,19 +134,22 @@ async def upsert_event(
                 headers=headers, json=body,
             )
             if r.status_code == 200:
-                return r.json()["id"]
+                return r.json()["id"], None
             if r.status_code not in (404, 410):
+                err = f"update failed: {r.status_code} {r.text[:300]}"
                 logger.warning(f"google calendar event update failed: {r.status_code} {r.text[:300]}")
-                return google_event_id
+                return google_event_id, err
             # 404/410 — the event was deleted on Google's side; fall through and recreate
         r = await hc.post(f"{CALENDAR_API}/calendars/{calendar_id}/events", headers=headers, json=body)
         if r.status_code in (200, 201):
-            return r.json()["id"]
+            return r.json()["id"], None
+        err = f"create failed: {r.status_code} {r.text[:300]}"
         logger.warning(f"google calendar event create failed: {r.status_code} {r.text[:300]}")
-        return None
+        return None, err
     except Exception as e:
+        err = f"{type(e).__name__}: {e}"
         logger.warning(f"google calendar upsert_event error: {e}")
-        return None
+        return None, err
 
 
 async def delete_event(user: dict, calendar_id: str, google_event_id: str):
@@ -162,14 +167,17 @@ async def delete_event(user: dict, calendar_id: str, google_event_id: str):
         logger.warning(f"google calendar delete_event error: {e}")
 
 
-async def sync_series(user: dict, tmdb_id: int, series_name: str, show: dict):
+async def sync_series(user: dict, tmdb_id: int, series_name: str, show: dict) -> list[dict]:
     """Push (create/update) the 1-2 events (most recent aired + next upcoming
     episode) for one series into the user's connected Google Calendar. Mirrors
     the pair the .ics feed already exposes. Best-effort: swallows all errors so
-    a Calendar hiccup never breaks adding a series to the library."""
+    a Calendar hiccup never breaks adding a series to the library — but
+    returns a per-episode result list (ok/error) so callers can surface WHY
+    something didn't sync, instead of it just silently not appearing."""
+    results: list[dict] = []
     calendar_id = user.get("google_calendar_id")
     if not calendar_id or not user.get("google_calendar_refresh_token"):
-        return
+        return results
     from datetime import datetime, timedelta
 
     for ep, kind in [(show.get("next_episode_to_air"), "upcoming"), (show.get("last_episode_to_air"), "recent")]:
@@ -184,7 +192,7 @@ async def sync_series(user: dict, tmdb_id: int, series_name: str, show: dict):
         summary = f"{series_name} — T{ep.get('season_number')}·E{ep.get('episode_number')}: {ep.get('name') or ''}".strip(": ")
         description = ep.get("overview") or ""
         url = f"https://www.themoviedb.org/tv/{tmdb_id}"
-        google_event_id = await upsert_event(
+        google_event_id, error = await upsert_event(
             user, calendar_id,
             existing.get("google_event_id") if existing else None,
             summary, description,
@@ -195,6 +203,12 @@ async def sync_series(user: dict, tmdb_id: int, series_name: str, show: dict):
             await db.calendar_events.update_one(
                 key, {"$set": {**key, "google_event_id": google_event_id, "kind": kind}}, upsert=True,
             )
+        results.append({
+            "series": series_name, "season": ep.get("season_number"), "episode": ep.get("episode_number"),
+            "air_date": ep.get("air_date"), "kind": kind,
+            "ok": bool(google_event_id), "error": error,
+        })
+    return results
 
 
 async def remove_series(user: dict, tmdb_id: int):
