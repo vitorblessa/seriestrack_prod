@@ -115,18 +115,31 @@ def _event_body(summary: str, description: str, date_str: str, end_date_str: str
 async def upsert_event(
     user: dict, calendar_id: str, google_event_id: Optional[str],
     summary: str, description: str, date_str: str, end_date_str: str, url: str,
-) -> tuple[Optional[str], Optional[str]]:
-    """Create or update one event. Returns (google_event_id, error_message) —
+) -> tuple[Optional[str], Optional[str], Optional[dict]]:
+    """Create or update one event. Returns (google_event_id, error_message, info) —
     event_id is None if the user isn't connected / the call failed, in which
     case error_message explains why (surfaced up through sync_series so
     callers — and the person — can see WHY an episode silently didn't sync,
-    instead of it just quietly not showing up in Google Calendar)."""
+    instead of it just quietly not showing up in Google Calendar). `info`
+    echoes back exactly what Google confirmed it stored (status, start date,
+    htmlLink, which calendarId) — lets us verify the event landed on the
+    right date/calendar instead of just trusting a 200 response."""
     access_token = await _get_access_token_for_user(user)
     if not access_token:
-        return None, "no valid Google access token (reconnect Calendar?)"
+        return None, "no valid Google access token (reconnect Calendar?)", None
     hc = await _client()
     headers = {"Authorization": f"Bearer {access_token}"}
     body = _event_body(summary, description, date_str, end_date_str, url)
+
+    def _info(data: dict) -> dict:
+        return {
+            "calendar_id": calendar_id,
+            "status": data.get("status"),
+            "start": (data.get("start") or {}).get("date"),
+            "end": (data.get("end") or {}).get("date"),
+            "htmlLink": data.get("htmlLink"),
+        }
+
     try:
         if google_event_id:
             r = await hc.patch(
@@ -134,22 +147,24 @@ async def upsert_event(
                 headers=headers, json=body,
             )
             if r.status_code == 200:
-                return r.json()["id"], None
+                data = r.json()
+                return data["id"], None, _info(data)
             if r.status_code not in (404, 410):
                 err = f"update failed: {r.status_code} {r.text[:300]}"
                 logger.warning(f"google calendar event update failed: {r.status_code} {r.text[:300]}")
-                return google_event_id, err
+                return google_event_id, err, None
             # 404/410 — the event was deleted on Google's side; fall through and recreate
         r = await hc.post(f"{CALENDAR_API}/calendars/{calendar_id}/events", headers=headers, json=body)
         if r.status_code in (200, 201):
-            return r.json()["id"], None
+            data = r.json()
+            return data["id"], None, _info(data)
         err = f"create failed: {r.status_code} {r.text[:300]}"
         logger.warning(f"google calendar event create failed: {r.status_code} {r.text[:300]}")
-        return None, err
+        return None, err, None
     except Exception as e:
         err = f"{type(e).__name__}: {e}"
         logger.warning(f"google calendar upsert_event error: {e}")
-        return None, err
+        return None, err, None
 
 
 async def delete_event(user: dict, calendar_id: str, google_event_id: str):
@@ -192,7 +207,7 @@ async def sync_series(user: dict, tmdb_id: int, series_name: str, show: dict) ->
         summary = f"{series_name} — T{ep.get('season_number')}·E{ep.get('episode_number')}: {ep.get('name') or ''}".strip(": ")
         description = ep.get("overview") or ""
         url = f"https://www.themoviedb.org/tv/{tmdb_id}"
-        google_event_id, error = await upsert_event(
+        google_event_id, error, info = await upsert_event(
             user, calendar_id,
             existing.get("google_event_id") if existing else None,
             summary, description,
@@ -207,6 +222,7 @@ async def sync_series(user: dict, tmdb_id: int, series_name: str, show: dict) ->
             "series": series_name, "season": ep.get("season_number"), "episode": ep.get("episode_number"),
             "air_date": ep.get("air_date"), "kind": kind,
             "ok": bool(google_event_id), "error": error,
+            "google": info,
         })
     return results
 
