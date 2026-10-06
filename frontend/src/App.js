@@ -11,6 +11,8 @@ import { installNativeBridge } from "./lib/native";
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Search from "./pages/Search";
 import SeriesDetail from "./pages/SeriesDetail";
@@ -68,6 +70,8 @@ export default function App() {
                             <Route path="/" element={<Splash />} />
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
+                            <Route path="/forgot-password" element={<ForgotPassword />} />
+                            <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                             <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
                             <Route path="/series/:id" element={<ProtectedRoute><SeriesDetail /></ProtectedRoute>} />

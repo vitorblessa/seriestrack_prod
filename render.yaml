@@ -57,3 +57,9 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: "SeriesTrack <noreply@series-track.com>"
+      - key: FRONTEND_URL
+        value: https://www.series-track.com

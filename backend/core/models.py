@@ -14,6 +14,15 @@ class LoginIn(BaseModel):
     password: str
 
 
+class ForgotPasswordIn(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordIn(BaseModel):
+    token: str
+    password: str = Field(min_length=6, max_length=128)
+
+
 class LibraryUpsertIn(BaseModel):
     tmdb_id: int
     status: str = Field(pattern="^(watching|paused|finished|want)$")

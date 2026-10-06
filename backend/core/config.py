@@ -91,6 +91,16 @@ EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')  # legacy, no longer u
 GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.8-flash')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
+# Transactional email (password reset). Uses Resend's HTTP API — see
+# core/email.py. Soft-fails (logs, doesn't raise) if RESEND_API_KEY is unset,
+# so local dev without it keeps working.
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+EMAIL_FROM = os.environ.get('EMAIL_FROM', 'SeriesTrack <onboarding@resend.dev>')
+
+# Base URL of the deployed frontend — used to build the link inside the
+# password-reset email. No trailing slash.
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://www.series-track.com').rstrip('/')
+
 # Shared secret that lets the external keepalive pinger opportunistically
 # trigger the daily push sweep (POST /push/cron/ping) without a user login.
 # Safety net for Render free-tier: if the process happened to be asleep or

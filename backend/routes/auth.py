@@ -1,14 +1,17 @@
-"""Auth: register / login / logout / me / Google OAuth."""
-from datetime import datetime, timezone
+"""Auth: register / login / logout / me / Google OAuth / forgot & reset password."""
+import hashlib
+import secrets
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Response, Depends
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
 from core import (
     db, logger, hash_password, verify_password, create_token,
     set_auth_cookies, clear_auth_cookies, serialize_user, get_current_user,
-    ensure_owner_pro, GOOGLE_CLIENT_ID,
+    ensure_owner_pro, GOOGLE_CLIENT_ID, FRONTEND_URL,
 )
-from core.models import RegisterIn, LoginIn, GoogleCallbackIn
+from core.email import send_email, password_reset_html
+from core.models import RegisterIn, LoginIn, GoogleCallbackIn, ForgotPasswordIn, ResetPasswordIn
 
 router = APIRouter()
 
@@ -51,6 +54,63 @@ async def login(payload: LoginIn, response: Response):
     refresh = create_token(user_id, email, "refresh")
     set_auth_cookies(response, access, refresh)
     return {"user": serialize_user(user), "access_token": access}
+
+
+@router.post("/auth/forgot_password")
+async def forgot_password(payload: ForgotPasswordIn):
+    """Always returns ok:true regardless of whether the email is registered —
+    never leak account existence. If a matching account with a password
+    (i.e. not Google-only) exists, email a reset link valid for 1 hour."""
+    email = payload.email.lower().strip()
+    user = await db.users.find_one({"email": email})
+    if user and user.get("password_hash"):
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {
+                "reset_token_hash": token_hash,
+                "reset_token_expires": datetime.now(timezone.utc) + timedelta(hours=1),
+            }},
+        )
+        reset_link = f"{FRONTEND_URL}/reset-password?token={raw_token}"
+        sent = await send_email(email, "Redefinir sua senha — SeriesTrack", password_reset_html(reset_link))
+        if not sent:
+            logger.warning(f"forgot_password: email send failed/skipped for {email}")
+    else:
+        logger.info(f"forgot_password: no password-based account for {email} (not found or Google-only)")
+    return {"ok": True}
+
+
+@router.post("/auth/reset_password")
+async def reset_password(payload: ResetPasswordIn):
+    token_hash = hashlib.sha256(payload.token.encode()).hexdigest()
+    user = await db.users.find_one({"reset_token_hash": token_hash})
+    if not user:
+        raise HTTPException(400, "Link inválido ou já utilizado")
+
+    expires = user.get("reset_token_expires")
+    expired = True
+    if expires:
+        try:
+            exp_dt = expires if isinstance(expires, datetime) else datetime.fromisoformat(expires)
+            if exp_dt.tzinfo is None:
+                exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+            expired = exp_dt <= datetime.now(timezone.utc)
+        except Exception:
+            expired = True
+    if expired:
+        raise HTTPException(400, "Link expirado — solicite um novo")
+
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {"password_hash": hash_password(payload.password)},
+            "$unset": {"reset_token_hash": "", "reset_token_expires": ""},
+        },
+    )
+    logger.info(f"reset_password: password changed for user_id={user['_id']}")
+    return {"ok": True}
 
 
 @router.post("/auth/logout")
