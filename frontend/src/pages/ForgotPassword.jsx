@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import api, { formatApiError } from "../lib/api";
-import { Tv, Mail, Loader2, CheckCircle2 } from "lucide-react";
+import { Tv, Mail, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState("");
@@ -44,6 +44,19 @@ export default function ForgotPassword() {
                             <span className="text-white/80 font-semibold">{email}</span>, enviamos um link para
                             redefinir a senha. Ele expira em 1 hora.
                         </p>
+
+                        <div className="mt-6 flex gap-3 px-4 py-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-left">
+                            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                            <p className="text-amber-200/90 text-sm leading-relaxed">
+                                Não encontrou na caixa de entrada? Confira a pasta de{" "}
+                                <span className="font-semibold">spam / lixo eletrônico</span>. Se estiver lá,
+                                marque o e-mail como <span className="font-semibold">"não é spam"</span> ou
+                                adicione <span className="font-semibold">noreply@series-track.com</span> aos
+                                remetentes confiáveis — assim os próximos avisos do SeriesTrack chegam direto
+                                na sua caixa de entrada.
+                            </p>
+                        </div>
+
                         <Link to="/login" className="inline-block mt-8 text-[#FF2A54] hover:text-[#FF4D71] font-semibold">
                             Voltar para o login
                         </Link>
