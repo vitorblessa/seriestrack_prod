@@ -45,9 +45,10 @@ export default function AppLayout({ children }) {
                                 <Tv className="w-5 h-5 text-white" strokeWidth={2.5} />
                             </div>
                         </div>
-                        {/* Icon-only up to 2xl — wordmark always shown from 2xl up, and slides out on hover/focus below that */}
+                        {/* Always visible on mobile (no nav bar to compete with); icon-only from md up to 2xl
+                            to make room for the nav links, wordmark back from 2xl up, and slides out on hover/focus in between */}
                         <span
-                            className="max-w-0 2xl:max-w-[160px] opacity-0 2xl:opacity-100 ml-0 2xl:ml-2
+                            className="max-w-[160px] opacity-100 ml-2 md:max-w-0 md:opacity-0 md:ml-0 2xl:max-w-[160px] 2xl:opacity-100 2xl:ml-2
                                 overflow-hidden whitespace-nowrap transition-all duration-200 ease-out
                                 group-hover/nav:max-w-[160px] group-hover/nav:opacity-100 group-hover/nav:ml-2
                                 group-focus-visible/nav:max-w-[160px] group-focus-visible/nav:opacity-100 group-focus-visible/nav:ml-2
