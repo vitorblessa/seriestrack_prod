@@ -1,0 +1,59 @@
+name: MongoDB Backup
+
+# Daily snapshot of the Atlas database via mongodump, stored as a workflow
+# artifact. MongoDB Atlas's M0 (free) tier has no native backup/snapshot
+# feature at all (Cloud Backup only starts at M10), so this workflow is
+# the safety net for that tier. It runs on GitHub's own runners, which
+# have full outbound network access to Atlas — unlike some sandboxes.
+#
+# Trigger: dispatched daily by cron-job.org via the GitHub API (POST
+# .../actions/workflows/<this-file>.yml/dispatches, body {"ref":"main"}),
+# the same pattern already used by keepalive.yml — GitHub's own `schedule`
+# trigger was dropped there for delaying/skipping runs, so we reuse the
+# known-reliable path here too. Can also be run manually from the Actions
+# tab at any time.
+#
+# Required GitHub secret (Settings -> Secrets and variables -> Actions):
+#
+#   MONGO_URL   The same Atlas SRV connection string used by the backend
+#               (mongodb+srv://user:pass@cluster.../), with a user that has
+#               at least read access to the database.
+#
+# To restore a downloaded backup against a (possibly empty/new) cluster:
+#   mongorestore --uri="$MONGO_URL" --gzip --archive=seriestrack-<timestamp>.gz --drop
+#
+# Backups are kept as workflow artifacts for 90 days (GitHub's own
+# retention limit for a private repo on most plans) — download them from
+# Actions -> this workflow -> a run -> Artifacts before they expire if you
+# need a longer-lived copy.
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: mongodb-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Dump database (via the official mongo:7 image, includes mongodump)
+        env:
+          MONGO_URL: ${{ secrets.MONGO_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p backup
+          STAMP=$(date -u +%Y-%m-%dT%H-%M-%SZ)
+          docker run --rm -v "$PWD/backup:/backup" mongo:7 \
+            mongodump --uri="$MONGO_URL" --gzip --archive="/backup/seriestrack-$STAMP.gz"
+          ls -lh backup/
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mongodb-backup-${{ github.run_id }}
+          path: backup/*.gz
+          retention-days: 90
+          if-no-files-found: error
