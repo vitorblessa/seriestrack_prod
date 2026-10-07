@@ -2,7 +2,7 @@
 import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, HTTPException, Response, Depends
+from fastapi import APIRouter, HTTPException, Request, Response, Depends
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
 from core import (
@@ -11,13 +11,15 @@ from core import (
     ensure_owner_pro, GOOGLE_CLIENT_ID, FRONTEND_URL,
 )
 from core.email import send_email, password_reset_html
+from core.limiter import limiter
 from core.models import RegisterIn, LoginIn, GoogleCallbackIn, ForgotPasswordIn, ResetPasswordIn
 
 router = APIRouter()
 
 
 @router.post("/auth/register")
-async def register(payload: RegisterIn, response: Response):
+@limiter.limit("5/minute")
+async def register(request: Request, payload: RegisterIn, response: Response):
     email = payload.email.lower().strip()
     if await db.users.find_one({"email": email}):
         raise HTTPException(400, "Email already registered")
@@ -41,7 +43,8 @@ async def register(payload: RegisterIn, response: Response):
 
 
 @router.post("/auth/login")
-async def login(payload: LoginIn, response: Response):
+@limiter.limit("10/minute")
+async def login(request: Request, payload: LoginIn, response: Response):
     email = payload.email.lower().strip()
     user = await db.users.find_one({"email": email})
     if not user or not verify_password(payload.password, user["password_hash"]):
@@ -57,7 +60,8 @@ async def login(payload: LoginIn, response: Response):
 
 
 @router.post("/auth/forgot_password")
-async def forgot_password(payload: ForgotPasswordIn):
+@limiter.limit("3/minute")
+async def forgot_password(request: Request, payload: ForgotPasswordIn):
     """Always returns ok:true regardless of whether the email is registered —
     never leak account existence. If a matching account with a password
     (i.e. not Google-only) exists, email a reset link valid for 1 hour."""
@@ -83,7 +87,8 @@ async def forgot_password(payload: ForgotPasswordIn):
 
 
 @router.post("/auth/reset_password")
-async def reset_password(payload: ResetPasswordIn):
+@limiter.limit("5/minute")
+async def reset_password(request: Request, payload: ResetPasswordIn):
     token_hash = hashlib.sha256(payload.token.encode()).hexdigest()
     user = await db.users.find_one({"reset_token_hash": token_hash})
     if not user:

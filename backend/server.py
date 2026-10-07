@@ -3,15 +3,46 @@ All route definitions live in /app/backend/routes/*.py and shared infra in /app/
 """
 import os
 from datetime import datetime, timezone, timedelta
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
-from core import db, logger, hash_password, close_tmdb
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+from core import db, logger, hash_password, close_tmdb, SENTRY_DSN, SENTRY_AVAILABLE
 from core.cron import start_scheduler, stop_scheduler, run_daily_push_pass
+from core.limiter import limiter
 from routes import api_router
+
+# Error monitoring — must run before the FastAPI app is created so Sentry's
+# Starlette/FastAPI auto-instrumentation picks up the app at init time.
+if SENTRY_AVAILABLE:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=os.environ.get("APP_ENV", "development"),
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+    )
+    logger.info("[sentry] error monitoring enabled")
+else:
+    logger.info("[sentry] SENTRY_DSN not set — error monitoring disabled")
 
 app = FastAPI(title="SeriesTrack API")
 app.include_router(api_router)
+
+# Rate limiting — protects auth endpoints (login/register/forgot-password) from
+# brute-force and spam. See core/limiter.py; per-route limits live on each route.
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(status_code=429, content={"detail": "Muitas tentativas. Aguarde um instante antes de tentar novamente."})
+
+
+app.add_middleware(SlowAPIMiddleware)
 
 # CORS: comma-separated allowlist via env. Default "*" for preview/dev only.
 # Production MUST set CORS_ORIGINS to an explicit domain list.

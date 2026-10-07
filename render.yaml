@@ -63,3 +63,5 @@ services:
         value: "SeriesTrack <noreply@series-track.com>"
       - key: FRONTEND_URL
         value: https://www.series-track.com
+      - key: SENTRY_DSN
+        sync: false

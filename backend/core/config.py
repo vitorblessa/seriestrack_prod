@@ -32,6 +32,12 @@ except Exception:
     _GENAI_SDK_AVAILABLE = False
 LLM_AVAILABLE = _GENAI_SDK_AVAILABLE and bool(os.environ.get('GEMINI_API_KEY'))
 
+try:
+    import sentry_sdk  # noqa: F401
+    _SENTRY_SDK_AVAILABLE = True
+except Exception:
+    _SENTRY_SDK_AVAILABLE = False
+
 # JWT
 JWT_SECRET = os.environ['JWT_SECRET']
 JWT_ALGO = "HS256"
@@ -100,6 +106,11 @@ EMAIL_FROM = os.environ.get('EMAIL_FROM', 'SeriesTrack <onboarding@resend.dev>')
 # Base URL of the deployed frontend — used to build the link inside the
 # password-reset email. No trailing slash.
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://www.series-track.com').rstrip('/')
+
+# Error monitoring (Sentry). Soft — disabled unless both the SDK is installed
+# and a DSN is set, so local dev / forks without a Sentry project keep working.
+SENTRY_DSN = os.environ.get('SENTRY_DSN', '')
+SENTRY_AVAILABLE = _SENTRY_SDK_AVAILABLE and bool(SENTRY_DSN)
 
 # Shared secret that lets the external keepalive pinger opportunistically
 # trigger the daily push sweep (POST /push/cron/ping) without a user login.
