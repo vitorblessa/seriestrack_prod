@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth";
 import api from "../lib/api";
 import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv, Settings as SettingsIcon, Crown, Sparkles, BarChart3, Award } from "lucide-react";
+import EmailVerifyBanner from "./EmailVerifyBanner";
 
 const navItems = [
     { to: "/dashboard", label: "Início", icon: Home, testid: "nav-home-link" },
@@ -170,6 +171,8 @@ export default function AppLayout({ children }) {
                     </div>
                 </div>
             </header>
+
+            <EmailVerifyBanner />
 
             <main className="max-w-[1400px] mx-auto w-full">{children}</main>
 

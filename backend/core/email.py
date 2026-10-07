@@ -32,6 +32,30 @@ async def send_email(to: str, subject: str, html: str) -> bool:
         return False
 
 
+def verify_email_html(verify_link: str) -> str:
+    return f"""
+    <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0A0A0C;color:#ffffff;border-radius:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#FF2A54,#7c1531);display:flex;align-items:center;justify-content:center;font-size:18px">📺</div>
+        <span style="font-weight:900;font-size:20px">SeriesTrack</span>
+      </div>
+      <h1 style="font-size:22px;margin:0 0 12px">Confirme seu e-mail</h1>
+      <p style="color:rgba(255,255,255,.6);line-height:1.6">
+        Falta pouco! Clique no botão abaixo para confirmar que este e-mail é seu.
+        O link expira em 24 horas.
+      </p>
+      <a href="{verify_link}" style="display:inline-block;margin-top:20px;padding:14px 28px;border-radius:999px;background:linear-gradient(135deg,#FF2A54,#7c1531);color:#ffffff;text-decoration:none;font-weight:700">
+        Confirmar e-mail
+      </a>
+      <p style="color:rgba(255,255,255,.35);font-size:12px;margin-top:28px;line-height:1.6">
+        Se você não criou uma conta no SeriesTrack, pode ignorar este e-mail.<br/>
+        Se o botão não funcionar, copie e cole este link no navegador:<br/>
+        <span style="word-break:break-all">{verify_link}</span>
+      </p>
+    </div>
+    """
+
+
 def password_reset_html(reset_link: str) -> str:
     return f"""
     <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0A0A0C;color:#ffffff;border-radius:16px">

@@ -23,6 +23,10 @@ class ResetPasswordIn(BaseModel):
     password: str = Field(min_length=6, max_length=128)
 
 
+class VerifyEmailIn(BaseModel):
+    token: str
+
+
 class LibraryUpsertIn(BaseModel):
     tmdb_id: int
     status: str = Field(pattern="^(watching|paused|finished|want)$")

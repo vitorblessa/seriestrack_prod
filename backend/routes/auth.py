@@ -10,11 +10,30 @@ from core import (
     set_auth_cookies, clear_auth_cookies, serialize_user, get_current_user,
     ensure_owner_pro, GOOGLE_CLIENT_ID, FRONTEND_URL,
 )
-from core.email import send_email, password_reset_html
+from core.email import send_email, password_reset_html, verify_email_html
 from core.limiter import limiter
-from core.models import RegisterIn, LoginIn, GoogleCallbackIn, ForgotPasswordIn, ResetPasswordIn
+from core.models import RegisterIn, LoginIn, GoogleCallbackIn, ForgotPasswordIn, ResetPasswordIn, VerifyEmailIn
 
 router = APIRouter()
+
+
+async def _send_verification_email(user_id, email: str):
+    """Issue a fresh 24h verification token for user_id and email it. Shared
+    by /auth/register and /auth/resend_verification. Best-effort — logs and
+    returns on failure, never raises (verification is non-blocking)."""
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    await db.users.update_one(
+        {"_id": user_id},
+        {"$set": {
+            "verify_token_hash": token_hash,
+            "verify_token_expires": datetime.now(timezone.utc) + timedelta(hours=24),
+        }},
+    )
+    verify_link = f"{FRONTEND_URL}/verify-email?token={raw_token}"
+    sent = await send_email(email, "Confirme seu e-mail — SeriesTrack", verify_email_html(verify_link))
+    if not sent:
+        logger.warning(f"verification email send failed/skipped for {email}")
 
 
 @router.post("/auth/register")
@@ -28,6 +47,7 @@ async def register(request: Request, payload: RegisterIn, response: Response):
         "password_hash": hash_password(payload.password),
         "name": payload.name.strip(),
         "avatar_url": None,
+        "email_verified": False,
         "created_at": datetime.now(timezone.utc),
     }
     res = await db.users.insert_one(doc)
@@ -36,6 +56,9 @@ async def register(request: Request, payload: RegisterIn, response: Response):
     await ensure_owner_pro(email)
     # Reload to get the updated tier in the response
     doc = await db.users.find_one({"_id": res.inserted_id}) or doc
+    # Non-blocking — registration succeeds even if the email never arrives;
+    # the user can retry from the "confirm your email" banner.
+    await _send_verification_email(res.inserted_id, email)
     access = create_token(user_id, email, "access")
     refresh = create_token(user_id, email, "refresh")
     set_auth_cookies(response, access, refresh)
@@ -116,6 +139,47 @@ async def reset_password(request: Request, payload: ResetPasswordIn):
     )
     logger.info(f"reset_password: password changed for user_id={user['_id']}")
     return {"ok": True}
+
+
+@router.post("/auth/verify_email")
+@limiter.limit("10/minute")
+async def verify_email(request: Request, payload: VerifyEmailIn):
+    token_hash = hashlib.sha256(payload.token.encode()).hexdigest()
+    user = await db.users.find_one({"verify_token_hash": token_hash})
+    if not user:
+        raise HTTPException(400, "Link inválido ou já utilizado")
+
+    expires = user.get("verify_token_expires")
+    expired = True
+    if expires:
+        try:
+            exp_dt = expires if isinstance(expires, datetime) else datetime.fromisoformat(expires)
+            if exp_dt.tzinfo is None:
+                exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+            expired = exp_dt <= datetime.now(timezone.utc)
+        except Exception:
+            expired = True
+    if expired:
+        raise HTTPException(400, "Link expirado — peça um novo na sua conta")
+
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {"email_verified": True},
+            "$unset": {"verify_token_hash": "", "verify_token_expires": ""},
+        },
+    )
+    logger.info(f"verify_email: confirmed for user_id={user['_id']}")
+    return {"ok": True}
+
+
+@router.post("/auth/resend_verification")
+@limiter.limit("3/minute")
+async def resend_verification(request: Request, user: dict = Depends(get_current_user)):
+    if user.get("email_verified", True):
+        return {"ok": True, "already_verified": True}
+    await _send_verification_email(user["_id"], user["email"])
+    return {"ok": True, "already_verified": False}
 
 
 @router.post("/auth/logout")
@@ -254,6 +318,7 @@ async def auth_google(payload: GoogleCallbackIn, response: Response):
             "name": name,
             "avatar_url": picture,
             "google_linked": True,
+            "email_verified": True,  # Google already verified this address (checked above)
             "created_at": now,
         }
         res = await db.users.insert_one(doc)

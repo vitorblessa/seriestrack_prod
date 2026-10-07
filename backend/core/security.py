@@ -64,6 +64,11 @@ def serialize_user(doc: dict) -> dict:
         "created_at": doc.get("created_at").isoformat() if isinstance(doc.get("created_at"), datetime) else doc.get("created_at"),
         "subscription_tier": "pro" if is_active_pro else "free",
         "subscription_renews_at": (renews.isoformat() if isinstance(renews, datetime) else renews),
+        # Default True so accounts created before this field existed don't
+        # suddenly see a "confirm your email" banner. New password-based
+        # registrations explicitly set this False; Google accounts explicitly
+        # set it True (Google already verified the address).
+        "email_verified": doc.get("email_verified", True),
     }
 
 
