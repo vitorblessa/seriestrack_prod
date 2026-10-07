@@ -4,7 +4,7 @@ from typing import Optional
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends
 from core import (
-    db, logger, get_current_user, is_pro, tmdb, tmdb_get_tv,
+    db, logger, get_current_user, is_pro, tmdb_get_tv, tmdb_get_cached,
     TMDB_LANG, TMDB_IMG, FREE_LIBRARY_CAP,
 )
 from core import google_calendar as gcal
@@ -142,11 +142,14 @@ async def bulk_progress(payload: ProgressBulkIn, user: dict = Depends(get_curren
     """Mark ALL episodes of a season as watched (or unwatched)."""
     user_id = str(user["_id"])
     if payload.watched:
-        tc = await tmdb()
-        r = await tc.get(f"/tv/{payload.tmdb_id}/season/{payload.season}", params={"language": TMDB_LANG})
-        if r.status_code != 200:
+        # Same cache key as GET /series/{id}/season/{n} — shares hits with it.
+        season_data = await tmdb_get_cached(
+            f"season:{payload.tmdb_id}:{payload.season}", f"/tv/{payload.tmdb_id}/season/{payload.season}",
+            {"language": TMDB_LANG}, 60 * 60,
+        )
+        if season_data is None:
             raise HTTPException(404, "Season not found")
-        episodes = r.json().get("episodes", [])
+        episodes = season_data.get("episodes", [])
         if not episodes:
             return {"updated": 0, "watched": True}
         now = datetime.now(timezone.utc).isoformat()

@@ -5,7 +5,7 @@ import jwt
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends, Request, Response
 from core import (
-    db, logger, get_current_user, tmdb, tmdb_get_tv,
+    db, logger, get_current_user, tmdb_get_tv, tmdb_get_cached,
     JWT_SECRET, JWT_ALGO, TMDB_LANG, TMDB_IMG, TMDB_REGION,
     GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALENDAR_REDIRECT_URI,
 )
@@ -20,14 +20,15 @@ router = APIRouter()
 async def calendar_upcoming(user: dict = Depends(get_current_user)):
     """Return upcoming episodes for shows in user's library."""
     items = await db.library.find({"user_id": str(user["_id"])}).to_list(200)
-    tc = await tmdb()
     out = []
     for it in items:
         try:
-            r = await tc.get(f"/tv/{it['tmdb_id']}", params={"language": TMDB_LANG, "append_to_response": "watch/providers"})
-            if r.status_code != 200:
+            s = await tmdb_get_cached(
+                f"detail_wp:{it['tmdb_id']}", f"/tv/{it['tmdb_id']}",
+                {"language": TMDB_LANG, "append_to_response": "watch/providers"}, 30 * 60,
+            )
+            if s is None:
                 continue
-            s = r.json()
             providers_block = (s.get("watch/providers", {}) or {}).get("results", {}) or {}
             region_block = providers_block.get(TMDB_REGION) or providers_block.get("US") or {}
             flatrate = region_block.get("flatrate") or []

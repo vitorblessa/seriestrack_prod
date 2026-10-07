@@ -5,7 +5,7 @@ import asyncio
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends
 from core import (
-    db, logger, get_current_user, tmdb, tmdb_get_tv,
+    db, logger, get_current_user, tmdb, tmdb_get_tv, tmdb_get_cached,
     TMDB_LANG, TMDB_REGION, TMDB_IMG,
 )
 
@@ -78,7 +78,6 @@ async def streaming_episodes(name: str, user: dict = Depends(get_current_user)):
     if not provider_ids:
         return {"matched_providers": [], "episodes": []}
 
-    tc = await tmdb()
     today = datetime.now(timezone.utc).date()
     min_date = (today - timedelta(days=60)).isoformat()
     max_date = (today + timedelta(days=30)).isoformat()
@@ -92,15 +91,14 @@ async def streaming_episodes(name: str, user: dict = Depends(get_current_user)):
         "air_date.gte": (today - timedelta(days=180)).isoformat(),
         "page": 1,
     }
-    try:
-        r = await tc.get("/discover/tv", params=discover_params)
-        if r.status_code != 200:
-            logger.warning(f"discover/tv failed {r.status_code}: {r.text[:200]}")
-            return {"matched_providers": matched_names, "episodes": []}
-        shows = r.json().get("results", [])[:25]
-    except Exception as e:
-        logger.warning(f"discover/tv error: {e}")
+    # Cache key includes today's date so the daily-moving air_date.gte window
+    # naturally busts the cache once a day, no manual invalidation needed.
+    cache_key = f"discover:{needle_norm}:{today.isoformat()}"
+    data = await tmdb_get_cached(cache_key, "/discover/tv", discover_params, 30 * 60)
+    if data is None:
+        logger.warning(f"discover/tv failed for provider={needle_norm}")
         return {"matched_providers": matched_names, "episodes": []}
+    shows = data.get("results", [])[:25]
 
     async def fetch_show_eps(show: dict):
         try:

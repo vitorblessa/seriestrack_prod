@@ -53,6 +53,37 @@ async def tmdb_get_tv(tmdb_id: int) -> Optional[dict]:
         return None
 
 
+# Generic cache for every other TMDB endpoint (lists, search, series detail,
+# season detail, discover...). One shared dict keyed by a caller-chosen string
+# so each call site decides what varies (window, season number, filters, day
+# bucket...); same eviction/size-cap strategy as the /tv/{id} cache above.
+_GENERIC_CACHE_TTL = 30 * 60
+_generic_cache: dict = {}
+
+
+async def tmdb_get_cached(cache_key: str, path: str, params: dict, ttl: int = _GENERIC_CACHE_TTL) -> Optional[dict]:
+    """Cached GET against any TMDB path. Returns parsed JSON, or None on a
+    non-200 response or network error — callers already handle that the same
+    way they handled an uncached failed request."""
+    now = time.time()
+    entry = _generic_cache.get(cache_key)
+    if entry and entry[1] > now:
+        return entry[0]
+    try:
+        tc = await tmdb()
+        r = await tc.get(path, params=params)
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        _generic_cache[cache_key] = (data, now + ttl)
+        if len(_generic_cache) > 1500:
+            for k, _ in sorted(_generic_cache.items(), key=lambda x: x[1][1])[:300]:
+                _generic_cache.pop(k, None)
+        return data
+    except Exception:
+        return None
+
+
 def normalize_show(s: dict) -> dict:
     poster = s.get("poster_path")
     backdrop = s.get("backdrop_path")

@@ -1,71 +1,81 @@
 """TMDB series proxy routes: trending, popular, top_rated, airing_today, on_the_air, search, detail, season."""
 from fastapi import APIRouter, HTTPException
-from core import tmdb, normalize_show, TMDB_LANG, TMDB_REGION, TMDB_IMG
+from core import tmdb_get_cached, normalize_show, TMDB_LANG, TMDB_REGION, TMDB_IMG
 
 router = APIRouter()
+
+# Same TMDB content served to every user — cache generously to cut latency
+# and stay well clear of TMDB's rate limit. Discovery lists change slowly;
+# search is cached shorter since it's free-text (many distinct queries).
+_LIST_TTL = 30 * 60
+_SEARCH_TTL = 10 * 60
+_DETAIL_TTL = 30 * 60
+_SEASON_TTL = 60 * 60
 
 
 @router.get("/series/trending")
 async def trending(window: str = "week"):
-    tc = await tmdb()
-    r = await tc.get(f"/trending/tv/{window}", params={"language": TMDB_LANG})
-    r.raise_for_status()
-    return [normalize_show(x) for x in r.json().get("results", [])][:20]
+    data = await tmdb_get_cached(f"trending:{window}", f"/trending/tv/{window}", {"language": TMDB_LANG}, _LIST_TTL)
+    if data is None:
+        raise HTTPException(502, "TMDB request failed")
+    return [normalize_show(x) for x in data.get("results", [])][:20]
 
 
 @router.get("/series/popular")
 async def popular():
-    tc = await tmdb()
-    r = await tc.get("/tv/popular", params={"language": TMDB_LANG, "region": TMDB_REGION})
-    r.raise_for_status()
-    return [normalize_show(x) for x in r.json().get("results", [])][:20]
+    data = await tmdb_get_cached("popular", "/tv/popular", {"language": TMDB_LANG, "region": TMDB_REGION}, _LIST_TTL)
+    if data is None:
+        raise HTTPException(502, "TMDB request failed")
+    return [normalize_show(x) for x in data.get("results", [])][:20]
 
 
 @router.get("/series/top_rated")
 async def top_rated():
-    tc = await tmdb()
-    r = await tc.get("/tv/top_rated", params={"language": TMDB_LANG})
-    r.raise_for_status()
-    return [normalize_show(x) for x in r.json().get("results", [])][:20]
+    data = await tmdb_get_cached("top_rated", "/tv/top_rated", {"language": TMDB_LANG}, _LIST_TTL)
+    if data is None:
+        raise HTTPException(502, "TMDB request failed")
+    return [normalize_show(x) for x in data.get("results", [])][:20]
 
 
 @router.get("/series/airing_today")
 async def airing_today():
-    tc = await tmdb()
-    r = await tc.get("/tv/airing_today", params={"language": TMDB_LANG})
-    r.raise_for_status()
-    return [normalize_show(x) for x in r.json().get("results", [])][:20]
+    data = await tmdb_get_cached("airing_today", "/tv/airing_today", {"language": TMDB_LANG}, _LIST_TTL)
+    if data is None:
+        raise HTTPException(502, "TMDB request failed")
+    return [normalize_show(x) for x in data.get("results", [])][:20]
 
 
 @router.get("/series/on_the_air")
 async def on_the_air():
-    tc = await tmdb()
-    r = await tc.get("/tv/on_the_air", params={"language": TMDB_LANG})
-    r.raise_for_status()
-    return [normalize_show(x) for x in r.json().get("results", [])][:20]
+    data = await tmdb_get_cached("on_the_air", "/tv/on_the_air", {"language": TMDB_LANG}, _LIST_TTL)
+    if data is None:
+        raise HTTPException(502, "TMDB request failed")
+    return [normalize_show(x) for x in data.get("results", [])][:20]
 
 
 @router.get("/series/search")
 async def search(q: str):
-    if not q.strip():
+    query = q.strip()
+    if not query:
         return []
-    tc = await tmdb()
-    r = await tc.get("/search/tv", params={"query": q, "language": TMDB_LANG, "include_adult": False})
-    r.raise_for_status()
-    return [normalize_show(x) for x in r.json().get("results", [])]
+    data = await tmdb_get_cached(
+        f"search:{query.lower()}", "/search/tv",
+        {"query": query, "language": TMDB_LANG, "include_adult": False}, _SEARCH_TTL,
+    )
+    if data is None:
+        raise HTTPException(502, "TMDB request failed")
+    return [normalize_show(x) for x in data.get("results", [])]
 
 
 @router.get("/series/{tmdb_id}")
 async def series_detail(tmdb_id: int):
-    tc = await tmdb()
-    r = await tc.get(
-        f"/tv/{tmdb_id}",
-        params={"language": TMDB_LANG, "append_to_response": "watch/providers,credits,videos,recommendations,external_ids"},
+    s = await tmdb_get_cached(
+        f"detail:{tmdb_id}", f"/tv/{tmdb_id}",
+        {"language": TMDB_LANG, "append_to_response": "watch/providers,credits,videos,recommendations,external_ids"},
+        _DETAIL_TTL,
     )
-    if r.status_code == 404:
+    if s is None:
         raise HTTPException(404, "Series not found")
-    r.raise_for_status()
-    s = r.json()
 
     providers_block = (s.get("watch/providers", {}) or {}).get("results", {}) or {}
     region_block = providers_block.get(TMDB_REGION) or providers_block.get("US") or {}
@@ -135,12 +145,12 @@ async def series_detail(tmdb_id: int):
 
 @router.get("/series/{tmdb_id}/season/{season_number}")
 async def season_detail(tmdb_id: int, season_number: int):
-    tc = await tmdb()
-    r = await tc.get(f"/tv/{tmdb_id}/season/{season_number}", params={"language": TMDB_LANG})
-    if r.status_code == 404:
+    s = await tmdb_get_cached(
+        f"season:{tmdb_id}:{season_number}", f"/tv/{tmdb_id}/season/{season_number}",
+        {"language": TMDB_LANG}, _SEASON_TTL,
+    )
+    if s is None:
         raise HTTPException(404, "Season not found")
-    r.raise_for_status()
-    s = r.json()
     return {
         "id": s.get("id"),
         "season_number": s.get("season_number"),
