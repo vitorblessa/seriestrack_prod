@@ -220,7 +220,7 @@ export default function Settings() {
         try {
             localStorage.removeItem(ONBOARDING_STORAGE_KEY);
         } catch {}
-        navigate("/?tour=1");
+        navigate("/dashboard?tour=1");
     };
 
     return (
