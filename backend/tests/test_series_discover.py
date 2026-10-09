@@ -25,12 +25,19 @@ class _FakeResponse:
 
 
 class _FakeTmdbClient:
-    def __init__(self, routes):
+    def __init__(self, routes, keyword_routes=None):
         self.routes = routes
+        # /search/keyword is called once per synonym term with a different
+        # `query` param each time — route those by query text, not just path.
+        self.keyword_routes = keyword_routes or {}
         self.calls = []
 
     async def get(self, path, params=None):
         self.calls.append((path, params))
+        if path == "/search/keyword":
+            query = ((params or {}).get("query") or "").lower()
+            payload = self.keyword_routes.get(query, {"results": []})
+            return _FakeResponse(200, payload)
         if path in self.routes:
             return _FakeResponse(200, self.routes[path])
         return _FakeResponse(404, {})
@@ -55,12 +62,20 @@ def fake_tmdb(monkeypatch):
             {"id": 2, "name": "Another Drama", "poster_path": None, "backdrop_path": None, "overview": "", "vote_average": 7.5, "first_air_date": "2023-01-01"},
         ]
     }
-    keyword_payload = {"results": [{"id": 6054, "name": "medical"}, {"id": 9999, "name": "medical malpractice"}]}
-    client = _FakeTmdbClient({
-        "/genre/tv/list": genres_payload,
-        "/discover/tv": discover_payload,
-        "/search/keyword": keyword_payload,
-    })
+    client = _FakeTmdbClient(
+        routes={
+            "/genre/tv/list": genres_payload,
+            "/discover/tv": discover_payload,
+        },
+        keyword_routes={
+            # "medical" resolves via _KEYWORD_SYNONYMS to 4 terms — each
+            # returns a distinct id here so the OR'ing can be verified.
+            "medical": {"results": [{"id": 6054, "name": "medical"}, {"id": 9999, "name": "medical malpractice"}]},
+            "hospital": {"results": [{"id": 7777, "name": "hospital"}]},
+            "doctor": {"results": [{"id": 8888, "name": "doctor"}]},
+            "medical drama": {"results": [{"id": 6054, "name": "medical"}]},  # dupe of "medical"'s id, should be deduped
+        },
+    )
 
     async def fake_tmdb_factory():
         return client
@@ -111,27 +126,29 @@ async def test_discover_without_genre_omits_with_genres_param(client, fake_tmdb)
 @pytest.mark.asyncio
 async def test_discover_keyword_resolves_to_with_keywords_param(client, fake_tmdb):
     """The "Médicas" pseudo-genre chip has no TMDB genre id — it goes through
-    a keyword search instead (TMDB models "medical" as a keyword, not a genre)."""
+    a keyword search instead (TMDB models "medical" as a keyword, not a genre).
+    Several related terms (medical/hospital/doctor/medical drama) are
+    searched and OR'd together so popular shows tagged under any one of them
+    (Grey's Anatomy, Chicago Med, House...) aren't missed."""
     r = await client.get("/api/series/discover", params={"keyword": "medical"})
     assert r.status_code == 200
     shows = r.json()
     assert len(shows) == 2
 
     keyword_calls = [c for c in fake_tmdb.calls if c[0] == "/search/keyword"]
-    assert keyword_calls and keyword_calls[-1][1]["query"] == "medical"
+    queried_terms = {c[1]["query"] for c in keyword_calls}
+    assert queried_terms == {"medical", "hospital", "doctor", "medical drama"}
 
     discover_calls = [c for c in fake_tmdb.calls if c[0] == "/discover/tv"]
-    assert discover_calls[-1][1]["with_keywords"] == 6054  # exact "medical" match, not the malpractice one
+    # 6054 (exact "medical" match) + 7777 (hospital) + 8888 (doctor) — the
+    # "medical drama" term's id (6054) is a dupe and shows up only once.
+    assert discover_calls[-1][1]["with_keywords"] == "6054|7777|8888"
 
 
 @pytest.mark.asyncio
 async def test_discover_unknown_keyword_omits_with_keywords_param(client, monkeypatch):
     discover_payload = {"results": []}
-    empty_keyword_payload = {"results": []}  # TMDB found nothing for this query
-    no_match_client = _FakeTmdbClient({
-        "/discover/tv": discover_payload,
-        "/search/keyword": empty_keyword_payload,
-    })
+    no_match_client = _FakeTmdbClient(routes={"/discover/tv": discover_payload}, keyword_routes={})
 
     async def fake_tmdb_factory():
         return no_match_client

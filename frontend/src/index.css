@@ -42,6 +42,15 @@ html, body, #root {
     max-width: 100vw;
 }
 
+/* Native <select> dropdown panels (Android/desktop browser chrome) render with
+   their OWN white background — not our dark theme — so the global white text
+   color above makes every <option> invisible except the one row the OS
+   highlights. Force dark, readable text for options specifically. */
+select option {
+    color: #111;
+    background: #fff;
+}
+
 /* When installed as PWA, respect iPhone notch + home indicator + Android nav bar.
    `env(safe-area-inset-*)` is a no-op in normal Safari — kicks in only when
    apple-mobile-web-app-capable is honored (i.e. app installed to home screen). */

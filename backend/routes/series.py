@@ -16,19 +16,35 @@ _DISCOVER_TTL = 30 * 60
 _KEYWORD_TTL = 24 * 60 * 60
 
 
-async def _resolve_keyword_id(keyword: str):
-    """TMDB has no official "Medical" TV genre, but it does have a keyword
-    many medical dramas (House, Grey's Anatomy, The Good Doctor...) are
-    tagged with. Resolve it by name instead of hardcoding an id, so this
-    doesn't silently break if TMDB ever changes one."""
-    data = await tmdb_get_cached(f"keyword_search:{keyword.lower()}", "/search/keyword", {"query": keyword}, _KEYWORD_TTL)
-    if not data:
-        return None
-    results = data.get("results") or []
-    if not results:
-        return None
-    exact = next((r for r in results if (r.get("name") or "").lower() == keyword.lower()), None)
-    return (exact or results[0]).get("id")
+# A single TMDB keyword rarely covers how a whole sub-genre actually gets
+# tagged — e.g. the marquee medical dramas (Grey's Anatomy, Chicago Med,
+# House, The Good Doctor, New Amsterdam, ER) are split across a few
+# different keywords rather than all carrying the exact same one. Search
+# several related terms and OR their resolved ids together so popular shows
+# don't fall through the cracks just because they're tagged "hospital"
+# instead of "medical".
+_KEYWORD_SYNONYMS = {
+    "medical": ["medical", "hospital", "doctor", "medical drama"],
+}
+
+
+async def _resolve_keyword_ids(keyword: str) -> list:
+    """TMDB has no official "Medical" TV genre, but it does have keywords
+    medical dramas are tagged with. Resolve them by name instead of
+    hardcoding ids, so this doesn't silently break if TMDB ever changes one."""
+    terms = _KEYWORD_SYNONYMS.get(keyword.lower(), [keyword])
+    ids: list = []
+    for term in terms:
+        data = await tmdb_get_cached(f"keyword_search:{term.lower()}", "/search/keyword", {"query": term}, _KEYWORD_TTL)
+        results = (data or {}).get("results") or []
+        if not results:
+            continue
+        exact = next((r for r in results if (r.get("name") or "").lower() == term.lower()), None)
+        chosen = exact or results[0]
+        kw_id = chosen.get("id")
+        if kw_id is not None and kw_id not in ids:
+            ids.append(kw_id)
+    return ids
 
 
 @router.get("/series/trending")
@@ -102,9 +118,10 @@ async def discover(genre: int = None, keyword: str = None, sort_by: str = "popul
     if genre:
         params["with_genres"] = genre
     if keyword:
-        kw_id = await _resolve_keyword_id(keyword)
-        if kw_id:
-            params["with_keywords"] = kw_id
+        kw_ids = await _resolve_keyword_ids(keyword)
+        if kw_ids:
+            # TMDB's "|" means OR across keywords — any show tagged with any one of them matches.
+            params["with_keywords"] = "|".join(str(i) for i in kw_ids)
     cache_key = f"discover_genre:{genre or 'all'}:{keyword or 'none'}:{sort_by}"
     data = await tmdb_get_cached(cache_key, "/discover/tv", params, _DISCOVER_TTL)
     if data is None:
