@@ -5,6 +5,8 @@ import AppLayout from "../components/AppLayout";
 import Rail from "../components/Rail";
 import PosterCard from "../components/PosterCard";
 import UpsellPreview from "../components/UpsellPreview";
+import OnboardingTour from "../components/OnboardingTour";
+import StartLibrarySuggestions from "../components/StartLibrarySuggestions";
 import { useAuth } from "../lib/auth";
 import { Sparkles, TrendingUp, Loader2, Calendar as CalIcon, Play } from "lucide-react";
 import { brandFor } from "../lib/providers";
@@ -20,6 +22,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [kind, setKind] = useState("upcoming"); // 'upcoming' | 'recent'
     const [providerFilter, setProviderFilter] = useState("all");
+    const [justAddedCount, setJustAddedCount] = useState(0);
 
     useEffect(() => {
         let cancelled = false;
@@ -52,6 +55,16 @@ export default function Dashboard() {
 
     const watching = library.filter((x) => x.status === "watching").map((x) => ({ id: x.tmdb_id, ...x }));
     const featured = trending[0];
+    const libraryIsEmpty = library.length === 0 && justAddedCount === 0;
+    const suggestions = useMemo(() => {
+        const seen = new Set();
+        return [...popular, ...trending].filter((s) => {
+            const tid = s.id || s.tmdb_id;
+            if (seen.has(tid)) return false;
+            seen.add(tid);
+            return true;
+        });
+    }, [popular, trending]);
 
     // Provider chips derived from current kind only
     const eventsOfKind = useMemo(
@@ -92,6 +105,8 @@ export default function Dashboard() {
 
     return (
         <AppLayout>
+            <OnboardingTour show={!loading && libraryIsEmpty} />
+
             {/* Featured hero */}
             {featured && (
                 <section className="relative h-[60vh] md:h-[72vh] -mb-8" data-testid="dashboard-featured">
@@ -131,6 +146,14 @@ export default function Dashboard() {
                 </h2>
                 <p className="text-white/50 text-sm mt-1">{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
             </section>
+
+            {/* Empty-library onboarding: seed the library with one tap */}
+            {libraryIsEmpty && (
+                <StartLibrarySuggestions
+                    shows={suggestions}
+                    onAdded={() => setJustAddedCount((c) => c + 1)}
+                />
+            )}
 
             {/* Continue Watching */}
             {watching.length > 0 && (
