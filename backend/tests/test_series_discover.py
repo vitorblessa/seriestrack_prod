@@ -55,9 +55,11 @@ def fake_tmdb(monkeypatch):
             {"id": 2, "name": "Another Drama", "poster_path": None, "backdrop_path": None, "overview": "", "vote_average": 7.5, "first_air_date": "2023-01-01"},
         ]
     }
+    keyword_payload = {"results": [{"id": 6054, "name": "medical"}, {"id": 9999, "name": "medical malpractice"}]}
     client = _FakeTmdbClient({
         "/genre/tv/list": genres_payload,
         "/discover/tv": discover_payload,
+        "/search/keyword": keyword_payload,
     })
 
     async def fake_tmdb_factory():
@@ -104,3 +106,39 @@ async def test_discover_without_genre_omits_with_genres_param(client, fake_tmdb)
     assert r.status_code == 200
     discover_calls = [c for c in fake_tmdb.calls if c[0] == "/discover/tv"]
     assert "with_genres" not in discover_calls[-1][1]
+
+
+@pytest.mark.asyncio
+async def test_discover_keyword_resolves_to_with_keywords_param(client, fake_tmdb):
+    """The "Médicas" pseudo-genre chip has no TMDB genre id — it goes through
+    a keyword search instead (TMDB models "medical" as a keyword, not a genre)."""
+    r = await client.get("/api/series/discover", params={"keyword": "medical"})
+    assert r.status_code == 200
+    shows = r.json()
+    assert len(shows) == 2
+
+    keyword_calls = [c for c in fake_tmdb.calls if c[0] == "/search/keyword"]
+    assert keyword_calls and keyword_calls[-1][1]["query"] == "medical"
+
+    discover_calls = [c for c in fake_tmdb.calls if c[0] == "/discover/tv"]
+    assert discover_calls[-1][1]["with_keywords"] == 6054  # exact "medical" match, not the malpractice one
+
+
+@pytest.mark.asyncio
+async def test_discover_unknown_keyword_omits_with_keywords_param(client, monkeypatch):
+    discover_payload = {"results": []}
+    empty_keyword_payload = {"results": []}  # TMDB found nothing for this query
+    no_match_client = _FakeTmdbClient({
+        "/discover/tv": discover_payload,
+        "/search/keyword": empty_keyword_payload,
+    })
+
+    async def fake_tmdb_factory():
+        return no_match_client
+
+    monkeypatch.setattr(core_tmdb, "tmdb", fake_tmdb_factory)
+
+    r = await client.get("/api/series/discover", params={"keyword": "nonexistent-xyz"})
+    assert r.status_code == 200
+    discover_calls = [c for c in no_match_client.calls if c[0] == "/discover/tv"]
+    assert "with_keywords" not in discover_calls[-1][1]

@@ -63,6 +63,27 @@ export default function GoogleSignInButton({ className, children }) {
                 size: "large",
                 width,
             });
+
+            // Google's button is an <iframe>. On mobile, the first tap on a
+            // never-before-focused iframe is commonly swallowed by the browser
+            // to just transfer page focus into it — the click itself only fires
+            // on the *second* tap. That's exactly the "nothing happens the first
+            // time, works after I tap the email field" symptom: tapping the email
+            // input elsewhere on the page happened to pre-consume that first
+            // focus-transfer tap. Pre-focusing the iframe ourselves as soon as
+            // it exists means the user's real tap is already the "second" one.
+            let focusAttempts = 0;
+            const tryFocusIframe = () => {
+                if (cancelled) return;
+                const iframe = overlayRef.current?.querySelector("iframe");
+                if (iframe) {
+                    try { iframe.focus(); } catch {}
+                    return;
+                }
+                focusAttempts += 1;
+                if (focusAttempts < 20) setTimeout(tryFocusIframe, 100);
+            };
+            tryFocusIframe();
         };
 
         // The GSI script is loaded from public/index.html; it may not be ready yet.

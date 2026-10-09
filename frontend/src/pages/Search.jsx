@@ -52,7 +52,12 @@ export default function Search() {
     useEffect(() => {
         api.get("/series/popular").then((r) => setPopular(r.data)).catch(() => {});
         api.get("/series/trending").then((r) => setTrending(r.data)).catch(() => {});
-        api.get("/series/genres").then((r) => setGenres(r.data)).catch(() => {});
+        api.get("/series/genres").then((r) => {
+            // TMDB has no official "Medical" TV genre — add it as a pseudo-genre
+            // chip backed by a keyword search instead (see backend /series/discover).
+            // Muito procurado, então vale o chip mesmo não sendo um gênero oficial.
+            setGenres([...r.data, { id: "medical", name: "Médicas", keyword: "medical" }]);
+        }).catch(() => {});
     }, []);
 
     // Genre/sort discovery — independent of text search and streaming filter
@@ -65,7 +70,10 @@ export default function Search() {
         (async () => {
             setLoadingDiscover(true);
             try {
-                const { data } = await api.get("/series/discover", { params: { genre: selectedGenre.id, sort_by: sortBy } });
+                const params = selectedGenre.keyword
+                    ? { keyword: selectedGenre.keyword, sort_by: sortBy }
+                    : { genre: selectedGenre.id, sort_by: sortBy };
+                const { data } = await api.get("/series/discover", { params });
                 if (!cancelled) setDiscoverResults(data);
             } finally {
                 if (!cancelled) setLoadingDiscover(false);

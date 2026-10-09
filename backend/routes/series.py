@@ -13,6 +13,22 @@ _DETAIL_TTL = 30 * 60
 _SEASON_TTL = 60 * 60
 _GENRES_TTL = 24 * 60 * 60
 _DISCOVER_TTL = 30 * 60
+_KEYWORD_TTL = 24 * 60 * 60
+
+
+async def _resolve_keyword_id(keyword: str):
+    """TMDB has no official "Medical" TV genre, but it does have a keyword
+    many medical dramas (House, Grey's Anatomy, The Good Doctor...) are
+    tagged with. Resolve it by name instead of hardcoding an id, so this
+    doesn't silently break if TMDB ever changes one."""
+    data = await tmdb_get_cached(f"keyword_search:{keyword.lower()}", "/search/keyword", {"query": keyword}, _KEYWORD_TTL)
+    if not data:
+        return None
+    results = data.get("results") or []
+    if not results:
+        return None
+    exact = next((r for r in results if (r.get("name") or "").lower() == keyword.lower()), None)
+    return (exact or results[0]).get("id")
 
 
 @router.get("/series/trending")
@@ -66,10 +82,13 @@ async def genres():
 
 
 @router.get("/series/discover")
-async def discover(genre: int = None, sort_by: str = "popularity.desc"):
+async def discover(genre: int = None, keyword: str = None, sort_by: str = "popularity.desc"):
     """Genre-filtered discovery — powers the "Filtrar por gênero" chips on
     the search/discovery page. sort_by accepts any TMDB discover sort value
-    (popularity.desc, vote_average.desc, first_air_date.desc, ...)."""
+    (popularity.desc, vote_average.desc, first_air_date.desc, ...).
+
+    `keyword` powers pseudo-genre chips TMDB doesn't model as real genres —
+    e.g. "médicas" (medical dramas), which is a TMDB keyword, not a genre."""
     allowed_sorts = {
         "popularity.desc", "vote_average.desc", "first_air_date.desc", "name.asc",
     }
@@ -82,7 +101,11 @@ async def discover(genre: int = None, sort_by: str = "popularity.desc"):
     }
     if genre:
         params["with_genres"] = genre
-    cache_key = f"discover_genre:{genre or 'all'}:{sort_by}"
+    if keyword:
+        kw_id = await _resolve_keyword_id(keyword)
+        if kw_id:
+            params["with_keywords"] = kw_id
+    cache_key = f"discover_genre:{genre or 'all'}:{keyword or 'none'}:{sort_by}"
     data = await tmdb_get_cached(cache_key, "/discover/tv", params, _DISCOVER_TTL)
     if data is None:
         raise HTTPException(502, "TMDB request failed")
