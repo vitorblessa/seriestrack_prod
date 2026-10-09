@@ -146,6 +146,34 @@ async def test_discover_keyword_resolves_to_with_keywords_param(client, fake_tmd
 
 
 @pytest.mark.asyncio
+async def test_discover_policial_keyword_synonyms(client, monkeypatch):
+    """Same pseudo-genre mechanism as "Médicas", for "Policial" (police
+    procedurals) — verifies the synonym set is wired up independently."""
+    discover_payload = {"results": [{"id": 3, "name": "NCIS", "poster_path": None, "backdrop_path": None, "overview": "", "vote_average": 7.0, "first_air_date": "2003-01-01"}]}
+    client_fake = _FakeTmdbClient(
+        routes={"/discover/tv": discover_payload},
+        keyword_routes={
+            "police": {"results": [{"id": 111, "name": "police"}]},
+            "detective": {"results": [{"id": 222, "name": "detective"}]},
+            "police procedural": {"results": [{"id": 333, "name": "police procedural"}]},
+            "fbi": {"results": [{"id": 444, "name": "fbi"}]},
+        },
+    )
+
+    async def fake_tmdb_factory():
+        return client_fake
+
+    monkeypatch.setattr(core_tmdb, "tmdb", fake_tmdb_factory)
+
+    r = await client.get("/api/series/discover", params={"keyword": "policial"})
+    assert r.status_code == 200
+    assert len(r.json()) == 1
+
+    discover_calls = [c for c in client_fake.calls if c[0] == "/discover/tv"]
+    assert discover_calls[-1][1]["with_keywords"] == "111|222|333|444"
+
+
+@pytest.mark.asyncio
 async def test_discover_unknown_keyword_omits_with_keywords_param(client, monkeypatch):
     discover_payload = {"results": []}
     no_match_client = _FakeTmdbClient(routes={"/discover/tv": discover_payload}, keyword_routes={})

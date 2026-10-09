@@ -25,6 +25,7 @@ _KEYWORD_TTL = 24 * 60 * 60
 # instead of "medical".
 _KEYWORD_SYNONYMS = {
     "medical": ["medical", "hospital", "doctor", "medical drama"],
+    "policial": ["police", "detective", "police procedural", "fbi"],
 }
 
 

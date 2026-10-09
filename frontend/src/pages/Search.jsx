@@ -53,10 +53,15 @@ export default function Search() {
         api.get("/series/popular").then((r) => setPopular(r.data)).catch(() => {});
         api.get("/series/trending").then((r) => setTrending(r.data)).catch(() => {});
         api.get("/series/genres").then((r) => {
-            // TMDB has no official "Medical" TV genre — add it as a pseudo-genre
-            // chip backed by a keyword search instead (see backend /series/discover).
-            // Muito procurado, então vale o chip mesmo não sendo um gênero oficial.
-            setGenres([...r.data, { id: "medical", name: "Médicas", keyword: "medical" }]);
+            // TMDB models these as keywords, not TV genres, so they're added as
+            // pseudo-genre chips backed by a keyword search instead (see backend
+            // /series/discover + _KEYWORD_SYNONYMS). Both são muito procurados,
+            // então valem o chip mesmo não sendo gêneros oficiais do TMDB.
+            setGenres([
+                ...r.data,
+                { id: "medical", name: "Médicas", keyword: "medical" },
+                { id: "policial", name: "Policial", keyword: "policial" },
+            ]);
         }).catch(() => {});
     }, []);
 
