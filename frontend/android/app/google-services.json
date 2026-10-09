@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "253227597205",
+    "project_id": "seriestrack-a8d28",
+    "storage_bucket": "seriestrack-a8d28.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:253227597205:android:07726963ba501a2e36ca9c",
+        "android_client_info": {
+          "package_name": "com.vitorblessa.seriestrack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxtyY7-L0x4Ph1CuIbs8yRPMo8aEjG_PE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

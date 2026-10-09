@@ -34,4 +34,9 @@ yarn-error.log*
 *.pem
 *.p12
 release-key.properties
-/android/app/google-services.json
+# google-services.json IS committed (see android/app/ directly) — it's the
+# Firebase Android client config (project id + a client-scoped API key), not
+# a server secret; Google's own docs say it's fine in source control, and
+# the android-release.yml CI build needs it present in the checkout. The
+# real secret (the Admin SDK service-account key, used server-side) is
+# FIREBASE_SERVICE_ACCOUNT_JSON — that one is a Render env var only.
