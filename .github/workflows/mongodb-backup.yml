@@ -45,6 +45,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p backup
+          # The official mongo:7 image runs as the unprivileged "mongodb" user
+          # (not root), so without this the mounted host dir — owned by the
+          # runner's own uid — rejects its write with "permission denied".
+          chmod 777 backup
           STAMP=$(date -u +%Y-%m-%dT%H-%M-%SZ)
           docker run --rm -v "$PWD/backup:/backup" mongo:7 \
             mongodump --uri="$MONGO_URL" --gzip --archive="/backup/seriestrack-$STAMP.gz"
