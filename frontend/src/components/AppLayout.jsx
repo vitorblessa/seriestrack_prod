@@ -62,12 +62,15 @@ export default function AppLayout({ children }) {
                         </span>
                     </Link>
 
-                    {/* overflow-x-auto + scrollbar-thin (not scrollbar-hide): with 7-8 items, the
-                        always-full-labels mode from 2xl up can overflow the available width on
-                        some desktop sizes — items past the edge must stay scrollable AND visibly
-                        so (a hover scrollbar), never silently clipped with no hint more exist
-                        (that's how the owner-only Admin link, appended last, went missing). */}
-                    <nav className="hidden md:flex items-center gap-0.5 2xl:gap-1 ml-2 2xl:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-thin">
+                    {/* Icon-only at every desktop width (label slides out on hover/focus only) —
+                        used to permanently show full labels from the 2xl breakpoint up, but with
+                        7-8 items that made the row wide enough to overflow on some "wide but not
+                        huge" desktop sizes, silently clipping whatever didn't fit (that's how the
+                        owner-only Admin link, appended last, went missing with no visual hint
+                        more items existed). Staying icon-only regardless of width keeps the row
+                        compact enough to never need to scroll in the first place; overflow-x-auto
+                        + scrollbar-thin stay on as a safety net for unusually narrow windows. */}
+                    <nav className="hidden md:flex items-center gap-0.5 ml-2 min-w-0 flex-1 overflow-x-auto scrollbar-thin">
                         {items.map((it) => (
                             <NavLink
                                 key={it.to}
@@ -75,7 +78,7 @@ export default function AppLayout({ children }) {
                                 data-testid={it.testid}
                                 title={it.label}
                                 className={({ isActive }) =>
-                                    `group/nav flex items-center px-2.5 2xl:px-3 py-2 rounded-full text-sm font-semibold transition-all shrink-0 ${
+                                    `group/nav flex items-center px-2.5 py-2 rounded-full text-sm font-semibold transition-all shrink-0 ${
                                         isActive
                                             ? "bg-white text-black"
                                             : "text-white/60 hover:text-white hover:bg-white/5"
@@ -83,9 +86,9 @@ export default function AppLayout({ children }) {
                                 }
                             >
                                 <it.icon className="w-4 h-4 shrink-0" />
-                                {/* Icon-only up to 2xl — label always shown from 2xl up, and slides out on hover/focus below that */}
+                                {/* Icon-only by default — label slides out on hover/focus */}
                                 <span
-                                    className="max-w-0 2xl:max-w-[100px] opacity-0 2xl:opacity-100 ml-0 2xl:ml-1.5
+                                    className="max-w-0 opacity-0 ml-0
                                         overflow-hidden whitespace-nowrap transition-all duration-200 ease-out
                                         group-hover/nav:max-w-[120px] group-hover/nav:opacity-100 group-hover/nav:ml-2
                                         group-focus-visible/nav:max-w-[120px] group-focus-visible/nav:opacity-100 group-focus-visible/nav:ml-2"
