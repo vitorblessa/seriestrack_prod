@@ -69,6 +69,9 @@ def serialize_user(doc: dict) -> dict:
         # registrations explicitly set this False; Google accounts explicitly
         # set it True (Google already verified the address).
         "email_verified": doc.get("email_verified", True),
+        # Drives the frontend's admin-panel link/guard — never set from the
+        # client, only via the PRO_OWNERS env var synced at backend startup.
+        "is_owner": bool(doc.get("is_owner", False)),
     }
 
 

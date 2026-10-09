@@ -33,6 +33,7 @@ import Wrapped from "./pages/Wrapped";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import DeleteAccount from "./pages/DeleteAccount";
+import Admin from "./pages/Admin";
 import InstallPromptBanner from "./components/InstallPromptBanner";
 
 registerSW();
@@ -95,6 +96,7 @@ export default function App() {
                             <Route path="/privacy" element={<Privacy />} />
                             <Route path="/terms" element={<Terms />} />
                             <Route path="/delete-account" element={<DeleteAccount />} />
+                            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                         </Routes>
                     </ThemeProvider>
                 </AuthProvider>

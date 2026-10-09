@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth";
 import api from "../lib/api";
-import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv, Settings as SettingsIcon, Crown, Sparkles, BarChart3, Award } from "lucide-react";
+import { Search, Home, Library, Calendar, Bell, LogOut, User, Tv, Settings as SettingsIcon, Crown, Sparkles, BarChart3, Award, ShieldCheck } from "lucide-react";
 import EmailVerifyBanner from "./EmailVerifyBanner";
 
 const navItems = [
@@ -19,6 +19,9 @@ export default function AppLayout({ children }) {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [unread, setUnread] = useState(0);
+    const items = user?.is_owner
+        ? [...navItems, { to: "/admin", label: "Admin", icon: ShieldCheck, testid: "nav-admin-link" }]
+        : navItems;
 
     useEffect(() => {
         let mounted = true;
@@ -60,7 +63,7 @@ export default function AppLayout({ children }) {
                     </Link>
 
                     <nav className="hidden md:flex items-center gap-0.5 2xl:gap-1 ml-2 2xl:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-hide">
-                        {navItems.map((it) => (
+                        {items.map((it) => (
                             <NavLink
                                 key={it.to}
                                 to={it.to}
@@ -153,7 +156,7 @@ export default function AppLayout({ children }) {
                 {/* Mobile nav — horizontal scroll keeps it from overflowing the viewport */}
                 <div className="md:hidden border-t border-white/5 overflow-x-auto scrollbar-hide">
                     <div className="flex gap-1 px-3 py-2 w-max min-w-full justify-around">
-                        {navItems.map((it) => (
+                        {items.map((it) => (
                             <NavLink
                                 key={it.to}
                                 to={it.to}
