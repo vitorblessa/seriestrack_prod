@@ -14,8 +14,20 @@ export function registerSW() {
 
     window.addEventListener("load", () => {
         navigator.serviceWorker.register("/sw.js").then((reg) => {
+            const checkForUpdate = () => { try { reg.update(); } catch {} };
+
             // Force an update check on every load so users on stale builds catch up
-            try { reg.update(); } catch {}
+            checkForUpdate();
+
+            // A PWA opened as a standalone app often never fires "load" again — it
+            // stays resident in the background instead of being closed/reopened —
+            // so without this, someone could sit on a stale bundle for days.
+            // Re-check whenever the app comes back to the foreground instead.
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "visible") checkForUpdate();
+            });
+            window.addEventListener("focus", checkForUpdate);
+
             reg.addEventListener("updatefound", () => {
                 const sw = reg.installing;
                 if (!sw) return;

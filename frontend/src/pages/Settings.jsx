@@ -1,17 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import AppLayout from "../components/AppLayout";
-import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink, Palette, Crown, Lock, RefreshCw, Unlink, Sparkles } from "lucide-react";
+import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink, Palette, Crown, Lock, RefreshCw, Unlink } from "lucide-react";
 import { getPushStatus, subscribePush, unsubscribePush, sendTestPush } from "../lib/push";
 import { toast } from "sonner";
 import api from "../lib/api";
-import { Link, useNavigate } from "react-router-dom";
-import { ONBOARDING_STORAGE_KEY } from "../components/OnboardingTour";
+import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useTheme, THEME_LABELS, THEME_SWATCHES, FREE_THEMES, PRO_THEMES } from "../lib/theme";
 
 export default function Settings() {
     const { user } = useAuth();
-    const navigate = useNavigate();
     const { theme, setTheme } = useTheme();
     const [status, setStatus] = useState(null);
     const [busy, setBusy] = useState(false);
@@ -216,12 +214,6 @@ export default function Settings() {
         }
     };
 
-    const redoOnboardingTour = () => {
-        try {
-            localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-        } catch {}
-        navigate("/dashboard?tour=1");
-    };
 
     return (
         <AppLayout>
@@ -515,22 +507,6 @@ export default function Settings() {
                                     </button>
                                 </div>
                             )}
-                        </div>
-                    </div>
-                </div>
-                <div className="glass rounded-2xl p-6 md:p-8" data-testid="onboarding-tour-card">
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                            <Sparkles className="w-5 h-5 text-[#FF2A54]" />
-                        </div>
-                        <div className="flex-1">
-                            <h2 className="font-display text-xl font-bold">Tour de boas-vindas</h2>
-                            <p className="text-white/60 text-sm mt-1">
-                                Reveja a introdução rápida sobre como montar sua biblioteca, calendário e notificações.
-                            </p>
-                            <button onClick={redoOnboardingTour} data-testid="redo-onboarding-tour-btn" className="btn-glass mt-4 text-sm">
-                                <Sparkles className="w-4 h-4" /> Refazer tour
-                            </button>
                         </div>
                     </div>
                 </div>

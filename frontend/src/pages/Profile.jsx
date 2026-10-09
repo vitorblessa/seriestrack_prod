@@ -2,16 +2,25 @@ import { useEffect, useState } from "react";
 import api from "../lib/api";
 import AppLayout from "../components/AppLayout";
 import { useAuth } from "../lib/auth";
-import { Mail, Calendar, LogOut, Trophy, ExternalLink, Settings as SettingsIcon, Crown, X, RotateCcw, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Mail, Calendar, LogOut, Trophy, ExternalLink, Settings as SettingsIcon, Crown, X, RotateCcw, Loader2, Sparkles } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { ONBOARDING_STORAGE_KEY } from "../components/OnboardingTour";
 
 export default function Profile() {
     const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [billing, setBilling] = useState(null);
     const [busy, setBusy] = useState(false);
     const [confirming, setConfirming] = useState(false);
+
+    const redoOnboardingTour = () => {
+        try {
+            localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        } catch {}
+        navigate("/dashboard?tour=1");
+    };
 
     const loadBilling = async () => {
         try {
@@ -93,6 +102,9 @@ export default function Profile() {
                     <Link to="/settings" data-testid="profile-settings-link" className="btn-glass mt-3 text-sm w-full">
                         <SettingsIcon className="w-4 h-4" /> Configurações
                     </Link>
+                    <button onClick={redoOnboardingTour} data-testid="redo-onboarding-tour-btn" className="btn-glass mt-3 text-sm w-full">
+                        <Sparkles className="w-4 h-4" /> Refazer tour de boas-vindas
+                    </button>
                 </div>
 
                 <div className="lg:col-span-2 glass rounded-2xl p-8">
