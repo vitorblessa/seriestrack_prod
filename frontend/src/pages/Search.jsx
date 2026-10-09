@@ -3,8 +3,16 @@ import { Link } from "react-router-dom";
 import api from "../lib/api";
 import AppLayout from "../components/AppLayout";
 import PosterCard from "../components/PosterCard";
-import { Search as SearchIcon, Loader2, Tv, Calendar as CalIcon, X } from "lucide-react";
+import Rail from "../components/Rail";
+import { Search as SearchIcon, Loader2, Tv, Calendar as CalIcon, X, Tag, ArrowUpDown } from "lucide-react";
 import { brandFor } from "../lib/providers";
+
+const SORT_OPTIONS = [
+    { value: "popularity.desc", label: "Mais populares" },
+    { value: "vote_average.desc", label: "Melhor avaliadas" },
+    { value: "first_air_date.desc", label: "Mais recentes" },
+    { value: "name.asc", label: "A-Z" },
+];
 
 const STREAMINGS = [
     "Netflix",
@@ -26,17 +34,45 @@ export default function Search() {
     const [q, setQ] = useState("");
     const [results, setResults] = useState([]);
     const [popular, setPopular] = useState([]);
+    const [trending, setTrending] = useState([]);
     const [loadingSeries, setLoadingSeries] = useState(false);
 
     const [selectedStreaming, setSelectedStreaming] = useState(null);
     const [streamingData, setStreamingData] = useState(null);
     const [loadingStreaming, setLoadingStreaming] = useState(false);
 
+    const [genres, setGenres] = useState([]);
+    const [selectedGenre, setSelectedGenre] = useState(null);
+    const [sortBy, setSortBy] = useState("popularity.desc");
+    const [discoverResults, setDiscoverResults] = useState([]);
+    const [loadingDiscover, setLoadingDiscover] = useState(false);
+
     const debounceRef = useRef(null);
 
     useEffect(() => {
         api.get("/series/popular").then((r) => setPopular(r.data)).catch(() => {});
+        api.get("/series/trending").then((r) => setTrending(r.data)).catch(() => {});
+        api.get("/series/genres").then((r) => setGenres(r.data)).catch(() => {});
     }, []);
+
+    // Genre/sort discovery — independent of text search and streaming filter
+    useEffect(() => {
+        if (!selectedGenre) {
+            setDiscoverResults([]);
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            setLoadingDiscover(true);
+            try {
+                const { data } = await api.get("/series/discover", { params: { genre: selectedGenre.id, sort_by: sortBy } });
+                if (!cancelled) setDiscoverResults(data);
+            } finally {
+                if (!cancelled) setLoadingDiscover(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [selectedGenre, sortBy]);
 
     // Series search (typed query) — independent of streaming selection
     useEffect(() => {
@@ -79,8 +115,15 @@ export default function Search() {
     const onSelectStreaming = (name) => {
         // toggle off if same, otherwise switch
         setSelectedStreaming((cur) => (cur === name ? null : name));
-        // Clear typed query so the streaming view takes over
+        // Clear typed query + genre so the streaming view takes over
         setQ("");
+        setSelectedGenre(null);
+    };
+
+    const onSelectGenre = (genre) => {
+        setSelectedGenre((cur) => (cur?.id === genre.id ? null : genre));
+        setQ("");
+        setSelectedStreaming(null);
     };
 
     return (
@@ -102,8 +145,11 @@ export default function Search() {
                         value={q}
                         onChange={(e) => {
                             setQ(e.target.value);
-                            // typing clears streaming selection
-                            if (e.target.value && selectedStreaming) setSelectedStreaming(null);
+                            // typing clears streaming + genre selection
+                            if (e.target.value) {
+                                if (selectedStreaming) setSelectedStreaming(null);
+                                if (selectedGenre) setSelectedGenre(null);
+                            }
                         }}
                         placeholder="Ex: Breaking Bad, House of the Dragon..."
                         className="w-full pl-14 pr-6 py-5 rounded-2xl bg-white/5 border border-white/10 focus:border-[#FF2A54] focus:bg-white/10 outline-none text-lg transition-all"
@@ -140,11 +186,85 @@ export default function Search() {
                         })}
                     </div>
                 </div>
+
+                {/* Genre filter + sort */}
+                {genres.length > 0 && (
+                    <div className="mt-5" data-testid="genre-buttons-row">
+                        <div className="flex items-center justify-between gap-3 flex-wrap mb-2.5">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40">Filtrar por gênero</p>
+                            {selectedGenre && (
+                                <div className="inline-flex items-center gap-1.5">
+                                    <ArrowUpDown className="w-3.5 h-3.5 text-white/40" />
+                                    <select
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value)}
+                                        data-testid="genre-sort-select"
+                                        className="bg-white/5 border border-white/10 rounded-full text-xs font-semibold px-3 py-1.5 outline-none focus:border-[#FF2A54]/50"
+                                    >
+                                        {SORT_OPTIONS.map((o) => (
+                                            <option key={o.value} value={o.value}>{o.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {genres.map((g) => {
+                                const active = selectedGenre?.id === g.id;
+                                return (
+                                    <button
+                                        key={g.id}
+                                        onClick={() => onSelectGenre(g)}
+                                        data-testid={`genre-btn-${g.id}`}
+                                        className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border inline-flex items-center gap-1.5 ${
+                                            active
+                                                ? "bg-white text-black border-white ring-2 ring-white/30 shadow-lg"
+                                                : "bg-white/5 text-white/75 border-white/10 hover:scale-105"
+                                        }`}
+                                    >
+                                        <Tag className="w-3.5 h-3.5" />
+                                        {g.name}
+                                        {active && <X className="w-3 h-3 ml-0.5 opacity-80" />}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </section>
+
+            {/* "Em alta" rail has its own px-6/md:px-10 padding — only shown unfiltered, so it
+                lives outside the padded results section below to avoid double-indenting. */}
+            {!selectedStreaming && !selectedGenre && !q.trim() && (
+                <Rail title="Em alta" subtitle="O que está bombando essa semana" items={trending} testid="search-rail-trending" />
+            )}
 
             <section className="px-6 md:px-10 mt-10" data-testid="search-results">
                 {selectedStreaming ? (
                     <StreamingResults streaming={selectedStreaming} data={streamingData} loading={loadingStreaming} onClose={() => setSelectedStreaming(null)} />
+                ) : selectedGenre ? (
+                    <div data-testid="genre-results">
+                        <div className="flex items-center gap-3 mb-6 flex-wrap">
+                            <h2 className="font-display text-xl font-bold text-white/70">
+                                Séries de {selectedGenre.name}
+                            </h2>
+                            {loadingDiscover && <Loader2 className="w-4 h-4 animate-spin text-white/50" />}
+                            <button
+                                onClick={() => setSelectedGenre(null)}
+                                data-testid="genre-clear-btn"
+                                className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/70"
+                            >
+                                <X className="w-3.5 h-3.5" /> Limpar
+                            </button>
+                        </div>
+                        {discoverResults.length === 0 && !loadingDiscover ? (
+                            <p className="text-white/50">Nenhuma série encontrada em {selectedGenre.name}.</p>
+                        ) : (
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
+                                {discoverResults.map((s) => <PosterCard key={s.id} show={s} />)}
+                            </div>
+                        )}
+                    </div>
                 ) : q.trim() ? (
                     results.length === 0 && !loadingSeries ? (
                         <p className="text-white/50">Nenhuma série encontrada para "{q}".</p>

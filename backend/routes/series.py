@@ -11,6 +11,8 @@ _LIST_TTL = 30 * 60
 _SEARCH_TTL = 10 * 60
 _DETAIL_TTL = 30 * 60
 _SEASON_TTL = 60 * 60
+_GENRES_TTL = 24 * 60 * 60
+_DISCOVER_TTL = 30 * 60
 
 
 @router.get("/series/trending")
@@ -51,6 +53,40 @@ async def on_the_air():
     if data is None:
         raise HTTPException(502, "TMDB request failed")
     return [normalize_show(x) for x in data.get("results", [])][:20]
+
+
+@router.get("/series/genres")
+async def genres():
+    """TV genre list for the discovery filter chips — barely ever changes,
+    so it's cached for a full day."""
+    data = await tmdb_get_cached("genres", "/genre/tv/list", {"language": TMDB_LANG}, _GENRES_TTL)
+    if data is None:
+        raise HTTPException(502, "TMDB request failed")
+    return data.get("genres", [])
+
+
+@router.get("/series/discover")
+async def discover(genre: int = None, sort_by: str = "popularity.desc"):
+    """Genre-filtered discovery — powers the "Filtrar por gênero" chips on
+    the search/discovery page. sort_by accepts any TMDB discover sort value
+    (popularity.desc, vote_average.desc, first_air_date.desc, ...)."""
+    allowed_sorts = {
+        "popularity.desc", "vote_average.desc", "first_air_date.desc", "name.asc",
+    }
+    if sort_by not in allowed_sorts:
+        sort_by = "popularity.desc"
+    params = {
+        "language": TMDB_LANG,
+        "sort_by": sort_by,
+        "vote_count.gte": 20,  # keeps vote_average.desc from surfacing obscure 1-vote shows
+    }
+    if genre:
+        params["with_genres"] = genre
+    cache_key = f"discover_genre:{genre or 'all'}:{sort_by}"
+    data = await tmdb_get_cached(cache_key, "/discover/tv", params, _DISCOVER_TTL)
+    if data is None:
+        raise HTTPException(502, "TMDB request failed")
+    return [normalize_show(x) for x in data.get("results", [])][:40]
 
 
 @router.get("/series/search")
