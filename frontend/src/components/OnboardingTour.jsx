@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Sparkles, Search, CalendarClock, ChevronRight } from "lucide-react";
 
-const STORAGE_KEY = "seriestrack_onboarding_done";
+export const ONBOARDING_STORAGE_KEY = "seriestrack_onboarding_done";
+const STORAGE_KEY = ONBOARDING_STORAGE_KEY;
 
 const STEPS = [
     {
@@ -26,23 +27,29 @@ const STEPS = [
  * empty and only until they've seen (or skipped) it once — tracked in
  * localStorage, not the backend, since missing it on another device costs
  * nothing (Fase 2 roadmap item: "Onboarding guiado"). */
-export default function OnboardingTour({ show }) {
+export default function OnboardingTour({ show, force = false, onDismiss }) {
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState(0);
 
     useEffect(() => {
+        if (force) {
+            setStep(0);
+            setOpen(true);
+            return;
+        }
         if (!show) return;
         try {
             if (localStorage.getItem(STORAGE_KEY) === "1") return;
         } catch {}
         setOpen(true);
-    }, [show]);
+    }, [show, force]);
 
     const dismiss = () => {
         setOpen(false);
         try {
             localStorage.setItem(STORAGE_KEY, "1");
         } catch {}
+        onDismiss?.();
     };
 
     const current = STEPS[step];

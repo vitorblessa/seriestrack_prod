@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import api from "../lib/api";
 import AppLayout from "../components/AppLayout";
 import Rail from "../components/Rail";
@@ -13,6 +13,8 @@ import { brandFor } from "../lib/providers";
 
 export default function Dashboard() {
     const { user } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const forceTour = searchParams.get("tour") === "1";
     const [trending, setTrending] = useState([]);
     const [popular, setPopular] = useState([]);
     const [airing, setAiring] = useState([]);
@@ -105,7 +107,17 @@ export default function Dashboard() {
 
     return (
         <AppLayout>
-            <OnboardingTour show={!loading && libraryIsEmpty} />
+            <OnboardingTour
+                show={!loading && libraryIsEmpty}
+                force={forceTour}
+                onDismiss={() => {
+                    if (forceTour) {
+                        const next = new URLSearchParams(searchParams);
+                        next.delete("tour");
+                        setSearchParams(next, { replace: true });
+                    }
+                }}
+            />
 
             {/* Featured hero */}
             {featured && (
