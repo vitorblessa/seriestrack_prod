@@ -66,10 +66,9 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: |
-            platforms;android-36
-            build-tools;36.0.0
-            platform-tools
+          # Single line, space-separated — see android-debug-apk.yml for why
+          # a YAML `|` block here breaks the sdkmanager install.
+          packages: 'platforms;android-36 build-tools;36.0.0 platform-tools'
 
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4

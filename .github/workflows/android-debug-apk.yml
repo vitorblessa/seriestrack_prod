@@ -44,10 +44,11 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: |
-            platforms;android-36
-            build-tools;36.0.0
-            platform-tools
+          # Single line, space-separated — a YAML `|` block here gets passed
+          # to sdkmanager with embedded newlines as ONE unparseable package
+          # name instead of being split, and the install fails with "Failed
+          # to find package 'platforms;android-36\nbuild-tools...'".
+          packages: 'platforms;android-36 build-tools;36.0.0 platform-tools'
 
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
