@@ -1,14 +1,20 @@
-"""Web Push (VAPID) — subscriptions, test ping, notify_today."""
+"""Push notifications — Web Push (VAPID) for browsers/PWA, and FCM for the
+native Android app. Subscriptions, test ping, notify_today."""
 import json
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Depends, Header
 from core import (
     db, logger, get_current_user, tmdb_get_tv,
     VAPID_PUBLIC_KEY, VAPID_PRIVATE_PEM, VAPID_PRIVATE_PEM_PATH, VAPID_SUBJECT, PUSH_AVAILABLE,
-    CRON_SECRET,
+    CRON_SECRET, FCM_AVAILABLE, send_fcm,
 )
 from core.models import PushSubscriptionIn
+
+
+class FcmTokenIn(BaseModel):
+    token: str
 
 try:
     from pywebpush import webpush, WebPushException
@@ -47,7 +53,36 @@ async def push_unsubscribe(endpoint: str, user: dict = Depends(get_current_user)
     return {"ok": True}
 
 
+@router.post("/push/register_fcm_token")
+async def push_register_fcm_token(payload: FcmTokenIn, user: dict = Depends(get_current_user)):
+    """Called by the native Android app (@capacitor/push-notifications) once
+    it has a device token. Stored in the same push_subscriptions collection
+    as Web Push subs, distinguished by platform="fcm" and keyed by token
+    (not endpoint/keys) for dedup. `endpoint` is set to a synthetic
+    "fcm:<token>" value purely so the existing unique index on
+    (user_id, endpoint) still applies — _send_push below branches on
+    `platform` before ever touching `endpoint` for real."""
+    user_id = str(user["_id"])
+    doc = {
+        "user_id": user_id,
+        "endpoint": f"fcm:{payload.token}",
+        "platform": "fcm",
+        "fcm_token": payload.token,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.push_subscriptions.update_one(
+        {"user_id": user_id, "endpoint": doc["endpoint"]},
+        {"$set": doc},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
 def _send_push(sub: dict, title: str, body: str, url: Optional[str] = None, icon: Optional[str] = None):
+    if sub.get("platform") == "fcm":
+        if not FCM_AVAILABLE:
+            return False, "FCM not configured"
+        return send_fcm(sub["fcm_token"], title, body, url=url, icon=icon)
     if not (PUSH_AVAILABLE and VAPID_PRIVATE_PEM_PATH):
         return False, "push not configured"
     try:
@@ -74,6 +109,20 @@ def _send_push(sub: dict, title: str, body: str, url: Optional[str] = None, icon
         return False, str(e)
 
 
+def _is_stale_token_error(err: Optional[str]) -> bool:
+    """True when `err` (from _send_push) means the subscription/token is
+    dead and should be dropped — Web Push's 410 Gone / 404 Not Found, or
+    FCM's equivalent "token no longer registered" errors."""
+    if not err:
+        return False
+    stale_markers = (
+        "410", "404",
+        "registration-token-not-registered", "not-registered",
+        "UNREGISTERED", "NOT_FOUND",
+    )
+    return any(marker in err for marker in stale_markers)
+
+
 @router.post("/push/test")
 async def push_test(user: dict = Depends(get_current_user)):
     user_id = str(user["_id"])
@@ -90,7 +139,7 @@ async def push_test(user: dict = Depends(get_current_user)):
         else:
             failed += 1
             last_err = err
-            if err and ("410" in err or "404" in err):
+            if _is_stale_token_error(err):
                 await db.push_subscriptions.delete_one({"_id": s["_id"]})
     if sent == 0 and failed > 0:
         # Surface the underlying error so the UI doesn't show a silent fail.
@@ -152,7 +201,7 @@ async def push_notify_today(user: dict = Depends(get_current_user)):
                 ok, err = _send_push(sub, title, body, url=f"/series/{it['tmdb_id']}", icon=it.get("poster_url"))
                 if ok:
                     pushed += 1
-                elif err and ("410" in err or "404" in err):
+                elif _is_stale_token_error(err):
                     await db.push_subscriptions.delete_one({"_id": sub["_id"]})
         except Exception as e:
             logger.warning(f"notify_today err {it.get('tmdb_id')}: {e}")

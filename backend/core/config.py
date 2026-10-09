@@ -38,6 +38,12 @@ try:
 except Exception:
     _SENTRY_SDK_AVAILABLE = False
 
+try:
+    import firebase_admin  # noqa: F401
+    _FIREBASE_SDK_AVAILABLE = True
+except Exception:
+    _FIREBASE_SDK_AVAILABLE = False
+
 # JWT
 JWT_SECRET = os.environ['JWT_SECRET']
 JWT_ALGO = "HS256"
@@ -65,6 +71,13 @@ if VAPID_PRIVATE_PEM_PATH and os.path.exists(VAPID_PRIVATE_PEM_PATH):
     except Exception as e:
         logger = logging.getLogger("seriestrack")
         logger.warning(f"VAPID private key unreadable: {e}")
+
+# Firebase Cloud Messaging — native Android push (web stays on VAPID/Web Push
+# above; this is only for the installed Android app via @capacitor/push-notifications).
+# The whole service account JSON goes in one env var (simplest for Render — no
+# file to mount), not a path, unlike VAPID_PRIVATE_PEM_PATH above.
+FIREBASE_SERVICE_ACCOUNT_JSON = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON', '')
+FCM_AVAILABLE = _FIREBASE_SDK_AVAILABLE and bool(FIREBASE_SERVICE_ACCOUNT_JSON)
 
 # Google OAuth via Emergent (legacy — kept only so the var doesn't error if still set;
 # no longer used now that /auth/google verifies Google ID tokens directly, see routes/auth.py)

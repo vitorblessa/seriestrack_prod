@@ -27,6 +27,7 @@ email-validator==2.3.0
 # rewired to call OpenAI/Gemini directly (both SDKs are already listed below).
 fastapi==0.110.1
 fastuuid==0.14.0
+firebase-admin==6.9.0
 filelock==3.29.0
 flake8==7.3.0
 frozenlist==1.8.0

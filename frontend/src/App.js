@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { registerSW } from "./lib/push";
 import { installNativeBridge } from "./lib/native";
+import { registerNativePush } from "./lib/nativePush";
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -44,7 +45,10 @@ registerSW();
  */
 function NativeBridge() {
     const navigate = useNavigate();
-    useEffect(() => { installNativeBridge(navigate); }, [navigate]);
+    useEffect(() => {
+        installNativeBridge(navigate);
+        registerNativePush(navigate);
+    }, [navigate]);
     return null;
 }
 

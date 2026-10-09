@@ -36,6 +36,8 @@ from .config import (
     PUSH_AVAILABLE,
     STRIPE_AVAILABLE,
     LLM_AVAILABLE,
+    FIREBASE_SERVICE_ACCOUNT_JSON,
+    FCM_AVAILABLE,
     logger,
 )
 from .db import db, mongo_client
@@ -52,6 +54,7 @@ from .security import (
 )
 from .tmdb import tmdb, tmdb_get_tv, tmdb_get_cached, normalize_show, close_tmdb
 from .owners import ensure_owner_pro
+from .fcm import send_fcm
 
 __all__ = [
     "FREE_LIBRARY_CAP", "PRO_PLANS",
@@ -66,6 +69,7 @@ __all__ = [
     "EMERGENT_LLM_KEY", "GEMINI_API_KEY", "GEMINI_MODEL", "CRON_SECRET",
     "SENTRY_DSN", "SENTRY_AVAILABLE",
     "PUSH_AVAILABLE", "STRIPE_AVAILABLE", "LLM_AVAILABLE",
+    "FIREBASE_SERVICE_ACCOUNT_JSON", "FCM_AVAILABLE",
     "logger",
     "db", "mongo_client",
     "hash_password", "verify_password", "create_token",
@@ -73,4 +77,5 @@ __all__ = [
     "get_current_user", "is_pro", "require_pro",
     "tmdb", "tmdb_get_tv", "tmdb_get_cached", "normalize_show", "close_tmdb",
     "ensure_owner_pro",
+    "send_fcm",
 ]

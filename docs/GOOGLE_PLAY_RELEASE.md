@@ -170,16 +170,35 @@ versionCode System.getenv("ANDROID_VERSION_CODE")?.toInteger() ?: 1
 versionName System.getenv("ANDROID_VERSION_NAME") ?: "1.0.0"
 ```
 
-## 9. Push notifications (optional — Firebase)
+## 9. Push notifications (Firebase / FCM)
 
-Currently the app uses Web Push via VAPID. To publish push on Android natively:
+The code side is implemented. Web Push via VAPID keeps working everywhere
+(browser + PWA); FCM is additive, native-Android-only, and needed for push
+to reach the app while it's fully closed (Web Push can't do that).
 
-1. Create Firebase project → add Android app with package `com.vitorblessa.seriestrack`.
-2. Download `google-services.json` → drop into `frontend/android/app/`.
-3. Add `@capacitor/push-notifications` plugin and register the FCM token with the backend.
-4. Backend already stores subscriptions in `db.push_subscriptions` — extend to accept FCM tokens alongside Web Push endpoints.
+What's already in place:
+- Backend: `backend/core/fcm.py` (lazy Firebase Admin SDK init + `send_fcm`),
+  `POST /push/register_fcm_token`, and `routes/push.py`'s `_send_push`
+  dispatches by `sub["platform"]` ("fcm" → FCM, else → existing Web Push).
+- Frontend: `@capacitor/push-notifications` installed; `frontend/src/lib/nativePush.js`
+  requests permission, registers for a token, and posts it to the backend —
+  wired into `App.js` alongside the existing service-worker/native-bridge setup.
+- `frontend/android/build.gradle` and `android/app/build.gradle` already apply
+  the Google Services Gradle plugin conditionally, so nothing there needs editing.
 
-**Not blocking for first release** — the app works fine with browser-based Web Push on Android.
+Still required before this does anything in production (can't be done by
+Claude — needs your own Firebase Console access):
+
+1. Create a Firebase project → add an Android app with package `com.vitorblessa.seriestrack`.
+2. Download `google-services.json` → drop into `frontend/android/app/google-services.json`.
+3. Firebase Console → Project settings → Service accounts → Generate new private key
+   (a JSON file). Set its **entire contents** as the `FIREBASE_SERVICE_ACCOUNT_JSON`
+   env var on Render (this is a secret — never commit it to the repo).
+4. Rebuild the Android app (`google-services.json` is read at Gradle build time).
+
+Until step 3 is done, `FCM_AVAILABLE` stays `False` and the backend silently
+skips FCM sends (same soft-fail pattern as Sentry/Gemini) — nothing breaks,
+Web Push keeps covering browsers/PWA as before.
 
 ## 10. Emergent-specific notes
 

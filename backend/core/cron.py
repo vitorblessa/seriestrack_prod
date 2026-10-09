@@ -20,7 +20,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from core import db, logger, tmdb_get_tv
 from core import google_calendar as gcal
-from routes.push import _send_push
+from routes.push import _send_push, _is_stale_token_error
 
 _scheduler: Optional[AsyncIOScheduler] = None
 
@@ -103,7 +103,7 @@ async def run_daily_push_pass() -> dict:
                     ok, err = _send_push(sub, title, body, url=f"/series/{it['tmdb_id']}", icon=it.get("poster_url"))
                     if ok:
                         total_pushed += 1
-                    elif err and ("410" in err or "404" in err):
+                    elif _is_stale_token_error(err):
                         await db.push_subscriptions.delete_one({"_id": sub["_id"]})
         except Exception as e:
             logger.warning(f"[cron] daily_push user={user_id} failed: {e}")
