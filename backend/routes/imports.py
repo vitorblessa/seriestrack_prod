@@ -92,17 +92,46 @@ def _coerce_status(s: str) -> str:
     return "want"
 
 
-@router.post("/import/trakt")
-async def import_trakt(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    """Upload a Trakt export (CSV or JSON) and bulk-add to library."""
-    user_id = str(user["_id"])
-    raw = await file.read()
-    if len(raw) > 5 * 1024 * 1024:
-        raise HTTPException(413, "Arquivo muito grande (max 5MB)")
-    items = _parse_trakt_file(raw, file.filename or "")
-    if not items:
-        raise HTTPException(400, "Nenhum item encontrado no arquivo")
+def _parse_letterboxd_file(content: bytes, filename: str) -> List[Dict[str, Any]]:
+    """Parse a Letterboxd CSV export. Letterboxd is a movie-tracking site, so
+    its exports have no "status" column and no TMDB id — just Name/Year (and
+    Date, for the watched/diary exports). Which export it is only shows up in
+    the filename, so we infer status from that: watched/diary -> already
+    seen, watchlist/ratings (and anything else) -> want to watch. Most
+    entries will be movies TMDB's TV search won't find — that's fine, they
+    just land in `not_found` like any other unmatched title."""
+    text = content.decode("utf-8", errors="ignore").strip()
+    if not text:
+        return []
+    reader = _csv.DictReader(StringIO(text))
+    if not reader.fieldnames:
+        return []
+    cols = {c.lower().strip(): c for c in reader.fieldnames}
+    name_col = cols.get("name") or cols.get("title")
+    year_col = cols.get("year")
+    if not name_col:
+        raise HTTPException(400, "CSV precisa de uma coluna 'Name'")
 
+    fname = (filename or "").lower()
+    default_status = "finished" if ("watched" in fname or "diary" in fname) else "want"
+
+    items: List[Dict[str, Any]] = []
+    for row in reader:
+        title = _normalize_trakt_title(row.get(name_col) or "")
+        if not title:
+            continue
+        try:
+            yr = int(row[year_col]) if year_col and row.get(year_col) else None
+        except Exception:
+            yr = None
+        items.append({"title": title, "year": yr, "tmdb_id": None, "status": default_status})
+    return items
+
+
+async def _bulk_import(items: List[Dict[str, Any]], user: dict, source: str):
+    """Resolve each parsed item against TMDB and bulk-add matches to the
+    user's library — shared by every importer (Trakt, Letterboxd, ...)."""
+    user_id = str(user["_id"])
     pro = await is_pro(user)
     current_count = await db.library.count_documents({"user_id": user_id})
     cap = None if pro else FREE_LIBRARY_CAP
@@ -179,7 +208,7 @@ async def import_trakt(file: UploadFile = File(...), user: dict = Depends(get_cu
                     "overview": found["overview"],
                     "updated_at": now,
                 },
-                "$setOnInsert": {"added_at": now, "imported_from": "trakt"},
+                "$setOnInsert": {"added_at": now, "imported_from": source},
             },
             upsert=True,
         )
@@ -196,3 +225,29 @@ async def import_trakt(file: UploadFile = File(...), user: dict = Depends(get_cu
         "tier": "pro" if pro else "free",
         "cap": cap,
     }
+
+
+@router.post("/import/trakt")
+async def import_trakt(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Upload a Trakt export (CSV or JSON) and bulk-add to library."""
+    raw = await file.read()
+    if len(raw) > 5 * 1024 * 1024:
+        raise HTTPException(413, "Arquivo muito grande (max 5MB)")
+    items = _parse_trakt_file(raw, file.filename or "")
+    if not items:
+        raise HTTPException(400, "Nenhum item encontrado no arquivo")
+    return await _bulk_import(items, user, "trakt")
+
+
+@router.post("/import/letterboxd")
+async def import_letterboxd(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Upload a Letterboxd CSV export (watched/watchlist/diary/ratings) and
+    bulk-add any matching TV shows to library. Letterboxd tracks movies, so
+    most rows in a typical export won't resolve — see _parse_letterboxd_file."""
+    raw = await file.read()
+    if len(raw) > 5 * 1024 * 1024:
+        raise HTTPException(413, "Arquivo muito grande (max 5MB)")
+    items = _parse_letterboxd_file(raw, file.filename or "")
+    if not items:
+        raise HTTPException(400, "Nenhum item encontrado no arquivo")
+    return await _bulk_import(items, user, "letterboxd")

@@ -13,9 +13,10 @@ export default function Settings() {
     const { theme, setTheme } = useTheme();
     const [status, setStatus] = useState(null);
     const [busy, setBusy] = useState(false);
-    const [importing, setImporting] = useState(false);
-    const [importResult, setImportResult] = useState(null);
+    const [importing, setImporting] = useState(null); // "trakt" | "letterboxd" | null
+    const [importResults, setImportResults] = useState({ trakt: null, letterboxd: null });
     const fileRef = useRef(null);
+    const letterboxdFileRef = useRef(null);
     const isPro = user?.subscription_tier === "pro";
 
     const handleThemeChange = async (t) => {
@@ -92,29 +93,30 @@ export default function Settings() {
         }
     };
 
-    const handleImport = async (e) => {
+    const handleImport = (source) => async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.size > 5 * 1024 * 1024) {
             toast.error("Arquivo muito grande (max 5MB)");
             return;
         }
-        setImporting(true);
-        setImportResult(null);
+        setImporting(source);
+        setImportResults((r) => ({ ...r, [source]: null }));
         try {
             const fd = new FormData();
             fd.append("file", file);
-            const { data } = await api.post("/import/trakt", fd, {
+            const { data } = await api.post(`/import/${source}`, fd, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            setImportResult(data);
+            setImportResults((r) => ({ ...r, [source]: data }));
             toast.success(`Importadas ${data.added} séries (de ${data.total})`);
         } catch (err) {
             const msg = err?.response?.data?.detail || "Erro ao importar";
             toast.error(typeof msg === "string" ? msg : "Erro ao importar");
         } finally {
-            setImporting(false);
-            if (fileRef.current) fileRef.current.value = "";
+            setImporting(null);
+            const ref = source === "trakt" ? fileRef : letterboxdFileRef;
+            if (ref.current) ref.current.value = "";
         }
     };
 
@@ -363,7 +365,12 @@ export default function Settings() {
                             <Upload className="w-5 h-5 text-[#FF2A54]" />
                         </div>
                         <div className="flex-1">
-                            <h2 className="font-display text-xl font-bold">Importar do Trakt</h2>
+                            <h2 className="font-display text-xl font-bold">
+                                Importar do{" "}
+                                <a href="https://trakt.tv" target="_blank" rel="noreferrer" className="underline decoration-white/30 hover:decoration-white">
+                                    Trakt
+                                </a>
+                            </h2>
                             <p className="text-white/60 text-sm mt-1">
                                 Faça upload do seu export do Trakt (JSON ou CSV). Buscamos cada série no TMDB e adicionamos à sua biblioteca como "Quero assistir".
                             </p>
@@ -377,8 +384,8 @@ export default function Settings() {
                                     ref={fileRef}
                                     type="file"
                                     accept=".json,.csv,application/json,text/csv"
-                                    onChange={handleImport}
-                                    disabled={importing}
+                                    onChange={handleImport("trakt")}
+                                    disabled={importing === "trakt"}
                                     className="hidden"
                                     data-testid="trakt-file-input"
                                     id="trakt-file"
@@ -386,10 +393,10 @@ export default function Settings() {
                                 <label
                                     htmlFor="trakt-file"
                                     data-testid="trakt-import-btn"
-                                    className={`btn-primary text-sm cursor-pointer ${importing ? "opacity-50 pointer-events-none" : ""}`}
+                                    className={`btn-primary text-sm cursor-pointer ${importing === "trakt" ? "opacity-50 pointer-events-none" : ""}`}
                                 >
-                                    {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                                    {importing ? "Importando..." : "Escolher arquivo"}
+                                    {importing === "trakt" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                    {importing === "trakt" ? "Importando..." : "Escolher arquivo"}
                                 </label>
                                 <a
                                     href="https://trakt.tv/settings/data"
@@ -400,26 +407,106 @@ export default function Settings() {
                                     Onde baixo meu export? <ExternalLink className="w-3 h-3" />
                                 </a>
                             </div>
-                            {importResult && (
+                            {importResults.trakt && (
                                 <div className="mt-5 p-4 rounded-xl bg-white/[0.04] border border-white/10 text-sm" data-testid="trakt-import-result">
                                     <p className="font-bold text-emerald-300">
-                                        ✓ {importResult.added} séries adicionadas <span className="text-white/50 font-normal">de {importResult.total}</span>
+                                        ✓ {importResults.trakt.added} séries adicionadas <span className="text-white/50 font-normal">de {importResults.trakt.total}</span>
                                     </p>
                                     <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-white/60">
-                                        <div><span className="text-white/40">Duplicadas:</span> {importResult.duplicates}</div>
-                                        <div><span className="text-white/40">Não encontradas:</span> {importResult.not_found_count}</div>
-                                        <div><span className="text-white/40">Bloqueadas (limite):</span> {importResult.skipped_cap}</div>
+                                        <div><span className="text-white/40">Duplicadas:</span> {importResults.trakt.duplicates}</div>
+                                        <div><span className="text-white/40">Não encontradas:</span> {importResults.trakt.not_found_count}</div>
+                                        <div><span className="text-white/40">Bloqueadas (limite):</span> {importResults.trakt.skipped_cap}</div>
                                     </div>
-                                    {importResult.skipped_cap > 0 && (
+                                    {importResults.trakt.skipped_cap > 0 && (
                                         <Link to="/pricing" className="mt-3 inline-block text-xs font-bold text-[#FF2A54] hover:underline">
                                             🔓 Desbloquear ilimitado no Pro →
                                         </Link>
                                     )}
-                                    {importResult.not_found?.length > 0 && (
+                                    {importResults.trakt.not_found?.length > 0 && (
                                         <details className="mt-3">
-                                            <summary className="text-xs text-white/50 cursor-pointer">Ver não encontradas ({importResult.not_found.length})</summary>
+                                            <summary className="text-xs text-white/50 cursor-pointer">Ver não encontradas ({importResults.trakt.not_found.length})</summary>
                                             <ul className="mt-2 text-xs text-white/60 max-h-32 overflow-auto list-disc pl-5">
-                                                {importResult.not_found.map((t, i) => <li key={i}>{t}</li>)}
+                                                {importResults.trakt.not_found.map((t, i) => <li key={i}>{t}</li>)}
+                                            </ul>
+                                        </details>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass rounded-2xl p-6 md:p-8" data-testid="import-letterboxd-card">
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
+                            <Upload className="w-5 h-5 text-[#FF2A54]" />
+                        </div>
+                        <div className="flex-1">
+                            <h2 className="font-display text-xl font-bold">
+                                Importar do{" "}
+                                <a href="https://letterboxd.com" target="_blank" rel="noreferrer" className="underline decoration-white/30 hover:decoration-white">
+                                    Letterboxd
+                                </a>
+                            </h2>
+                            <p className="text-white/60 text-sm mt-1">
+                                Faça upload do seu export do Letterboxd (CSV — watched, watchlist, diary ou ratings). Buscamos cada título no TMDB e adicionamos à sua biblioteca.
+                            </p>
+                            <p className="text-white/40 text-xs mt-1">
+                                O Letterboxd é focado em filmes, então só séries de TV do seu export serão encontradas.
+                            </p>
+                            {!isPro && (
+                                <p className="text-amber-300/80 text-xs mt-2">
+                                    Plano Free: máximo de 50 séries no total. Itens além do limite ficam de fora — <Link to="/pricing" className="underline">faça upgrade</Link> para importar tudo.
+                                </p>
+                            )}
+                            <div className="mt-4 flex flex-wrap items-center gap-3">
+                                <input
+                                    ref={letterboxdFileRef}
+                                    type="file"
+                                    accept=".csv,text/csv"
+                                    onChange={handleImport("letterboxd")}
+                                    disabled={importing === "letterboxd"}
+                                    className="hidden"
+                                    data-testid="letterboxd-file-input"
+                                    id="letterboxd-file"
+                                />
+                                <label
+                                    htmlFor="letterboxd-file"
+                                    data-testid="letterboxd-import-btn"
+                                    className={`btn-primary text-sm cursor-pointer ${importing === "letterboxd" ? "opacity-50 pointer-events-none" : ""}`}
+                                >
+                                    {importing === "letterboxd" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                    {importing === "letterboxd" ? "Importando..." : "Escolher arquivo"}
+                                </label>
+                                <a
+                                    href="https://letterboxd.com/settings/data/"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs text-white/50 hover:text-white inline-flex items-center gap-1"
+                                >
+                                    Onde baixo meu export? <ExternalLink className="w-3 h-3" />
+                                </a>
+                            </div>
+                            {importResults.letterboxd && (
+                                <div className="mt-5 p-4 rounded-xl bg-white/[0.04] border border-white/10 text-sm" data-testid="letterboxd-import-result">
+                                    <p className="font-bold text-emerald-300">
+                                        ✓ {importResults.letterboxd.added} séries adicionadas <span className="text-white/50 font-normal">de {importResults.letterboxd.total}</span>
+                                    </p>
+                                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-white/60">
+                                        <div><span className="text-white/40">Duplicadas:</span> {importResults.letterboxd.duplicates}</div>
+                                        <div><span className="text-white/40">Não encontradas:</span> {importResults.letterboxd.not_found_count}</div>
+                                        <div><span className="text-white/40">Bloqueadas (limite):</span> {importResults.letterboxd.skipped_cap}</div>
+                                    </div>
+                                    {importResults.letterboxd.skipped_cap > 0 && (
+                                        <Link to="/pricing" className="mt-3 inline-block text-xs font-bold text-[#FF2A54] hover:underline">
+                                            🔓 Desbloquear ilimitado no Pro →
+                                        </Link>
+                                    )}
+                                    {importResults.letterboxd.not_found?.length > 0 && (
+                                        <details className="mt-3">
+                                            <summary className="text-xs text-white/50 cursor-pointer">Ver não encontradas ({importResults.letterboxd.not_found.length})</summary>
+                                            <ul className="mt-2 text-xs text-white/60 max-h-32 overflow-auto list-disc pl-5">
+                                                {importResults.letterboxd.not_found.map((t, i) => <li key={i}>{t}</li>)}
                                             </ul>
                                         </details>
                                     )}
