@@ -29,6 +29,17 @@ android {
                 keyPassword System.getenv("ANDROID_KEY_PASSWORD")
             }
         }
+        debug {
+            // Pinned, committed debug keystore (see .gitignore's comment next to
+            // it) instead of Gradle's own auto-generated one — otherwise every
+            // machine/CI runner gets a different SHA-1 fingerprint, which
+            // breaks native Google Sign-In (it's registered against one fixed
+            // SHA-1 in Google Cloud Console for debug builds).
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
     }
     buildTypes {
         release {
@@ -44,6 +55,7 @@ android {
         debug {
             // Explicit — WebView debugging is only enabled in debug builds via BridgeActivity.
             debuggable true
+            signingConfig signingConfigs.debug
         }
     }
 }

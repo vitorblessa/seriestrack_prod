@@ -34,6 +34,13 @@ yarn-error.log*
 *.pem
 *.p12
 release-key.properties
+# EXCEPTION: android/app/debug.keystore IS committed on purpose. A debug-only
+# signing key is not sensitive (anyone can use it, it's explicitly untrusted
+# by Play Store), and native Google Sign-In needs it pinned so every build —
+# local or any CI runner — produces the SAME SHA-1, matching the Android
+# OAuth client registered in Google Cloud Console. Letting Gradle auto-generate
+# a fresh one per machine would break native Google Sign-In on every rebuild.
+!/android/app/debug.keystore
 # google-services.json IS committed (see android/app/ directly) — it's the
 # Firebase Android client config (project id + a client-scoped API key), not
 # a server secret; Google's own docs say it's fine in source control, and

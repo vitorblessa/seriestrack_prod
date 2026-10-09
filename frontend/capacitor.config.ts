@@ -42,6 +42,21 @@ const config: CapacitorConfig = {
       backgroundColor: '#0A0A0C',
       overlaysWebView: false,
     },
+    GoogleAuth: {
+      // The WEB OAuth client (same one REACT_APP_GOOGLE_CLIENT_ID holds for
+      // the browser/PWA flow), NOT an Android client ID. Native Google
+      // Sign-In still needs a separate Android OAuth client registered in
+      // Google Cloud Console (package com.vitorblessa.seriestrack + this
+      // build's signing certificate SHA-1) for Play Services to allow the
+      // sign-in at all — but the idToken it hands back is issued FOR this
+      // serverClientId, so it verifies against the backend's existing
+      // GOOGLE_CLIENT_ID check (routes/auth.py's /auth/google) with no
+      // backend changes needed. A public identifier, safe to commit — see
+      // GoogleSignInButton.jsx for the same note on the web side.
+      scopes: ['profile', 'email'],
+      serverClientId: '915970909757-v0heesi45pik9a10evd6ei27nvspcdan.apps.googleusercontent.com',
+      forceCodeForRefreshToken: false,
+    },
   },
 };
 

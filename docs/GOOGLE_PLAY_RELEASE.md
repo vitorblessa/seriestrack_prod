@@ -200,6 +200,56 @@ Until step 3 is done, `FCM_AVAILABLE` stays `False` and the backend silently
 skips FCM sends (same soft-fail pattern as Sentry/Gemini) — nothing breaks,
 Web Push keeps covering browsers/PWA as before.
 
+## 9b. Native Google Sign-In
+
+Google blocks its Identity Services JS SDK inside any embedded WebView
+("disallowed_useragent") — the web/PWA Google Sign-In button never worked in
+the installed app for this reason, independent of everything else in this
+doc. Fixed with `@southdevs/capacitor-google-auth` (a Capacitor-7-compatible
+fork of the popular `@codetrix-studio/capacitor-google-auth`), which opens
+Android's native account picker instead and hands back an idToken that
+verifies against the *same* backend endpoint (`/auth/google`,
+`GOOGLE_CLIENT_ID`) as the web flow — no backend changes.
+
+What's already in place:
+- `frontend/capacitor.config.ts`'s `plugins.GoogleAuth` and
+  `android/app/.../values/strings.xml`'s `server_client_id` both carry the
+  **web** OAuth client ID (same value as `REACT_APP_GOOGLE_CLIENT_ID`) — not
+  an Android client ID, and not a secret, same as the web flow already is.
+- `frontend/src/components/GoogleSignInButton.jsx` branches on
+  `Capacitor.isNativePlatform()` to call the native plugin instead of
+  `google.accounts.id.prompt()`.
+- `frontend/android/app/debug.keystore` is a **committed, fixed** debug
+  signing key (not Gradle's own auto-generated one, which would differ per
+  machine/CI runner) — `app/build.gradle`'s `signingConfigs.debug` points at
+  it, storePass/keyAlias/keyPass all `android`/`androiddebugkey`/`android`
+  (Android's own defaults, so nothing else needed to change).
+
+Still required (needs your own Google Cloud Console access — Claude can't
+do this part): native Google Sign-In only works once an **Android** OAuth
+client is registered for this app, tied to its package name *and* signing
+certificate SHA-1 fingerprint. Two separate entries are needed over time:
+
+1. **Debug builds** (what `android-debug-apk.yml` produces): Google Cloud
+   Console → APIs & Services → Credentials → Create Credentials → OAuth
+   client ID → Application type **Android**.
+   - Package name: `com.vitorblessa.seriestrack`
+   - SHA-1 certificate fingerprint: `1B:71:30:AF:F9:3A:73:C2:BB:05:DD:55:E4:95:CF:2F:CC:41:BA:19`
+     (the committed `debug.keystore`'s fingerprint — stable across every
+     build since the keystore itself is committed; re-derive it anytime with
+     `keytool -list -v -keystore frontend/android/app/debug.keystore -storepass android -alias androiddebugkey`.)
+2. **Release builds** (Play Store, `android-release.yml`, your own
+   `ANDROID_KEYSTORE_BASE64` secret): a second Android OAuth client, same
+   package name, SHA-1 of *that* keystore instead
+   (`keytool -list -v -keystore <your-release.jks> -alias <your-alias>`).
+   Not needed until you're actually preparing a Play Store release.
+
+No app-side config changes when you add these — Google Play Services
+matches the signing certificate automatically. If sign-in reports
+`DEVELOPER_ERROR` or `10` after installing a new build, the most common
+cause is this Android OAuth client either missing or registered with the
+wrong SHA-1.
+
 ## 10. Emergent-specific notes
 
 - The backend at `https://show-notify.emergent.host` is deployed via the Emergent pipeline. Any change to `/app/backend/` requires a redeploy before it's live for the Android WebView.

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { useAuth } from "../lib/auth";
 import api, { formatApiError } from "../lib/api";
 
@@ -20,12 +21,22 @@ const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
  * our own real <button>'s onClick. No overlay, no iframe, no timing window
  * where the tap can land on nothing — the click handler itself is the
  * trusted user gesture.
+ *
+ * NONE of the above runs inside the installed Android app, though: Google
+ * blocks its Identity Services JS SDK inside embedded WebViews entirely
+ * ("disallowed_useragent", a security policy since 2021) — prompt() just
+ * silently fails to display there, web/PWA or not. On
+ * Capacitor.isNativePlatform() we instead call the native Google Sign-In
+ * plugin (@southdevs/capacitor-google-auth, see capacitor.config.ts), which
+ * opens Android's own account picker and hands back an idToken we send to
+ * the exact same backend endpoint as the web flow — no backend changes.
  */
 export default function GoogleSignInButton({ className, children }) {
     const { setSession } = useAuth();
     const navigate = useNavigate();
     const [error, setError] = useState("");
     const initializedRef = useRef(false);
+    const isNative = Capacitor.isNativePlatform();
 
     const ensureInitialized = useCallback(() => {
         if (initializedRef.current || !window.google?.accounts?.id) return;
@@ -46,6 +57,7 @@ export default function GoogleSignInButton({ className, children }) {
     }, [navigate, setSession]);
 
     useEffect(() => {
+        if (isNative) return; // native path needs no GSI script
         if (!GOOGLE_CLIENT_ID) {
             setError("Login com Google não configurado (falta REACT_APP_GOOGLE_CLIENT_ID).");
             return;
@@ -63,9 +75,35 @@ export default function GoogleSignInButton({ className, children }) {
         }, 200);
         const timeout = setTimeout(() => clearInterval(t), 10000);
         return () => { clearInterval(t); clearTimeout(timeout); };
-    }, [ensureInitialized]);
+    }, [isNative, ensureInitialized]);
 
-    const handleClick = () => {
+    const handleNativeClick = async () => {
+        setError("");
+        try {
+            const { GoogleAuth } = await import("@southdevs/capacitor-google-auth");
+            // Also configured in capacitor.config.ts (read automatically on
+            // native) and strings.xml as a fallback — calling initialize()
+            // explicitly here is what the plugin's own docs recommend and
+            // costs nothing extra (it's a no-op if already initialized).
+            await GoogleAuth.initialize({
+                clientId: GOOGLE_CLIENT_ID,
+                scopes: ["profile", "email"],
+            });
+            const user = await GoogleAuth.signIn();
+            const idToken = user?.authentication?.idToken;
+            if (!idToken) throw new Error("Google não retornou um token válido.");
+            const { data } = await api.post("/auth/google", { credential: idToken });
+            setSession(data.user, data.access_token);
+            navigate("/dashboard", { replace: true });
+        } catch (e) {
+            // User closing the native account picker throws too — don't show
+            // an error for a plain cancel.
+            if (e?.message?.toLowerCase().includes("cancel")) return;
+            setError(formatApiError(e) || "Falha ao autenticar com Google.");
+        }
+    };
+
+    const handleWebClick = () => {
         setError("");
         if (!GOOGLE_CLIENT_ID) return;
         if (!window.google?.accounts?.id) {
@@ -81,6 +119,8 @@ export default function GoogleSignInButton({ className, children }) {
             }
         });
     };
+
+    const handleClick = isNative ? handleNativeClick : handleWebClick;
 
     return (
         <div>

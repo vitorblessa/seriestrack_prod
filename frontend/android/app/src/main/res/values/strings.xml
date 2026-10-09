@@ -6,4 +6,9 @@
     <!-- Custom scheme used by @capacitor/app deep-link handler.
          Must match capacitor.config.ts and the seriestrack:// intent-filter in AndroidManifest.xml. -->
     <string name="custom_url_scheme">seriestrack</string>
+    <!-- Native Google Sign-In (@southdevs/capacitor-google-auth) reads this as
+         a fallback if capacitor.config.ts's GoogleAuth.serverClientId isn't
+         picked up. Same WEB OAuth client ID as REACT_APP_GOOGLE_CLIENT_ID —
+         not an Android client ID, and not a secret (see capacitor.config.ts). -->
+    <string name="server_client_id">915970909757-v0heesi45pik9a10evd6ei27nvspcdan.apps.googleusercontent.com</string>
 </resources>
