@@ -57,10 +57,14 @@ export default function Search() {
             // pseudo-genre chips backed by a keyword search instead (see backend
             // /series/discover + _KEYWORD_SYNONYMS). Both são muito procurados,
             // então valem o chip mesmo não sendo gêneros oficiais do TMDB.
+            // "Policial" also piggybacks on the real "Crime" genre id (looked up
+            // from TMDB's own list here, never hardcoded) — TMDB's keyword tagging
+            // alone is too sparse and missed well-known shows on its own.
+            const crime = r.data.find((g) => (g.name || "").toLowerCase() === "crime");
             setGenres([
                 ...r.data,
                 { id: "medical", name: "Médicas", keyword: "medical" },
-                { id: "policial", name: "Policial", keyword: "policial" },
+                { id: "policial", name: "Policial", keyword: "policial", genre: crime?.id },
             ]);
         }).catch(() => {});
     }, []);
@@ -75,9 +79,13 @@ export default function Search() {
         (async () => {
             setLoadingDiscover(true);
             try {
-                const params = selectedGenre.keyword
-                    ? { keyword: selectedGenre.keyword, sort_by: sortBy }
-                    : { genre: selectedGenre.id, sort_by: sortBy };
+                const params = { sort_by: sortBy };
+                if (selectedGenre.keyword) {
+                    params.keyword = selectedGenre.keyword;
+                    if (selectedGenre.genre) params.genre = selectedGenre.genre;
+                } else {
+                    params.genre = selectedGenre.id;
+                }
                 const { data } = await api.get("/series/discover", { params });
                 if (!cancelled) setDiscoverResults(data);
             } finally {

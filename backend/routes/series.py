@@ -98,6 +98,18 @@ async def genres():
     return data.get("genres", [])
 
 
+def _sort_key(sort_by: str):
+    """Returns (key_func, reverse) for sorting a merged list of raw TMDB
+    results the same way TMDB's own `sort_by` discover param would."""
+    if sort_by == "vote_average.desc":
+        return (lambda x: x.get("vote_average") or 0), True
+    if sort_by == "first_air_date.desc":
+        return (lambda x: x.get("first_air_date") or ""), True
+    if sort_by == "name.asc":
+        return (lambda x: (x.get("name") or "").lower()), False
+    return (lambda x: x.get("popularity") or 0), True  # popularity.desc (default)
+
+
 @router.get("/series/discover")
 async def discover(genre: int = None, keyword: str = None, sort_by: str = "popularity.desc"):
     """Genre-filtered discovery — powers the "Filtrar por gênero" chips on
@@ -105,29 +117,71 @@ async def discover(genre: int = None, keyword: str = None, sort_by: str = "popul
     (popularity.desc, vote_average.desc, first_air_date.desc, ...).
 
     `keyword` powers pseudo-genre chips TMDB doesn't model as real genres —
-    e.g. "médicas" (medical dramas), which is a TMDB keyword, not a genre."""
+    e.g. "médicas" (medical dramas) and "policial" (police procedurals),
+    which are TMDB keywords, not genres.
+
+    TMDB's community keyword tagging is sparse — even very popular shows can
+    be missing a given keyword — so a keyword-only chip can come back thin.
+    When a pseudo-genre chip also has a real TMDB genre behind it (e.g.
+    "Policial" -> the "Crime" genre, reliably tagged on every crime show),
+    `genre` and `keyword` are combined as an OR (two separate TMDB discover
+    calls, merged and de-duped) instead of TMDB's own AND-within-one-call
+    semantics, which would require both and stay just as thin."""
     allowed_sorts = {
         "popularity.desc", "vote_average.desc", "first_air_date.desc", "name.asc",
     }
     if sort_by not in allowed_sorts:
         sort_by = "popularity.desc"
-    params = {
+    base_params = {
         "language": TMDB_LANG,
         "sort_by": sort_by,
         "vote_count.gte": 20,  # keeps vote_average.desc from surfacing obscure 1-vote shows
     }
+
+    result_lists = []
+
     if genre:
-        params["with_genres"] = genre
-    if keyword:
-        kw_ids = await _resolve_keyword_ids(keyword)
-        if kw_ids:
-            # TMDB's "|" means OR across keywords — any show tagged with any one of them matches.
-            params["with_keywords"] = "|".join(str(i) for i in kw_ids)
-    cache_key = f"discover_genre:{genre or 'all'}:{keyword or 'none'}:{sort_by}"
-    data = await tmdb_get_cached(cache_key, "/discover/tv", params, _DISCOVER_TTL)
-    if data is None:
+        p = dict(base_params, with_genres=genre)
+        data = await tmdb_get_cached(f"discover_genre:{genre}:{sort_by}", "/discover/tv", p, _DISCOVER_TTL)
+        if data is not None:
+            result_lists.append(data.get("results") or [])
+
+    kw_ids = await _resolve_keyword_ids(keyword) if keyword else []
+    if kw_ids:
+        # TMDB's "|" means OR across keywords — any show tagged with any one of them matches.
+        p = dict(base_params, with_keywords="|".join(str(i) for i in kw_ids))
+        data = await tmdb_get_cached(f"discover_keyword:{keyword}:{sort_by}", "/discover/tv", p, _DISCOVER_TTL)
+        if data is not None:
+            result_lists.append(data.get("results") or [])
+
+    # No usable filter at all (no genre, and either no keyword or one that
+    # didn't resolve to any TMDB keyword) — fall back to the unfiltered list
+    # instead of erroring out.
+    if not genre and not kw_ids:
+        data = await tmdb_get_cached("discover_all", "/discover/tv", base_params, _DISCOVER_TTL)
+        if data is not None:
+            result_lists.append(data.get("results") or [])
+
+    if not result_lists:
         raise HTTPException(502, "TMDB request failed")
-    return [normalize_show(x) for x in data.get("results", [])][:40]
+
+    merged = []
+    seen_ids = set()
+    for results in result_lists:
+        for item in results:
+            tid = item.get("id")
+            if tid in seen_ids:
+                continue
+            seen_ids.add(tid)
+            merged.append(item)
+
+    # A single list came back from TMDB already sorted; only re-sort when
+    # genre+keyword results were actually merged together.
+    if len(result_lists) > 1:
+        key_func, reverse = _sort_key(sort_by)
+        merged.sort(key=key_func, reverse=reverse)
+
+    return [normalize_show(x) for x in merged][:40]
 
 
 @router.get("/series/search")

@@ -174,6 +174,55 @@ async def test_discover_policial_keyword_synonyms(client, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_discover_genre_plus_keyword_merges_and_dedupes(client, monkeypatch):
+    """"Policial" sends both a real TMDB genre (Crime) and keyword terms.
+    TMDB's own semantics would AND them in a single call (show must have
+    the genre AND one of the keywords) — too strict, since keyword tagging
+    is sparse. We instead run two separate discover calls and OR (merge +
+    dedupe) their results, so a show found by genre alone, or by keyword
+    alone, still shows up."""
+
+    class _UnionFakeClient:
+        def __init__(self):
+            self.calls = []
+
+        async def get(self, path, params=None):
+            self.calls.append((path, params))
+            if path == "/search/keyword":
+                return _FakeResponse(200, {"results": [{"id": 111, "name": "police"}]})
+            if path == "/discover/tv":
+                if params and "with_genres" in params:
+                    # Found via genre only, plus one overlapping with the keyword call
+                    return _FakeResponse(200, {"results": [
+                        {"id": 1, "name": "NCIS", "popularity": 50, "vote_average": 7.0, "first_air_date": "2003-01-01"},
+                        {"id": 2, "name": "Shared Show", "popularity": 10, "vote_average": 6.0, "first_air_date": "2010-01-01"},
+                    ]})
+                if params and "with_keywords" in params:
+                    return _FakeResponse(200, {"results": [
+                        {"id": 2, "name": "Shared Show", "popularity": 10, "vote_average": 6.0, "first_air_date": "2010-01-01"},
+                        {"id": 3, "name": "Annika", "popularity": 80, "vote_average": 8.0, "first_air_date": "2021-01-01"},
+                    ]})
+            return _FakeResponse(404, {})
+
+    fake = _UnionFakeClient()
+
+    async def fake_tmdb_factory():
+        return fake
+
+    monkeypatch.setattr(core_tmdb, "tmdb", fake_tmdb_factory)
+
+    r = await client.get("/api/series/discover", params={"genre": 80, "keyword": "policial"})
+    assert r.status_code == 200
+    shows = r.json()
+    names = [s["name"] for s in shows]
+    # All 3 unique shows present — "Shared Show" (found by both) appears once
+    assert sorted(names) == ["Annika", "NCIS", "Shared Show"]
+    assert len(shows) == 3
+    # Default sort is popularity.desc, applied across the merged set
+    assert names[0] == "Annika"  # popularity 80, highest
+
+
+@pytest.mark.asyncio
 async def test_discover_unknown_keyword_omits_with_keywords_param(client, monkeypatch):
     discover_payload = {"results": []}
     no_match_client = _FakeTmdbClient(routes={"/discover/tv": discover_payload}, keyword_routes={})
