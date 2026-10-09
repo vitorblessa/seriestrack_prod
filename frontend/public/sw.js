@@ -1,7 +1,10 @@
 // SeriesTrack Service Worker — handles push notifications + offline cache
 // Bump CACHE_NAME on UI changes that need to invalidate prior cached HTML/assets
-const CACHE_NAME = "seriestrack-v21";
+const CACHE_NAME = "seriestrack-v22";
 const APP_SHELL = ["/manifest.json", "/favicon.ico"];
+// Stable key used to always keep a fallback copy of the last successfully
+// loaded HTML shell around — see networkFirstNavigate() below.
+const SHELL_KEY = "/__app_shell__";
 
 self.addEventListener("install", (event) => {
     self.skipWaiting();
@@ -30,15 +33,7 @@ self.addEventListener("fetch", (event) => {
     if (/\.(js|css|map)$/i.test(url.pathname)) return;
 
     if (req.mode === "navigate") {
-        event.respondWith(
-            fetch(req)
-                .then((res) => {
-                    const copy = res.clone();
-                    caches.open(CACHE_NAME).then((c) => c.put(req, copy));
-                    return res;
-                })
-                .catch(() => caches.match(req).then((c) => c || caches.match("/index.html")))
-        );
+        event.respondWith(networkFirstNavigate(req));
         return;
     }
     event.respondWith(
@@ -54,6 +49,44 @@ self.addEventListener("fetch", (event) => {
         })
     );
 });
+
+// A PWA resumed from the background after sitting closed for a while sometimes
+// fires its first navigation while the device's network is still reconnecting
+// (waking from sleep). A single failed fetch used to fall straight through to
+// `caches.match("/index.html")` — a key nothing ever actually wrote to, since
+// navigations are cached under their own URL — so the SW handed the page an
+// empty response and the user was stuck on a permanent blank screen until a
+// manual reload. Now: retry once after a short delay (covers the typical
+// reconnect blip), and keep a real fallback (the last successfully loaded
+// shell, always from the current build) under a stable key so a genuine
+// failure still serves something that renders instead of nothing at all.
+async function networkFirstNavigate(req) {
+    const cache = await caches.open(CACHE_NAME);
+    try {
+        const res = await fetch(req);
+        cache.put(req, res.clone());
+        cache.put(SHELL_KEY, res.clone());
+        return res;
+    } catch {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        try {
+            const res = await fetch(req);
+            cache.put(req, res.clone());
+            cache.put(SHELL_KEY, res.clone());
+            return res;
+        } catch {
+            const cached = (await cache.match(req)) || (await cache.match(SHELL_KEY));
+            if (cached) return cached;
+            // Never loaded successfully even once (first-ever offline launch) —
+            // serve a tiny self-healing page instead of a dead blank screen.
+            return new Response(
+                '<!doctype html><html><body style="background:#0A0A0C"></body>' +
+                "<script>setTimeout(function(){location.reload();},2000);</script></html>",
+                { headers: { "Content-Type": "text/html" } }
+            );
+        }
+    }
+}
 
 // Push notification handler — runs even when app is fully closed (that's the point of web push).
 self.addEventListener("push", (event) => {
