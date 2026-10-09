@@ -12,6 +12,15 @@ from core import db
 
 
 @pytest.mark.asyncio
+async def test_public_key_endpoint_reports_fcm_available(client):
+    """/push/public_key is unauthenticated — used to sanity-check a deploy's
+    FCM config (FIREBASE_SERVICE_ACCOUNT_JSON) without needing a session."""
+    r = await client.get("/api/push/public_key")
+    assert r.status_code == 200
+    assert "fcm_available" in r.json()
+
+
+@pytest.mark.asyncio
 async def test_register_fcm_token_upserts_subscription(client):
     data = await register_user(client, "fcmuser@example.com")
     headers = auth_headers(data["access_token"])

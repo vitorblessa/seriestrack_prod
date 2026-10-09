@@ -27,7 +27,15 @@ router = APIRouter()
 
 @router.get("/push/public_key")
 async def push_public_key():
-    return {"public_key": VAPID_PUBLIC_KEY, "available": bool(VAPID_PUBLIC_KEY) and PUSH_AVAILABLE}
+    return {
+        "public_key": VAPID_PUBLIC_KEY,
+        "available": bool(VAPID_PUBLIC_KEY) and PUSH_AVAILABLE,
+        # Native Android (FCM) status — separate from the Web Push flag above,
+        # since they're configured independently (FIREBASE_SERVICE_ACCOUNT_JSON
+        # vs VAPID_*). Surfaced here so the deploy can be sanity-checked without
+        # needing a logged-in session.
+        "fcm_available": FCM_AVAILABLE,
+    }
 
 
 @router.post("/push/subscribe")
