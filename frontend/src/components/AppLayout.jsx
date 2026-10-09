@@ -62,7 +62,12 @@ export default function AppLayout({ children }) {
                         </span>
                     </Link>
 
-                    <nav className="hidden md:flex items-center gap-0.5 2xl:gap-1 ml-2 2xl:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-hide">
+                    {/* overflow-x-auto + scrollbar-thin (not scrollbar-hide): with 7-8 items, the
+                        always-full-labels mode from 2xl up can overflow the available width on
+                        some desktop sizes — items past the edge must stay scrollable AND visibly
+                        so (a hover scrollbar), never silently clipped with no hint more exist
+                        (that's how the owner-only Admin link, appended last, went missing). */}
+                    <nav className="hidden md:flex items-center gap-0.5 2xl:gap-1 ml-2 2xl:ml-4 min-w-0 flex-1 overflow-x-auto scrollbar-thin">
                         {items.map((it) => (
                             <NavLink
                                 key={it.to}
@@ -70,7 +75,7 @@ export default function AppLayout({ children }) {
                                 data-testid={it.testid}
                                 title={it.label}
                                 className={({ isActive }) =>
-                                    `group/nav flex items-center px-2.5 2xl:px-4 py-2 rounded-full text-sm font-semibold transition-all shrink-0 ${
+                                    `group/nav flex items-center px-2.5 2xl:px-3 py-2 rounded-full text-sm font-semibold transition-all shrink-0 ${
                                         isActive
                                             ? "bg-white text-black"
                                             : "text-white/60 hover:text-white hover:bg-white/5"
@@ -80,7 +85,7 @@ export default function AppLayout({ children }) {
                                 <it.icon className="w-4 h-4 shrink-0" />
                                 {/* Icon-only up to 2xl — label always shown from 2xl up, and slides out on hover/focus below that */}
                                 <span
-                                    className="max-w-0 2xl:max-w-[120px] opacity-0 2xl:opacity-100 ml-0 2xl:ml-2
+                                    className="max-w-0 2xl:max-w-[100px] opacity-0 2xl:opacity-100 ml-0 2xl:ml-1.5
                                         overflow-hidden whitespace-nowrap transition-all duration-200 ease-out
                                         group-hover/nav:max-w-[120px] group-hover/nav:opacity-100 group-hover/nav:ml-2
                                         group-focus-visible/nav:max-w-[120px] group-focus-visible/nav:opacity-100 group-focus-visible/nav:ml-2"
