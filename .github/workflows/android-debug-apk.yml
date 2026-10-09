@@ -61,6 +61,11 @@ jobs:
         working-directory: frontend
         env:
           REACT_APP_BACKEND_URL: ${{ secrets.REACT_APP_BACKEND_URL || 'https://seriestrack-backend-zfla.onrender.com' }}
+          # OAuth client IDs are public identifiers (they're meant to appear
+          # in client-side requests/bundles, unlike a client *secret*) — safe
+          # to inline here rather than needing a GitHub secret. Same value
+          # Vercel injects for the web build.
+          REACT_APP_GOOGLE_CLIENT_ID: '915970909757-v0heesi45pik9a10evd6ei27nvspcdan.apps.googleusercontent.com'
           CI: 'true'
         run: npm run build
 

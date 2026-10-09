@@ -100,6 +100,10 @@ jobs:
         working-directory: frontend
         env:
           REACT_APP_BACKEND_URL: ${{ secrets.REACT_APP_BACKEND_URL }}
+          # OAuth client IDs are public identifiers (meant to appear in
+          # client-side requests/bundles, unlike a client *secret*) — safe to
+          # inline here. Same value Vercel injects for the web build.
+          REACT_APP_GOOGLE_CLIENT_ID: '915970909757-v0heesi45pik9a10evd6ei27nvspcdan.apps.googleusercontent.com'
           CI: 'true'
         run: |
           if [ -z "$REACT_APP_BACKEND_URL" ]; then
