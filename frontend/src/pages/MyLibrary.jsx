@@ -84,14 +84,14 @@ export default function MyLibrary() {
                                 data-testid={`library-stat-${s.key}`}
                                 className={`glass rounded-xl p-4 text-left transition-all ${tab === s.key ? "border-[#FF2A54]/50" : ""}`}
                             >
-                                <div className="flex items-center gap-2 text-white/60 text-xs font-bold uppercase tracking-wider">
+                                <div className="flex items-center gap-2 text-foreground/60 text-xs font-bold uppercase tracking-wider">
                                     <s.icon className="w-3.5 h-3.5" /> {s.label}
                                 </div>
                                 <p className="font-display text-3xl font-black mt-2">{stats[s.key] || 0}</p>
                             </button>
                         ))}
                         <div className="glass rounded-xl p-4">
-                            <p className="text-white/60 text-xs font-bold uppercase tracking-wider">Total</p>
+                            <p className="text-foreground/60 text-xs font-bold uppercase tracking-wider">Total</p>
                             <p className="font-display text-3xl font-black mt-2 text-[#FF2A54]">{stats.total || 0}</p>
                         </div>
                     </div>
@@ -100,13 +100,13 @@ export default function MyLibrary() {
 
             <section className="px-6 md:px-10 mt-10">
                 <Tabs value={tab} onValueChange={setTab}>
-                    <TabsList className="bg-white/5 border border-white/10 p-1 flex flex-wrap h-auto">
+                    <TabsList className="bg-white/5 border border-border p-1 flex flex-wrap h-auto">
                         {STATUSES.map((s) => (
                             <TabsTrigger
                                 key={s.key}
                                 value={s.key}
                                 data-testid={`library-tab-${s.key}`}
-                                className="data-[state=active]:bg-white data-[state=active]:text-black"
+                                className="data-[state=active]:bg-foreground data-[state=active]:text-background"
                             >
                                 {s.label}
                             </TabsTrigger>
@@ -121,13 +121,13 @@ export default function MyLibrary() {
                         ) : filtered.length === 0 ? (
                             <div className="glass rounded-2xl py-20 px-6 text-center">
                                 <p className="font-display text-2xl font-bold mb-3">Nenhuma série em "{STATUSES.find((s) => s.key === tab).label}"</p>
-                                <p className="text-white/60 mb-6">Comece adicionando algumas séries da busca.</p>
+                                <p className="text-foreground/60 mb-6">Comece adicionando algumas séries da busca.</p>
                                 <Link to="/search" className="btn-primary inline-flex">Explorar séries</Link>
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
                                 {filtered.map((it) => (
-                                    <div key={it.tmdb_id} data-testid={`library-item-${it.tmdb_id}`} className="group relative rounded-xl overflow-hidden border border-white/5 bg-white/5 poster-card">
+                                    <div key={it.tmdb_id} data-testid={`library-item-${it.tmdb_id}`} className="group relative rounded-xl overflow-hidden border border-border bg-white/5 poster-card">
                                         <Link to={`/series/${it.tmdb_id}`} className="block aspect-[2/3]">
                                             {it.poster_url ? (
                                                 <img src={it.poster_url} alt={it.name} className="w-full h-full object-cover" />

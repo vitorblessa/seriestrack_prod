@@ -37,9 +37,9 @@ export default function AppLayout({ children }) {
     }, []);
 
     return (
-        <div className="min-h-screen bg-obsidian text-white overflow-x-hidden">
+        <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
             <header
-                className="sticky top-0 z-50 bg-[#0A0A0C]/70 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/5"
+                className="sticky top-0 z-50 bg-background/70 backdrop-blur-2xl backdrop-saturate-150 border-b border-border"
                 style={{ paddingTop: "env(safe-area-inset-top)" }}
             >
                 <div className="max-w-[1400px] mx-auto px-3 sm:px-6 md:px-10 py-3 sm:py-4 flex items-center gap-3 md:gap-8">
@@ -80,8 +80,8 @@ export default function AppLayout({ children }) {
                                 className={({ isActive }) =>
                                     `flex items-center gap-1.5 px-2 xl:px-3 py-1.5 xl:py-2 rounded-full text-xs xl:text-sm font-semibold transition-all shrink-0 whitespace-nowrap ${
                                         isActive
-                                            ? "bg-white text-black"
-                                            : "text-white/60 hover:text-white hover:bg-white/5"
+                                            ? "bg-foreground text-background"
+                                            : "text-foreground/60 hover:text-foreground hover:bg-foreground/5"
                                     }`
                                 }
                             >
@@ -110,12 +110,12 @@ export default function AppLayout({ children }) {
                         <button
                             onClick={() => navigate("/notifications")}
                             data-testid="nav-notifications-btn"
-                            className="relative p-2 sm:p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
+                            className="relative p-2 sm:p-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-border"
                             title="Notificações"
                         >
                             <Bell className="w-4 h-4" />
                             {unread > 0 && (
-                                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF2A54] text-[10px] font-bold flex items-center justify-center">
+                                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF2A54] text-white text-[10px] font-bold flex items-center justify-center">
                                     {unread > 9 ? "9+" : unread}
                                 </span>
                             )}
@@ -123,13 +123,13 @@ export default function AppLayout({ children }) {
                         <button
                             onClick={() => navigate("/profile")}
                             data-testid="nav-profile-btn"
-                            className="flex items-center gap-2 p-1 md:pl-1 md:pr-3 md:py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
+                            className="flex items-center gap-2 p-1 md:pl-1 md:pr-3 md:py-1 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-border"
                             title="Perfil"
                         >
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center text-xs font-bold">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center text-white text-xs font-bold">
                                 {(user?.name || "?").charAt(0).toUpperCase()}
                             </div>
-                            <span className="hidden xl:inline text-xs font-semibold text-white/80 max-w-[100px] truncate">
+                            <span className="hidden xl:inline text-xs font-semibold text-foreground/80 max-w-[100px] truncate">
                                 {user?.name || "Convidado"}
                             </span>
                         </button>
@@ -137,7 +137,7 @@ export default function AppLayout({ children }) {
                         <button
                             onClick={() => navigate("/settings")}
                             data-testid="nav-settings-btn"
-                            className="hidden md:inline-flex p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-white/60 hover:text-white"
+                            className="hidden md:inline-flex p-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-border text-foreground/60 hover:text-foreground"
                             title="Configurações"
                         >
                             <SettingsIcon className="w-4 h-4" />
@@ -145,7 +145,7 @@ export default function AppLayout({ children }) {
                         <button
                             onClick={logout}
                             data-testid="nav-logout-btn"
-                            className="hidden md:inline-flex p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-white/60 hover:text-white"
+                            className="hidden md:inline-flex p-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-border text-foreground/60 hover:text-foreground"
                             title="Sair"
                         >
                             <LogOut className="w-4 h-4" />
@@ -154,7 +154,7 @@ export default function AppLayout({ children }) {
                 </div>
 
                 {/* Mobile nav — horizontal scroll keeps it from overflowing the viewport */}
-                <div className="md:hidden border-t border-white/5 overflow-x-auto scrollbar-hide">
+                <div className="md:hidden border-t border-border overflow-x-auto scrollbar-hide">
                     <div className="flex gap-1 px-3 py-2 w-max min-w-full justify-around">
                         {items.map((it) => (
                             <NavLink
@@ -163,7 +163,7 @@ export default function AppLayout({ children }) {
                                 data-testid={`mobile-${it.testid}`}
                                 className={({ isActive }) =>
                                     `flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold shrink-0 whitespace-nowrap ${
-                                        isActive ? "text-white" : "text-white/50"
+                                        isActive ? "text-foreground" : "text-foreground/50"
                                     }`
                                 }
                             >
@@ -179,7 +179,7 @@ export default function AppLayout({ children }) {
 
             <main className="max-w-[1400px] mx-auto w-full">{children}</main>
 
-            <footer className="border-t border-white/5 mt-24 py-10 px-6 text-center text-white/40 text-sm">
+            <footer className="border-t border-border mt-24 py-10 px-6 text-center text-foreground/40 text-sm">
                 <p>SeriesTrack © 2026 — Powered by TMDB. Todas as séries dos seus streamings em um só lugar.</p>
             </footer>
         </div>

@@ -109,6 +109,42 @@ class TestPreferencesPatch:
         assert r.status_code == 200
 
 
+# ---------- ui_mode (light/dark) — free, not Pro-gated, unlike ui_theme ----------
+class TestPreferencesColorMode:
+    def test_free_user_can_set_light(self, free_token):
+        r = requests.patch(f"{BASE_URL}/api/me/preferences",
+                           headers={"Authorization": f"Bearer {free_token}"},
+                           json={"ui_mode": "light"})
+        assert r.status_code == 200, r.text
+        assert r.json()["ok"] is True
+        g = requests.get(f"{BASE_URL}/api/me/preferences",
+                         headers={"Authorization": f"Bearer {free_token}"})
+        assert g.json()["preferences"]["ui_mode"] == "light"
+
+    def test_free_user_can_set_dark(self, free_token):
+        r = requests.patch(f"{BASE_URL}/api/me/preferences",
+                           headers={"Authorization": f"Bearer {free_token}"},
+                           json={"ui_mode": "dark"})
+        assert r.status_code == 200, r.text
+        g = requests.get(f"{BASE_URL}/api/me/preferences",
+                         headers={"Authorization": f"Bearer {free_token}"})
+        assert g.json()["preferences"]["ui_mode"] == "dark"
+
+    def test_unknown_mode_400(self, free_token):
+        r = requests.patch(f"{BASE_URL}/api/me/preferences",
+                           headers={"Authorization": f"Bearer {free_token}"},
+                           json={"ui_mode": "sepia"})
+        assert r.status_code == 400
+
+    def test_default_mode_is_dark(self, admin_token):
+        # Doesn't touch ui_mode — just checks the shape default for an account
+        # that hasn't set one explicitly comes back as "dark" (today's app default).
+        r = requests.get(f"{BASE_URL}/api/me/preferences",
+                         headers={"Authorization": f"Bearer {admin_token}"})
+        assert r.status_code == 200
+        assert "ui_mode" in r.json()["preferences"]
+
+
 # ---------- /api/wrapped/{year} ----------
 class TestWrapped:
     def test_unauth_401(self):

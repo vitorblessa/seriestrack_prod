@@ -22,12 +22,16 @@ PRO_THEMES = {
 ALL_THEMES = FREE_THEMES | PRO_THEMES
 
 
+COLOR_MODES = {"light", "dark"}
+
+
 class PreferencesIn(BaseModel):
     ui_theme: Optional[str] = Field(None, max_length=32)
+    ui_mode: Optional[str] = Field(None, max_length=8)
 
 
 def _default_prefs() -> dict:
-    return {"ui_theme": "default"}
+    return {"ui_theme": "default", "ui_mode": "dark"}
 
 
 @router.get("/me/preferences")
@@ -58,6 +62,12 @@ async def update_preferences(payload: PreferencesIn, user: dict = Depends(get_cu
                 },
             )
         update["preferences.ui_theme"] = payload.ui_theme
+
+    if payload.ui_mode is not None:
+        if payload.ui_mode not in COLOR_MODES:
+            raise HTTPException(400, f"Modo de cor desconhecido: {payload.ui_mode}")
+        # Light/dark is a free, non-Pro-gated preference — unlike the skin (ui_theme).
+        update["preferences.ui_mode"] = payload.ui_mode
 
     if not update:
         return {"ok": True, "updated": False}

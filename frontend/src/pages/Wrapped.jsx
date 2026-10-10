@@ -71,7 +71,7 @@ export default function Wrapped() {
             <Layout>
                 <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
                     <Loader2 className="w-10 h-10 animate-spin text-[#FF2A54]" />
-                    <p className="text-white/60 text-sm">Montando seu ano em séries...</p>
+                    <p className="text-foreground/60 text-sm">Montando seu ano em séries...</p>
                 </div>
             </Layout>
         );
@@ -81,7 +81,7 @@ export default function Wrapped() {
         return (
             <Layout>
                 <div className="px-6 md:px-10 py-20 text-center max-w-md mx-auto" data-testid="wrapped-error">
-                    <p className="text-white/70">{error || "Sem dados."}</p>
+                    <p className="text-foreground/70">{error || "Sem dados."}</p>
                     <button onClick={() => navigate("/dashboard")} className="btn-primary mt-6 inline-flex">Voltar</button>
                 </div>
             </Layout>
@@ -99,7 +99,7 @@ export default function Wrapped() {
                     <h1 className="font-display text-4xl md:text-5xl font-black mt-3 tracking-tight">
                         Ainda sem dados pra {year}
                     </h1>
-                    <p className="text-white/70 mt-5 text-lg">
+                    <p className="text-foreground/70 mt-5 text-lg">
                         {data.message || "Marque episódios como assistidos durante o ano e seu Wrapped vai brilhar aqui."}
                     </p>
                     <Link to="/library" className="btn-primary mt-10 inline-flex" data-testid="wrapped-empty-cta">
@@ -296,11 +296,11 @@ export default function Wrapped() {
 function StatCard({ icon, label, big, sub, testid }) {
     return (
         <div className="glass rounded-2xl p-6 md:p-8" data-testid={testid}>
-            <div className="flex items-center gap-3 text-white/60 text-xs font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-3 text-foreground/60 text-xs font-bold uppercase tracking-wider">
                 {icon} {label}
             </div>
             <p className="font-display text-5xl md:text-6xl font-black mt-3 leading-none tracking-tight">{big}</p>
-            {sub && <p className="text-white/50 text-sm mt-2">{sub}</p>}
+            {sub && <p className="text-foreground/50 text-sm mt-2">{sub}</p>}
         </div>
     );
 }
@@ -315,8 +315,8 @@ function EpisodeBookend({ label, ep }) {
             <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#FF2A54]">{label}</p>
                 <p className="font-display font-bold text-base line-clamp-1 mt-1">{ep.name}</p>
-                <p className="text-white/60 text-xs">T{ep.season}·E{ep.episode}</p>
-                <p className="text-white/40 text-xs mt-1">{formatDatePt(ep.watched_at)}</p>
+                <p className="text-foreground/60 text-xs">T{ep.season}·E{ep.episode}</p>
+                <p className="text-foreground/40 text-xs mt-1">{formatDatePt(ep.watched_at)}</p>
             </div>
         </div>
     );

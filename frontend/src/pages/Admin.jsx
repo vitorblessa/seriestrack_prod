@@ -14,7 +14,7 @@ function StatCard({ icon: Icon, label, value }) {
             </div>
             <div>
                 <p className="text-2xl font-black font-display">{value ?? "–"}</p>
-                <p className="text-white/50 text-xs mt-0.5">{label}</p>
+                <p className="text-foreground/50 text-xs mt-0.5">{label}</p>
             </div>
         </div>
     );
@@ -110,7 +110,7 @@ export default function Admin() {
             <section className="px-6 md:px-10 mt-10 max-w-3xl">
                 <div className="glass rounded-2xl p-6 md:p-8">
                     <h2 className="font-display text-xl font-bold">Buscar usuário</h2>
-                    <p className="text-white/60 text-sm mt-1">Busca parcial por e-mail — use para achar a conta certa antes de conceder/revogar Pro.</p>
+                    <p className="text-foreground/60 text-sm mt-1">Busca parcial por e-mail — use para achar a conta certa antes de conceder/revogar Pro.</p>
 
                     <form onSubmit={search} className="mt-4 flex flex-col sm:flex-row gap-2">
                         <input
@@ -118,17 +118,17 @@ export default function Admin() {
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="parte do e-mail..."
                             data-testid="admin-search-input"
-                            className="min-w-0 flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF2A54]/50"
+                            className="min-w-0 flex-1 bg-muted border border-border rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF2A54]/50"
                         />
                         <div className="flex items-center gap-2">
-                            <label className="text-xs text-white/50 whitespace-nowrap">dias Pro</label>
+                            <label className="text-xs text-foreground/50 whitespace-nowrap">dias Pro</label>
                             <input
                                 type="number"
                                 min="1"
                                 value={days}
                                 onChange={(e) => setDays(Number(e.target.value) || 1)}
                                 data-testid="admin-grant-days-input"
-                                className="w-20 min-w-0 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#FF2A54]/50"
+                                className="w-20 min-w-0 bg-muted border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#FF2A54]/50"
                             />
                             <button type="submit" disabled={searching} data-testid="admin-search-btn" className="btn-primary text-sm shrink-0">
                                 {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
@@ -139,18 +139,18 @@ export default function Admin() {
                     {results !== null && (
                         <div className="mt-5" data-testid="admin-search-results">
                             {results.length === 0 ? (
-                                <p className="text-white/40 text-sm">Nenhum usuário encontrado.</p>
+                                <p className="text-foreground/40 text-sm">Nenhum usuário encontrado.</p>
                             ) : (
                                 <div className="space-y-2">
                                     {results.map((u) => (
                                         <div
                                             key={u._id}
                                             data-testid={`admin-user-row-${u._id}`}
-                                            className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-white/[0.04] border border-white/10"
+                                            className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-muted border border-border"
                                         >
                                             <div className="min-w-0">
                                                 <p className="font-semibold text-sm truncate">{u.email}</p>
-                                                <p className="text-white/50 text-xs mt-0.5">
+                                                <p className="text-foreground/50 text-xs mt-0.5">
                                                     {u.name || "—"} · {u.subscription_tier === "pro" ? (
                                                         <span className="text-amber-300">Pro{u.subscription_renews_at ? ` até ${new Date(u.subscription_renews_at).toLocaleDateString("pt-BR")}` : ""}</span>
                                                     ) : "Free"}

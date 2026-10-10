@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import AppLayout from "../components/AppLayout";
-import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink, Palette, Crown, Lock, RefreshCw, Unlink } from "lucide-react";
+import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink, Palette, Crown, Lock, RefreshCw, Unlink, Sun, Moon } from "lucide-react";
 import { getPushStatus, subscribePush, unsubscribePush, sendTestPush } from "../lib/push";
 import { toast } from "sonner";
 import api from "../lib/api";
@@ -10,7 +10,7 @@ import { useTheme, THEME_LABELS, THEME_SWATCHES, FREE_THEMES, PRO_THEMES } from 
 
 export default function Settings() {
     const { user } = useAuth();
-    const { theme, setTheme } = useTheme();
+    const { theme, setTheme, mode, setMode } = useTheme();
     const [status, setStatus] = useState(null);
     const [busy, setBusy] = useState(false);
     const [importing, setImporting] = useState(null); // "trakt" | "letterboxd" | null
@@ -39,6 +39,12 @@ export default function Settings() {
                 toast.error("Erro ao salvar tema");
             }
         }
+    };
+
+    const handleModeChange = async (next) => {
+        if (next === mode) return;
+        await setMode(next);
+        toast.success(next === "light" ? "Modo claro ativado" : "Modo escuro ativado");
     };
 
     const refresh = async () => {
@@ -235,9 +241,34 @@ export default function Settings() {
                                 Tema da interface
                                 {!isPro && <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-amber-200 font-bold">Pro</span>}
                             </h2>
-                            <p className="text-white/60 text-sm mt-1">
+                            <p className="text-foreground/60 text-sm mt-1">
                                 Escolha o visual. Temas com cores das plataformas são exclusivos do plano Pro.
                             </p>
+
+                            <div className="mt-5 flex items-center justify-between gap-4 rounded-xl border border-border bg-muted p-3" data-testid="color-mode-row">
+                                <div className="flex items-center gap-3">
+                                    {mode === "light" ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-indigo-300" />}
+                                    <div>
+                                        <p className="text-sm font-semibold">Modo {mode === "light" ? "claro" : "escuro"}</p>
+                                        <p className="text-xs text-foreground/50">Gratuito, independente do tema acima</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={mode === "light"}
+                                    data-testid="color-mode-toggle"
+                                    onClick={() => handleModeChange(mode === "light" ? "dark" : "light")}
+                                    className={`relative h-7 w-14 shrink-0 rounded-full transition-colors ${mode === "light" ? "bg-[#FF2A54]" : "bg-secondary"}`}
+                                >
+                                    <span
+                                        className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-card shadow transition-transform flex items-center justify-center ${mode === "light" ? "translate-x-7" : "translate-x-0"}`}
+                                    >
+                                        {mode === "light" ? <Sun className="w-3.5 h-3.5 text-[#FF2A54]" /> : <Moon className="w-3.5 h-3.5 text-foreground/60" />}
+                                    </span>
+                                </button>
+                            </div>
+
                             <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" data-testid="theme-grid">
                                 {[...FREE_THEMES, ...PRO_THEMES].map((t) => {
                                     const sw = THEME_SWATCHES[t];
@@ -295,11 +326,11 @@ export default function Settings() {
                         </div>
                         <div className="flex-1 min-w-0">
                             <h2 className="font-display text-xl font-bold">Notificações Push</h2>
-                            <p className="text-white/60 text-sm mt-1">
+                            <p className="text-foreground/60 text-sm mt-1">
                                 Receba alertas no navegador (mesmo com a aba fechada) sempre que novos episódios saírem.
                             </p>
                             {status === null ? (
-                                <Loader2 className="w-5 h-5 animate-spin text-white/40 mt-4" />
+                                <Loader2 className="w-5 h-5 animate-spin text-foreground/40 mt-4" />
                             ) : !status.supported ? (
                                 <p className="text-amber-400 text-sm mt-4">Seu navegador não suporta web push.</p>
                             ) : (
@@ -335,7 +366,7 @@ export default function Settings() {
                         </div>
                         <div className="flex-1">
                             <h2 className="font-display text-xl font-bold">Instalar como app (PWA)</h2>
-                            <p className="text-white/60 text-sm mt-1">
+                            <p className="text-foreground/60 text-sm mt-1">
                                 Instale o SeriesTrack no seu celular ou desktop direto do navegador. No Chrome/Edge, use o ícone de instalação na barra de endereços. No iOS, use "Adicionar à Tela de Início" no Safari.
                             </p>
                         </div>
@@ -344,12 +375,12 @@ export default function Settings() {
 
                 <div className="glass rounded-2xl p-6 md:p-8">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-muted border border-border flex items-center justify-center shrink-0">
                             <Send className="w-5 h-5" />
                         </div>
                         <div className="flex-1">
                             <h2 className="font-display text-xl font-bold">Verificar episódios de hoje</h2>
-                            <p className="text-white/60 text-sm mt-1">
+                            <p className="text-foreground/60 text-sm mt-1">
                                 Cria notificações in-app e dispara push para episódios da sua biblioteca que estreiam hoje ou amanhã.
                             </p>
                             <button onClick={triggerToday} data-testid="push-notify-today" className="btn-glass mt-4 text-sm">
@@ -367,11 +398,11 @@ export default function Settings() {
                         <div className="flex-1">
                             <h2 className="font-display text-xl font-bold">
                                 Importar do{" "}
-                                <a href="https://trakt.tv" target="_blank" rel="noreferrer" className="underline decoration-white/30 hover:decoration-white">
+                                <a href="https://trakt.tv" target="_blank" rel="noreferrer" className="underline decoration-foreground/30 hover:decoration-foreground">
                                     Trakt
                                 </a>
                             </h2>
-                            <p className="text-white/60 text-sm mt-1">
+                            <p className="text-foreground/60 text-sm mt-1">
                                 Faça upload do seu export do Trakt (JSON ou CSV). Buscamos cada série no TMDB e adicionamos à sua biblioteca como "Quero assistir".
                             </p>
                             {!isPro && (
@@ -402,20 +433,20 @@ export default function Settings() {
                                     href="https://trakt.tv/settings/data"
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-xs text-white/50 hover:text-white inline-flex items-center gap-1"
+                                    className="text-xs text-foreground/50 hover:text-foreground inline-flex items-center gap-1"
                                 >
                                     Onde baixo meu export? <ExternalLink className="w-3 h-3" />
                                 </a>
                             </div>
                             {importResults.trakt && (
-                                <div className="mt-5 p-4 rounded-xl bg-white/[0.04] border border-white/10 text-sm" data-testid="trakt-import-result">
+                                <div className="mt-5 p-4 rounded-xl bg-muted border border-border text-sm" data-testid="trakt-import-result">
                                     <p className="font-bold text-emerald-300">
-                                        ✓ {importResults.trakt.added} séries adicionadas <span className="text-white/50 font-normal">de {importResults.trakt.total}</span>
+                                        ✓ {importResults.trakt.added} séries adicionadas <span className="text-foreground/50 font-normal">de {importResults.trakt.total}</span>
                                     </p>
-                                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-white/60">
-                                        <div><span className="text-white/40">Duplicadas:</span> {importResults.trakt.duplicates}</div>
-                                        <div><span className="text-white/40">Não encontradas:</span> {importResults.trakt.not_found_count}</div>
-                                        <div><span className="text-white/40">Bloqueadas (limite):</span> {importResults.trakt.skipped_cap}</div>
+                                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-foreground/60">
+                                        <div><span className="text-foreground/40">Duplicadas:</span> {importResults.trakt.duplicates}</div>
+                                        <div><span className="text-foreground/40">Não encontradas:</span> {importResults.trakt.not_found_count}</div>
+                                        <div><span className="text-foreground/40">Bloqueadas (limite):</span> {importResults.trakt.skipped_cap}</div>
                                     </div>
                                     {importResults.trakt.skipped_cap > 0 && (
                                         <Link to="/pricing" className="mt-3 inline-block text-xs font-bold text-[#FF2A54] hover:underline">
@@ -424,8 +455,8 @@ export default function Settings() {
                                     )}
                                     {importResults.trakt.not_found?.length > 0 && (
                                         <details className="mt-3">
-                                            <summary className="text-xs text-white/50 cursor-pointer">Ver não encontradas ({importResults.trakt.not_found.length})</summary>
-                                            <ul className="mt-2 text-xs text-white/60 max-h-32 overflow-auto list-disc pl-5">
+                                            <summary className="text-xs text-foreground/50 cursor-pointer">Ver não encontradas ({importResults.trakt.not_found.length})</summary>
+                                            <ul className="mt-2 text-xs text-foreground/60 max-h-32 overflow-auto list-disc pl-5">
                                                 {importResults.trakt.not_found.map((t, i) => <li key={i}>{t}</li>)}
                                             </ul>
                                         </details>
@@ -444,14 +475,14 @@ export default function Settings() {
                         <div className="flex-1">
                             <h2 className="font-display text-xl font-bold">
                                 Importar do{" "}
-                                <a href="https://letterboxd.com" target="_blank" rel="noreferrer" className="underline decoration-white/30 hover:decoration-white">
+                                <a href="https://letterboxd.com" target="_blank" rel="noreferrer" className="underline decoration-foreground/30 hover:decoration-foreground">
                                     Letterboxd
                                 </a>
                             </h2>
-                            <p className="text-white/60 text-sm mt-1">
+                            <p className="text-foreground/60 text-sm mt-1">
                                 Faça upload do seu export do Letterboxd (CSV — watched, watchlist, diary ou ratings). Buscamos cada título no TMDB e adicionamos à sua biblioteca.
                             </p>
-                            <p className="text-white/40 text-xs mt-1">
+                            <p className="text-foreground/40 text-xs mt-1">
                                 O Letterboxd é focado em filmes, então só séries de TV do seu export serão encontradas.
                             </p>
                             {!isPro && (
@@ -482,20 +513,20 @@ export default function Settings() {
                                     href="https://letterboxd.com/settings/data/"
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-xs text-white/50 hover:text-white inline-flex items-center gap-1"
+                                    className="text-xs text-foreground/50 hover:text-foreground inline-flex items-center gap-1"
                                 >
                                     Onde baixo meu export? <ExternalLink className="w-3 h-3" />
                                 </a>
                             </div>
                             {importResults.letterboxd && (
-                                <div className="mt-5 p-4 rounded-xl bg-white/[0.04] border border-white/10 text-sm" data-testid="letterboxd-import-result">
+                                <div className="mt-5 p-4 rounded-xl bg-muted border border-border text-sm" data-testid="letterboxd-import-result">
                                     <p className="font-bold text-emerald-300">
-                                        ✓ {importResults.letterboxd.added} séries adicionadas <span className="text-white/50 font-normal">de {importResults.letterboxd.total}</span>
+                                        ✓ {importResults.letterboxd.added} séries adicionadas <span className="text-foreground/50 font-normal">de {importResults.letterboxd.total}</span>
                                     </p>
-                                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-white/60">
-                                        <div><span className="text-white/40">Duplicadas:</span> {importResults.letterboxd.duplicates}</div>
-                                        <div><span className="text-white/40">Não encontradas:</span> {importResults.letterboxd.not_found_count}</div>
-                                        <div><span className="text-white/40">Bloqueadas (limite):</span> {importResults.letterboxd.skipped_cap}</div>
+                                    <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-foreground/60">
+                                        <div><span className="text-foreground/40">Duplicadas:</span> {importResults.letterboxd.duplicates}</div>
+                                        <div><span className="text-foreground/40">Não encontradas:</span> {importResults.letterboxd.not_found_count}</div>
+                                        <div><span className="text-foreground/40">Bloqueadas (limite):</span> {importResults.letterboxd.skipped_cap}</div>
                                     </div>
                                     {importResults.letterboxd.skipped_cap > 0 && (
                                         <Link to="/pricing" className="mt-3 inline-block text-xs font-bold text-[#FF2A54] hover:underline">
@@ -504,8 +535,8 @@ export default function Settings() {
                                     )}
                                     {importResults.letterboxd.not_found?.length > 0 && (
                                         <details className="mt-3">
-                                            <summary className="text-xs text-white/50 cursor-pointer">Ver não encontradas ({importResults.letterboxd.not_found.length})</summary>
-                                            <ul className="mt-2 text-xs text-white/60 max-h-32 overflow-auto list-disc pl-5">
+                                            <summary className="text-xs text-foreground/50 cursor-pointer">Ver não encontradas ({importResults.letterboxd.not_found.length})</summary>
+                                            <ul className="mt-2 text-xs text-foreground/60 max-h-32 overflow-auto list-disc pl-5">
                                                 {importResults.letterboxd.not_found.map((t, i) => <li key={i}>{t}</li>)}
                                             </ul>
                                         </details>
@@ -523,7 +554,7 @@ export default function Settings() {
                         </div>
                         <div className="flex-1 min-w-0">
                             <h2 className="font-display text-xl font-bold">Calendário (iCal)</h2>
-                            <p className="text-white/60 text-sm mt-1">
+                            <p className="text-foreground/60 text-sm mt-1">
                                 Sincronize os próximos episódios da sua biblioteca direto no Google Calendar, Apple Calendar ou Outlook.
                             </p>
 
@@ -542,13 +573,13 @@ export default function Settings() {
                                 )}
                             </div>
                             {feedUrl && (
-                                <div className="mt-3 p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs break-all font-mono text-white/70" data-testid="ical-feed-url">
+                                <div className="mt-3 p-3 rounded-xl bg-muted border border-border text-xs break-all font-mono text-foreground/70" data-testid="ical-feed-url">
                                     {feedUrl}
                                 </div>
                             )}
 
-                            <details className="mt-4 text-xs text-white/60">
-                                <summary className="cursor-pointer text-white/70 font-semibold">Como assinar no Google Calendar / Apple</summary>
+                            <details className="mt-4 text-xs text-foreground/60">
+                                <summary className="cursor-pointer text-foreground/70 font-semibold">Como assinar no Google Calendar / Apple</summary>
                                 <ol className="mt-2 list-decimal pl-5 space-y-1">
                                     <li>Clique em "Gerar URL de assinatura" acima — copiamos automaticamente.</li>
                                     <li><b>Google Calendar:</b> Outros calendários → De URL → Cole o link.</li>
@@ -567,7 +598,7 @@ export default function Settings() {
                         </div>
                         <div className="flex-1 min-w-0">
                             <h2 className="font-display text-xl font-bold">Google Calendar (sincronização automática)</h2>
-                            <p className="text-white/60 text-sm mt-1">
+                            <p className="text-foreground/60 text-sm mt-1">
                                 Diferente do link acima — aqui os eventos aparecem na hora que você adiciona ou remove uma série,
                                 sem esperar o Google atualizar sozinho. Cria um calendário separado chamado "SeriesTrack".
                             </p>
@@ -603,7 +634,7 @@ export default function Settings() {
             <section className="mt-10 px-4 sm:px-8 max-w-3xl mx-auto pb-16">
                 <div className="glass rounded-2xl p-6 border border-red-500/20">
                     <h2 className="font-bold text-lg mb-1 text-red-300">Zona de perigo</h2>
-                    <p className="text-white/60 text-sm mb-4">Exclua sua conta permanentemente. Todos os dados serão removidos.</p>
+                    <p className="text-foreground/60 text-sm mb-4">Exclua sua conta permanentemente. Todos os dados serão removidos.</p>
                     <Link
                         to="/delete-account"
                         data-testid="settings-delete-account-link"
@@ -612,9 +643,9 @@ export default function Settings() {
                         Excluir minha conta
                     </Link>
                 </div>
-                <div className="flex flex-wrap gap-4 mt-6 text-xs text-white/40 justify-center">
-                    <Link to="/privacy" className="hover:text-white/80" data-testid="settings-privacy-link">Política de Privacidade</Link>
-                    <Link to="/terms" className="hover:text-white/80" data-testid="settings-terms-link">Termos de Uso</Link>
+                <div className="flex flex-wrap gap-4 mt-6 text-xs text-foreground/40 justify-center">
+                    <Link to="/privacy" className="hover:text-foreground/80" data-testid="settings-privacy-link">Política de Privacidade</Link>
+                    <Link to="/terms" className="hover:text-foreground/80" data-testid="settings-terms-link">Termos de Uso</Link>
                 </div>
             </section>
             <div className="h-20" />

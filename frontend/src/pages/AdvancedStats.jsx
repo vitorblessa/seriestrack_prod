@@ -45,11 +45,11 @@ export default function AdvancedStats() {
             <AppLayout>
                 <section className="px-6 md:px-10 pt-16 pb-24 max-w-2xl mx-auto text-center" data-testid="stats-paywall">
                     <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_30px_80px_-20px_rgba(255,42,84,0.5)]">
-                        <BarChart3 className="w-10 h-10 text-white" strokeWidth={2.5} />
+                        <BarChart3 className="w-10 h-10 text-foreground" strokeWidth={2.5} />
                     </div>
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54] mt-8">Recurso Pro</p>
                     <h1 className="font-display text-4xl md:text-5xl font-black mt-3 tracking-tight">Sua história em números</h1>
-                    <p className="text-white/70 mt-5 text-lg max-w-md mx-auto">
+                    <p className="text-foreground/70 mt-5 text-lg max-w-md mx-auto">
                         Heatmap anual de assistidos, top gêneros, séries que mais consumiu, horas totais — tudo num só lugar.
                     </p>
                     <Link to="/pricing" className="btn-primary mt-10 inline-flex" data-testid="stats-paywall-cta">
@@ -73,7 +73,7 @@ export default function AdvancedStats() {
     if (!stats) {
         return (
             <AppLayout>
-                <div className="px-6 md:px-10 py-20 text-center text-white/60">Sem dados ainda. Marque alguns episódios como assistidos.</div>
+                <div className="px-6 md:px-10 py-20 text-center text-foreground/60">Sem dados ainda. Marque alguns episódios como assistidos.</div>
             </AppLayout>
         );
     }
@@ -122,7 +122,7 @@ export default function AdvancedStats() {
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/50">
+                        <div className="mt-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-foreground/50">
                             menos
                             {[0, 1, 2, 3, 4].map((i) => (
                                 <span key={i} className="w-3 h-3 rounded-sm" style={{
@@ -147,9 +147,9 @@ export default function AdvancedStats() {
                                 <div key={g.genre}>
                                     <div className="flex items-center justify-between text-sm mb-1">
                                         <span className="font-semibold">{g.genre}</span>
-                                        <span className="text-white/50 text-xs font-bold">{g.count}</span>
+                                        <span className="text-foreground/50 text-xs font-bold">{g.count}</span>
                                     </div>
-                                    <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                                    <div className="h-2 rounded-full bg-muted overflow-hidden">
                                         <div className="h-full bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] transition-all duration-700" style={{ width: `${pct}%` }} />
                                     </div>
                                 </div>
@@ -165,11 +165,11 @@ export default function AdvancedStats() {
                     <h2 className="font-display text-2xl font-bold mb-4">Séries que você mais consumiu</h2>
                     <div className="space-y-2">
                         {stats.top_series.map((s, i) => (
-                            <Link key={s.tmdb_id} to={`/series/${s.tmdb_id}`} className="glass rounded-xl p-4 flex items-center gap-4 hover:border-white/20 transition-all">
-                                <span className="font-display text-3xl font-black text-white/30 w-10">{i + 1}</span>
+                            <Link key={s.tmdb_id} to={`/series/${s.tmdb_id}`} className="glass rounded-xl p-4 flex items-center gap-4 hover:border-border transition-all">
+                                <span className="font-display text-3xl font-black text-foreground/30 w-10">{i + 1}</span>
                                 <div className="flex-1">
                                     <p className="font-bold">{s.name}</p>
-                                    <p className="text-xs text-white/50 mt-0.5">{s.episodes} episódio{s.episodes !== 1 ? "s" : ""} assistido{s.episodes !== 1 ? "s" : ""}</p>
+                                    <p className="text-xs text-foreground/50 mt-0.5">{s.episodes} episódio{s.episodes !== 1 ? "s" : ""} assistido{s.episodes !== 1 ? "s" : ""}</p>
                                 </div>
                             </Link>
                         ))}
@@ -182,10 +182,10 @@ export default function AdvancedStats() {
 
 function BigStat({ label, value, icon: Icon, accent }) {
     return (
-        <div className={`rounded-2xl p-5 border ${accent ? "bg-gradient-to-br from-[#FF2A54]/10 to-transparent border-[#FF2A54]/30" : "bg-white/5 border-white/10"}`}>
-            <Icon className={`w-5 h-5 ${accent ? "text-[#FF2A54]" : "text-white/40"}`} />
+        <div className={`rounded-2xl p-5 border ${accent ? "bg-gradient-to-br from-[#FF2A54]/10 to-transparent border-[#FF2A54]/30" : "bg-muted border-border"}`}>
+            <Icon className={`w-5 h-5 ${accent ? "text-[#FF2A54]" : "text-foreground/40"}`} />
             <p className="font-display text-3xl md:text-4xl font-black mt-3 tracking-tight">{value ?? 0}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/60 mt-1">{label}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/60 mt-1">{label}</p>
         </div>
     );
 }

@@ -60,7 +60,7 @@ export default function BillingSuccess() {
                     <>
                         <Loader2 className="w-12 h-12 mx-auto animate-spin text-[#FF2A54]" />
                         <h1 className="font-display text-3xl md:text-4xl font-black mt-8">Confirmando seu pagamento...</h1>
-                        <p className="text-white/60 mt-3">Isso leva alguns segundos. Não feche a página.</p>
+                        <p className="text-foreground/60 mt-3">Isso leva alguns segundos. Não feche a página.</p>
                     </>
                 )}
                 {phase === "success" && (
@@ -74,10 +74,10 @@ export default function BillingSuccess() {
                         <h1 className="font-display text-4xl md:text-5xl font-black mt-6 tracking-tight">
                             Bem-vindo ao <span className="bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] bg-clip-text text-transparent">Pro 💎</span>
                         </h1>
-                        <p className="text-white/70 mt-4 text-lg">Sua biblioteca acaba de ficar ilimitada.</p>
+                        <p className="text-foreground/70 mt-4 text-lg">Sua biblioteca acaba de ficar ilimitada.</p>
                         {info?.new_renews_at && (
-                            <p className="text-white/50 text-sm mt-2">
-                                Sua assinatura é válida até <span className="text-white font-semibold">{info.new_renews_at.slice(0, 10)}</span>
+                            <p className="text-foreground/50 text-sm mt-2">
+                                Sua assinatura é válida até <span className="text-foreground font-semibold">{info.new_renews_at.slice(0, 10)}</span>
                             </p>
                         )}
                         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
@@ -106,7 +106,7 @@ export default function BillingSuccess() {
                         <h1 className="font-display text-3xl md:text-4xl font-black mt-6">
                             {phase === "expired" ? "Sessão expirada" : "Não foi possível confirmar"}
                         </h1>
-                        <p className="text-white/60 mt-3 max-w-md mx-auto">
+                        <p className="text-foreground/60 mt-3 max-w-md mx-auto">
                             Se você foi cobrado, sua assinatura aparecerá no seu perfil em alguns minutos. Se não, tente novamente.
                         </p>
                         <button onClick={() => navigate("/pricing")} className="btn-primary mt-8 inline-flex">

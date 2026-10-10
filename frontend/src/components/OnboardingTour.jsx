@@ -59,7 +59,7 @@ export default function OnboardingTour({ show, force = false, onDismiss }) {
     return (
         <Dialog open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
             <DialogContent
-                className="bg-[#0F0F12] border-white/10 text-white max-w-md"
+                className="bg-popover border-border text-foreground max-w-md"
                 data-testid="onboarding-tour"
             >
                 <div className="flex flex-col items-center text-center py-2">
@@ -67,14 +67,14 @@ export default function OnboardingTour({ show, force = false, onDismiss }) {
                         <Icon className="w-7 h-7 text-[#FF2A54]" />
                     </div>
                     <h3 className="font-display text-xl font-bold">{current.title}</h3>
-                    <p className="text-white/60 text-sm mt-2 leading-relaxed">{current.body}</p>
+                    <p className="text-foreground/60 text-sm mt-2 leading-relaxed">{current.body}</p>
 
                     <div className="flex items-center gap-1.5 mt-6" data-testid="onboarding-tour-dots">
                         {STEPS.map((_, i) => (
                             <span
                                 key={i}
                                 className={`h-1.5 rounded-full transition-all ${
-                                    i === step ? "w-6 bg-[#FF2A54]" : "w-1.5 bg-white/20"
+                                    i === step ? "w-6 bg-[#FF2A54]" : "w-1.5 bg-foreground/20"
                                 }`}
                             />
                         ))}
@@ -84,7 +84,7 @@ export default function OnboardingTour({ show, force = false, onDismiss }) {
                         <button
                             onClick={dismiss}
                             data-testid="onboarding-tour-skip"
-                            className="text-white/50 text-sm font-medium hover:text-white/80 transition-colors"
+                            className="text-foreground/50 text-sm font-medium hover:text-foreground/80 transition-colors"
                         >
                             Pular
                         </button>

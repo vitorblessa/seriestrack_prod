@@ -325,7 +325,7 @@ export default function SeriesDetail() {
                             <p className="font-display text-xl md:text-2xl font-bold mt-1">
                                 T{series.next_episode_to_air.season_number}·E{series.next_episode_to_air.episode_number} — {series.next_episode_to_air.name}
                             </p>
-                            <p className="text-white/60 text-sm mt-1">Estreia em {series.next_episode_to_air.air_date}</p>
+                            <p className="text-foreground/60 text-sm mt-1">Estreia em {series.next_episode_to_air.air_date}</p>
                         </div>
                     </div>
                 </section>
@@ -336,13 +336,13 @@ export default function SeriesDetail() {
                 <section className="px-6 md:px-10 mt-16" data-testid="series-detail-seasons">
                     <h2 className="font-display text-2xl md:text-3xl font-bold mb-6">Temporadas & Episódios</h2>
                     <Tabs value={String(seasonNum)} onValueChange={(v) => setSeasonNum(Number(v))}>
-                        <TabsList className="bg-white/5 border border-white/10 flex flex-wrap h-auto">
+                        <TabsList className="bg-white/5 border border-border flex flex-wrap h-auto">
                             {series.seasons.map((se) => (
                                 <TabsTrigger
                                     key={se.season_number}
                                     value={String(se.season_number)}
                                     data-testid={`season-tab-${se.season_number}`}
-                                    className="data-[state=active]:bg-white data-[state=active]:text-black"
+                                    className="data-[state=active]:bg-foreground data-[state=active]:text-background"
                                 >
                                     T{se.season_number}
                                 </TabsTrigger>
@@ -352,7 +352,7 @@ export default function SeriesDetail() {
                             {currentSeasonProgress && (
                                 <div className="glass rounded-xl p-4 mb-4 flex items-center gap-4 flex-wrap" data-testid="season-progress">
                                     <div className="flex-1 min-w-[200px]">
-                                        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-white/60">
+                                        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-foreground/60">
                                             <span>Progresso da temporada</span>
                                             <span>{currentSeasonProgress.watched}/{currentSeasonProgress.total} · {currentSeasonProgress.percent}%</span>
                                         </div>
@@ -370,7 +370,7 @@ export default function SeriesDetail() {
                                                     data-testid={`season-bulk-toggle-${seasonNum}`}
                                                     className={`shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${
                                                         allWatched
-                                                            ? "bg-white/5 border-white/15 text-white/70 hover:bg-white/10"
+                                                            ? "bg-white/5 border-border text-foreground/70 hover:bg-white/10"
                                                             : "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25"
                                                     } disabled:opacity-60`}
                                                 >
@@ -404,9 +404,9 @@ export default function SeriesDetail() {
                                                     <div className="flex items-baseline gap-3 flex-wrap">
                                                         <span className="text-xs font-bold uppercase tracking-wider text-[#FF2A54]">EP {ep.episode_number}</span>
                                                         <h3 className="font-display font-bold text-lg">{ep.name}</h3>
-                                                        {ep.air_date && <span className="text-xs text-white/50">{ep.air_date}</span>}
+                                                        {ep.air_date && <span className="text-xs text-foreground/50">{ep.air_date}</span>}
                                                     </div>
-                                                    <p className="text-white/60 text-sm mt-2 line-clamp-3">{ep.overview || "Sem descrição."}</p>
+                                                    <p className="text-foreground/60 text-sm mt-2 line-clamp-3">{ep.overview || "Sem descrição."}</p>
                                                 </div>
                                                 {user && (
                                                     <button
@@ -415,7 +415,7 @@ export default function SeriesDetail() {
                                                         className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${
                                                             watched
                                                                 ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                                                                : "bg-white/5 border-white/10 hover:bg-white/10 text-white/70"
+                                                                : "bg-white/5 border-border hover:bg-white/10 text-foreground/70"
                                                         }`}
                                                     >
                                                         {watched ? <><Check className="w-3.5 h-3.5" /> Assistido</> : <><Plus className="w-3.5 h-3.5" /> Marcar</>}
@@ -438,11 +438,11 @@ export default function SeriesDetail() {
                     <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide -mx-6 md:-mx-10 px-6 md:px-10">
                         {series.cast.map((c, i) => (
                             <div key={i} className="w-32 shrink-0 text-center">
-                                <div className="w-32 h-32 rounded-full bg-surface overflow-hidden border border-white/10 mx-auto">
+                                <div className="w-32 h-32 rounded-full bg-surface overflow-hidden border border-border mx-auto">
                                     {c.profile_url && <img src={c.profile_url} alt={c.name} className="w-full h-full object-cover" />}
                                 </div>
                                 <p className="font-semibold text-sm mt-3 line-clamp-2">{c.name}</p>
-                                <p className="text-white/50 text-xs line-clamp-1">{c.character}</p>
+                                <p className="text-foreground/50 text-xs line-clamp-1">{c.character}</p>
                             </div>
                         ))}
                     </div>

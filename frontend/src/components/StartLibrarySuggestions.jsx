@@ -47,7 +47,7 @@ export default function StartLibrarySuggestions({ shows, onAdded }) {
         <section className="px-6 md:px-10 mt-12" data-testid="start-library-suggestions">
             <div className="mb-5">
                 <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight">Comece sua biblioteca</h2>
-                <p className="text-white/50 text-sm mt-1">Clique no + para adicionar como "Quero ver" — sem precisar abrir a página da série</p>
+                <p className="text-foreground/50 text-sm mt-1">Clique no + para adicionar como "Quero ver" — sem precisar abrir a página da série</p>
             </div>
             <div className="flex overflow-x-auto gap-4 md:gap-5 pb-3 snap-x scrollbar-thin -mx-6 md:-mx-10 px-6 md:px-10">
                 {shows.slice(0, 12).map((show) => {

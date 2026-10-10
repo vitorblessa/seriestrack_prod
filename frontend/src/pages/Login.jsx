@@ -63,7 +63,7 @@ export default function Login() {
 
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Bem-vindo de volta</p>
                     <h1 className="font-display text-4xl md:text-5xl font-black mt-2">Entrar</h1>
-                    <p className="text-white/50 mt-3">Continue acompanhando suas séries onde parou.</p>
+                    <p className="text-foreground/50 mt-3">Continue acompanhando suas séries onde parou.</p>
 
                     {error && (
                         <div data-testid="auth-error" className="mt-6 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
@@ -73,9 +73,9 @@ export default function Login() {
 
                     <div className="mt-8 space-y-4">
                         <label className="block">
-                            <span className="text-xs font-bold uppercase tracking-wider text-white/60">Email</span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">Email</span>
                             <div className="mt-2 relative">
-                                <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                                <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
                                 <input
                                     data-testid="auth-email-input"
                                     type="email"
@@ -83,20 +83,20 @@ export default function Login() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="voce@email.com"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
                                 />
                             </div>
                         </label>
 
                         <label className="block">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase tracking-wider text-white/60">Senha</span>
+                                <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">Senha</span>
                                 <Link to="/forgot-password" className="text-xs font-semibold text-[#FF2A54] hover:text-[#FF4D71]">
                                     Esqueceu a senha?
                                 </Link>
                             </div>
                             <div className="mt-2 relative">
-                                <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                                <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
                                 <input
                                     data-testid="auth-password-input"
                                     type="password"
@@ -104,7 +104,7 @@ export default function Login() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
                                 />
                             </div>
                         </label>
@@ -120,10 +120,10 @@ export default function Login() {
                         Entrar na minha conta
                     </button>
 
-                    <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/40 font-bold">
-                        <div className="flex-1 h-px bg-white/10" />
+                    <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-foreground/40 font-bold">
+                        <div className="flex-1 h-px bg-border" />
                         ou
-                        <div className="flex-1 h-px bg-white/10" />
+                        <div className="flex-1 h-px bg-border" />
                     </div>
 
                     <GoogleSignInButton className="w-full inline-flex items-center justify-center gap-3 rounded-full bg-white text-black px-8 py-3.5 font-bold tracking-wide hover:bg-white/90 transition-all disabled:opacity-60">
@@ -136,7 +136,7 @@ export default function Login() {
                         Continuar com Google
                     </GoogleSignInButton>
 
-                    <p className="mt-6 text-sm text-center text-white/50">
+                    <p className="mt-6 text-sm text-center text-foreground/50">
                         Ainda não tem conta?{" "}
                         <Link to="/register" className="text-[#FF2A54] hover:text-[#FF4D71] font-semibold">Criar agora</Link>
                     </p>

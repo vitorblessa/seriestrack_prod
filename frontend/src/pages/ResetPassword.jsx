@@ -45,7 +45,7 @@ export default function ResetPassword() {
                 {!token ? (
                     <div className="text-center">
                         <h1 className="font-display text-3xl font-black">Link inválido</h1>
-                        <p className="text-white/50 mt-3">Esse link de redefinição está incompleto ou expirou.</p>
+                        <p className="text-foreground/50 mt-3">Esse link de redefinição está incompleto ou expirou.</p>
                         <Link to="/forgot-password" className="inline-block mt-8 text-[#FF2A54] hover:text-[#FF4D71] font-semibold">
                             Solicitar novo link
                         </Link>
@@ -56,13 +56,13 @@ export default function ResetPassword() {
                             <CheckCircle2 className="w-7 h-7 text-emerald-400" />
                         </div>
                         <h1 className="font-display text-3xl font-black">Senha redefinida!</h1>
-                        <p className="text-white/50 mt-3">Redirecionando para o login...</p>
+                        <p className="text-foreground/50 mt-3">Redirecionando para o login...</p>
                     </div>
                 ) : (
                     <form onSubmit={onSubmit}>
                         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Recuperar acesso</p>
                         <h1 className="font-display text-4xl font-black mt-2">Nova senha</h1>
-                        <p className="text-white/50 mt-3">Escolha uma nova senha para sua conta.</p>
+                        <p className="text-foreground/50 mt-3">Escolha uma nova senha para sua conta.</p>
 
                         {error && (
                             <div data-testid="auth-error" className="mt-6 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
@@ -72,9 +72,9 @@ export default function ResetPassword() {
 
                         <div className="mt-8 space-y-4">
                             <label className="block">
-                                <span className="text-xs font-bold uppercase tracking-wider text-white/60">Nova senha</span>
+                                <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">Nova senha</span>
                                 <div className="mt-2 relative">
-                                    <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                                    <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
                                     <input
                                         data-testid="reset-password-input"
                                         type="password"
@@ -83,14 +83,14 @@ export default function ResetPassword() {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="••••••••"
-                                        className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                        className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
                                     />
                                 </div>
                             </label>
                             <label className="block">
-                                <span className="text-xs font-bold uppercase tracking-wider text-white/60">Confirmar senha</span>
+                                <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">Confirmar senha</span>
                                 <div className="mt-2 relative">
-                                    <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                                    <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
                                     <input
                                         data-testid="reset-password-confirm-input"
                                         type="password"
@@ -99,7 +99,7 @@ export default function ResetPassword() {
                                         value={confirm}
                                         onChange={(e) => setConfirm(e.target.value)}
                                         placeholder="••••••••"
-                                        className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                        className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
                                     />
                                 </div>
                             </label>

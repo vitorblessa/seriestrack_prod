@@ -42,8 +42,8 @@ export default function VerifyEmail() {
 
                 {status === "loading" && (
                     <div data-testid="verify-email-loading">
-                        <Loader2 className="w-8 h-8 mx-auto animate-spin text-white/40" />
-                        <p className="text-white/50 mt-6">Confirmando seu e-mail...</p>
+                        <Loader2 className="w-8 h-8 mx-auto animate-spin text-foreground/40" />
+                        <p className="text-foreground/50 mt-6">Confirmando seu e-mail...</p>
                     </div>
                 )}
 
@@ -53,7 +53,7 @@ export default function VerifyEmail() {
                             <CheckCircle2 className="w-7 h-7 text-emerald-400" />
                         </div>
                         <h1 className="font-display text-3xl font-black">E-mail confirmado!</h1>
-                        <p className="text-white/50 mt-3">Sua conta está verificada. Pode continuar aproveitando o SeriesTrack.</p>
+                        <p className="text-foreground/50 mt-3">Sua conta está verificada. Pode continuar aproveitando o SeriesTrack.</p>
                         <Link to={user ? "/dashboard" : "/login"} className="inline-block mt-8 text-[#FF2A54] hover:text-[#FF4D71] font-semibold">
                             {user ? "Ir para o início" : "Ir para o login"}
                         </Link>
@@ -66,7 +66,7 @@ export default function VerifyEmail() {
                             <XCircle className="w-7 h-7 text-red-400" />
                         </div>
                         <h1 className="font-display text-3xl font-black">Link inválido</h1>
-                        <p className="text-white/50 mt-3">
+                        <p className="text-foreground/50 mt-3">
                             {status === "missing"
                                 ? "Esse link de confirmação está incompleto."
                                 : (error || "Esse link expirou ou já foi usado.")}

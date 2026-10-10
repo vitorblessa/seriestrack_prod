@@ -67,13 +67,13 @@ export default function AIRecommendations() {
             <AppLayout>
                 <section className="px-6 md:px-10 pt-16 pb-24 max-w-2xl mx-auto text-center" data-testid="ai-paywall">
                     <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_30px_80px_-20px_rgba(255,42,84,0.5)]">
-                        <Sparkles className="w-10 h-10 text-white" strokeWidth={2.5} />
+                        <Sparkles className="w-10 h-10 text-foreground" strokeWidth={2.5} />
                     </div>
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54] mt-8">Recurso Pro</p>
                     <h1 className="font-display text-4xl md:text-5xl font-black mt-3 tracking-tight">
                         IA que conhece seu gosto
                     </h1>
-                    <p className="text-white/70 mt-5 text-lg max-w-md mx-auto">
+                    <p className="text-foreground/70 mt-5 text-lg max-w-md mx-auto">
                         Google Gemini analisa sua biblioteca e avaliações para sugerir 5 séries que você vai amar — com explicação personalizada do porquê.
                     </p>
                     <Link to="/pricing" className="btn-primary mt-10 inline-flex" data-testid="ai-paywall-cta">
@@ -95,7 +95,7 @@ export default function AIRecommendations() {
                         <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2">
                             Pra você assistir agora
                         </h1>
-                        <p className="text-white/60 mt-2 max-w-2xl">
+                        <p className="text-foreground/60 mt-2 max-w-2xl">
                             Geradas com Google Gemini baseadas no que você já tem na biblioteca e nas suas avaliações.
                         </p>
                     </div>
@@ -110,17 +110,17 @@ export default function AIRecommendations() {
                 {loading && !recs ? (
                     <div className="flex flex-col items-center py-20 gap-4">
                         <Loader2 className="w-10 h-10 animate-spin text-[#FF2A54]" />
-                        <p className="text-white/60 text-sm">Analisando seu gosto...</p>
+                        <p className="text-foreground/60 text-sm">Analisando seu gosto...</p>
                     </div>
                 ) : error ? (
                     <div className="glass rounded-2xl py-12 text-center max-w-md mx-auto">
-                        <p className="text-white/70">{error}</p>
+                        <p className="text-foreground/70">{error}</p>
                         <button onClick={load} className="btn-primary mt-6 inline-flex">Tentar novamente</button>
                     </div>
                 ) : !recs || recs.length === 0 ? (
                     <div className="glass rounded-2xl py-16 text-center max-w-2xl mx-auto">
                         <p className="font-display text-xl font-bold">Adicione algumas séries primeiro</p>
-                        <p className="text-white/60 mt-2">A IA precisa do seu histórico para recomendar.</p>
+                        <p className="text-foreground/60 mt-2">A IA precisa do seu histórico para recomendar.</p>
                         <Link to="/search" className="btn-primary mt-6 inline-flex">Explorar séries</Link>
                     </div>
                 ) : (
@@ -134,7 +134,7 @@ export default function AIRecommendations() {
                                     <Link to={`/series/${r.tmdb_id}`} className="font-display font-black text-lg leading-tight hover:text-[#FF2A54] transition-colors">
                                         {r.name}
                                     </Link>
-                                    <div className="flex items-center gap-3 mt-1 text-xs text-white/50">
+                                    <div className="flex items-center gap-3 mt-1 text-xs text-foreground/50">
                                         {r.first_air_date && <span>{r.first_air_date.slice(0, 4)}</span>}
                                         {r.vote_average ? (
                                             <span className="flex items-center gap-1">
@@ -147,7 +147,7 @@ export default function AIRecommendations() {
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-[#FF2A54] mb-1 flex items-center gap-1">
                                             <Sparkles className="w-3 h-3" /> Por que você vai gostar
                                         </p>
-                                        <p className="text-sm text-white/80 leading-snug">{r.ai_why}</p>
+                                        <p className="text-sm text-foreground/80 leading-snug">{r.ai_why}</p>
                                     </div>
                                     <div className="mt-auto pt-4">
                                         {r.in_library ? (
@@ -158,7 +158,7 @@ export default function AIRecommendations() {
                                             <button
                                                 onClick={() => addToLib(r)}
                                                 data-testid={`ai-add-${r.tmdb_id}`}
-                                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-bold uppercase tracking-wider"
+                                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-muted hover:bg-muted/70 border border-border text-xs font-bold uppercase tracking-wider"
                                             >
                                                 <Plus className="w-3.5 h-3.5" /> Quero assistir
                                             </button>

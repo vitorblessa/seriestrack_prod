@@ -40,14 +40,14 @@ export default function AuthCallback() {
 
     if (error) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-obsidian text-white p-6">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-6">
                 <div className="glass rounded-2xl p-8 max-w-md w-full text-center">
                     <div className="w-14 h-14 rounded-full bg-red-500/15 border border-red-500/40 flex items-center justify-center mx-auto">
                         <AlertCircle className="w-7 h-7 text-red-400" />
                     </div>
                     <h1 className="font-display text-2xl font-bold mt-4">Falha no login com Google</h1>
-                    <p className="text-white/60 mt-2 text-sm">{error}</p>
-                    <p className="text-white/40 mt-3 text-xs">Sua sessão Google só vale uma vez — tente entrar de novo abaixo.</p>
+                    <p className="text-foreground/60 mt-2 text-sm">{error}</p>
+                    <p className="text-foreground/40 mt-3 text-xs">Sua sessão Google só vale uma vez — tente entrar de novo abaixo.</p>
                     <button
                         onClick={() => {
                             // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
@@ -68,10 +68,10 @@ export default function AuthCallback() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-obsidian text-white">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
             <Loader2 className="w-10 h-10 animate-spin text-[#FF2A54]" />
             <p className="mt-6 font-display font-bold text-lg">Conectando sua conta Google...</p>
-            <p className="text-white/50 text-sm mt-1">Só um instante</p>
+            <p className="text-foreground/50 text-sm mt-1">Só um instante</p>
         </div>
     );
 }

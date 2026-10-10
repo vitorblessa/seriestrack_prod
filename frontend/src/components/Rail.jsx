@@ -47,11 +47,11 @@ export default function Rail({ title, subtitle, items, testid, emptyText = "Nada
             <div className="flex items-end justify-between mb-4">
                 <div>
                     <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight">{title}</h2>
-                    {subtitle && <p className="text-white/50 text-sm mt-1">{subtitle}</p>}
+                    {subtitle && <p className="text-foreground/50 text-sm mt-1">{subtitle}</p>}
                 </div>
             </div>
             {(!items || items.length === 0) ? (
-                <p className="text-white/40 text-sm">{emptyText}</p>
+                <p className="text-foreground/40 text-sm">{emptyText}</p>
             ) : (
                 <div className="relative">
                     <div
@@ -92,12 +92,12 @@ export default function Rail({ title, subtitle, items, testid, emptyText = "Nada
 
                     {/* Edge fades — hint that content continues off-screen */}
                     <div
-                        className={`hidden md:block pointer-events-none absolute inset-y-0 left-0 w-12 -ml-6 md:-ml-10 bg-gradient-to-r from-[#0A0A0C] to-transparent transition-opacity duration-200 ${
+                        className={`hidden md:block pointer-events-none absolute inset-y-0 left-0 w-12 -ml-6 md:-ml-10 bg-gradient-to-r from-background to-transparent transition-opacity duration-200 ${
                             canLeft ? "opacity-100" : "opacity-0"
                         }`}
                     />
                     <div
-                        className={`hidden md:block pointer-events-none absolute inset-y-0 right-0 w-12 -mr-6 md:-mr-10 bg-gradient-to-l from-[#0A0A0C] to-transparent transition-opacity duration-200 ${
+                        className={`hidden md:block pointer-events-none absolute inset-y-0 right-0 w-12 -mr-6 md:-mr-10 bg-gradient-to-l from-background to-transparent transition-opacity duration-200 ${
                             canRight ? "opacity-100" : "opacity-0"
                         }`}
                     />

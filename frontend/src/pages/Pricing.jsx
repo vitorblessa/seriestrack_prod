@@ -72,23 +72,23 @@ export default function Pricing() {
     return (
         <AppLayout>
             <section className="px-6 md:px-10 pt-10 pb-6 text-center max-w-4xl mx-auto">
-                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs font-bold uppercase tracking-[0.2em] text-white/80">
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs font-bold uppercase tracking-[0.2em] text-foreground/80">
                     <Sparkles className="w-3 h-3 text-[#FF2A54]" /> Planos
                 </span>
                 <h1 className="font-display text-5xl md:text-7xl font-black tracking-tighter leading-[0.95] mt-6">
                     Pra quem é fã <span className="bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] bg-clip-text text-transparent">de verdade</span>.
                 </h1>
-                <p className="text-white/60 mt-6 text-lg max-w-2xl mx-auto">
+                <p className="text-foreground/60 mt-6 text-lg max-w-2xl mx-auto">
                     Comece grátis. Faça upgrade quando seus 50 lugares na biblioteca acabarem ou quando quiser as features avançadas.
                 </p>
 
                 {/* Period toggle */}
-                <div className="mt-10 inline-flex p-1 rounded-full bg-white/5 border border-white/10" data-testid="pricing-period-toggle">
+                <div className="mt-10 inline-flex p-1 rounded-full bg-muted/50 border border-border" data-testid="pricing-period-toggle">
                     <button
                         onClick={() => setPeriod("monthly")}
                         data-testid="pricing-period-monthly"
                         className={`px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-all ${
-                            period === "monthly" ? "bg-white text-black" : "text-white/60 hover:text-white"
+                            period === "monthly" ? "bg-foreground text-background" : "text-foreground/60 hover:text-foreground"
                         }`}
                     >
                         Mensal
@@ -97,7 +97,7 @@ export default function Pricing() {
                         onClick={() => setPeriod("yearly")}
                         data-testid="pricing-period-yearly"
                         className={`px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-all relative ${
-                            period === "yearly" ? "bg-white text-black" : "text-white/60 hover:text-white"
+                            period === "yearly" ? "bg-foreground text-background" : "text-foreground/60 hover:text-foreground"
                         }`}
                     >
                         Anual
@@ -113,26 +113,26 @@ export default function Pricing() {
             <section className="px-6 md:px-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
                 {/* Free */}
                 <div className="glass rounded-2xl p-8 flex flex-col" data-testid="plan-card-free">
-                    <div className="flex items-center gap-2 text-white/60 text-xs font-bold uppercase tracking-[0.2em]">
+                    <div className="flex items-center gap-2 text-foreground/60 text-xs font-bold uppercase tracking-[0.2em]">
                         <Zap className="w-4 h-4" /> Free
                     </div>
                     <h2 className="font-display text-3xl font-black mt-4">Grátis</h2>
-                    <p className="text-white/50 text-sm mt-2">Pra começar a organizar</p>
+                    <p className="text-foreground/50 text-sm mt-2">Pra começar a organizar</p>
                     <div className="mt-6 mb-2">
                         <span className="font-display text-5xl font-black">R$ 0</span>
-                        <span className="text-white/50 text-sm">/mês</span>
+                        <span className="text-foreground/50 text-sm">/mês</span>
                     </div>
                     <ul className="mt-6 space-y-2.5 flex-1">
                         {FEATURES_FREE.map((f) => (
-                            <li key={f} className="text-white/70 text-sm flex items-start gap-2">
-                                <Check className="w-4 h-4 text-white/40 shrink-0 mt-0.5" />
+                            <li key={f} className="text-foreground/70 text-sm flex items-start gap-2">
+                                <Check className="w-4 h-4 text-foreground/40 shrink-0 mt-0.5" />
                                 {f}
                             </li>
                         ))}
                     </ul>
                     <button
                         disabled
-                        className="mt-8 w-full px-6 py-3 rounded-full bg-white/5 border border-white/10 text-white/50 text-sm font-bold cursor-not-allowed"
+                        className="mt-8 w-full px-6 py-3 rounded-full bg-muted/50 border border-border text-foreground/50 text-sm font-bold cursor-not-allowed"
                     >
                         {user ? "Plano atual" : "Começar grátis"}
                     </button>
@@ -147,11 +147,11 @@ export default function Pricing() {
                         <Crown className="w-4 h-4" /> Pro
                     </div>
                     <h2 className="font-display text-3xl font-black mt-4">SeriesTrack Pro</h2>
-                    <p className="text-white/60 text-sm mt-2">Tudo do Free + features avançadas</p>
+                    <p className="text-foreground/60 text-sm mt-2">Tudo do Free + features avançadas</p>
                     {plan ? (
                         <div className="mt-6 mb-2">
                             {period === "yearly" && monthly && (
-                                <div className="text-white/40 text-sm line-through">
+                                <div className="text-foreground/40 text-sm line-through">
                                     R$ {(monthly.amount * 12).toFixed(2).replace(".", ",")}/ano
                                 </div>
                             )}
@@ -159,7 +159,7 @@ export default function Pricing() {
                                 <span className="font-display text-5xl font-black">
                                     R$ {plan.amount.toFixed(2).replace(".", ",")}
                                 </span>
-                                <span className="text-white/60 text-sm">/{period === "monthly" ? "mês" : "ano"}</span>
+                                <span className="text-foreground/60 text-sm">/{period === "monthly" ? "mês" : "ano"}</span>
                             </div>
                             {period === "yearly" && yearlyMonthEq && (
                                 <p className="text-[#FF8a8a] text-xs font-semibold mt-1">
@@ -168,11 +168,11 @@ export default function Pricing() {
                             )}
                         </div>
                     ) : (
-                        <Loader2 className="w-5 h-5 animate-spin text-white/40 mt-6" />
+                        <Loader2 className="w-5 h-5 animate-spin text-foreground/40 mt-6" />
                     )}
                     <ul className="mt-6 space-y-2.5 flex-1">
                         {FEATURES_PRO.map((f) => (
-                            <li key={f} className="text-white text-sm flex items-start gap-2">
+                            <li key={f} className="text-foreground text-sm flex items-start gap-2">
                                 <Check className="w-4 h-4 text-[#FF2A54] shrink-0 mt-0.5" />
                                 {f}
                             </li>
@@ -188,14 +188,14 @@ export default function Pricing() {
                         {isPro ? "Você já é Pro 💎" : "Assinar Pro agora"}
                     </button>
                     {!user && (
-                        <p className="text-center text-xs text-white/50 mt-3">Você precisa de uma conta. Vamos te levar.</p>
+                        <p className="text-center text-xs text-foreground/50 mt-3">Você precisa de uma conta. Vamos te levar.</p>
                     )}
                 </div>
             </section>
 
             <section className="px-6 md:px-10 mt-16 max-w-3xl mx-auto text-center">
                 <h3 className="font-display text-2xl md:text-3xl font-bold">Pagamento via Stripe — cartão e PIX</h3>
-                <p className="text-white/60 mt-4">
+                <p className="text-foreground/60 mt-4">
                     Cancele quando quiser direto pelo seu perfil. Sem multas, sem complicações.
                     Pagamento processado pela Stripe — uma das maiores plataformas de pagamento do mundo.
                 </p>

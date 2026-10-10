@@ -154,12 +154,12 @@ export default function Search() {
                 <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2">
                     Encontre sua próxima obsessão
                 </h1>
-                <p className="text-white/50 mt-3 max-w-2xl">
-                    Digite o nome de uma série <span className="text-white/80">ou</span> clique em um streaming abaixo para ver os <span className="text-white/80">últimos episódios lançados</span> naquela plataforma.
+                <p className="text-foreground/50 mt-3 max-w-2xl">
+                    Digite o nome de uma série <span className="text-foreground/80">ou</span> clique em um streaming abaixo para ver os <span className="text-foreground/80">últimos episódios lançados</span> naquela plataforma.
                 </p>
 
                 <div className="mt-8 relative max-w-3xl">
-                    <SearchIcon className="w-5 h-5 absolute left-5 top-1/2 -translate-y-1/2 text-white/40" />
+                    <SearchIcon className="w-5 h-5 absolute left-5 top-1/2 -translate-y-1/2 text-foreground/40" />
                     <input
                         data-testid="search-input"
                         type="text"
@@ -173,14 +173,14 @@ export default function Search() {
                             }
                         }}
                         placeholder="Ex: Breaking Bad, House of the Dragon..."
-                        className="w-full pl-14 pr-6 py-5 rounded-2xl bg-white/5 border border-white/10 focus:border-[#FF2A54] focus:bg-white/10 outline-none text-lg transition-all"
+                        className="w-full pl-14 pr-6 py-5 rounded-2xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none text-lg transition-all"
                     />
-                    {loadingSeries && <Loader2 className="w-5 h-5 absolute right-5 top-1/2 -translate-y-1/2 animate-spin text-white/50" />}
+                    {loadingSeries && <Loader2 className="w-5 h-5 absolute right-5 top-1/2 -translate-y-1/2 animate-spin text-foreground/50" />}
                 </div>
 
                 {/* Fixed streaming buttons */}
                 <div className="mt-5" data-testid="streaming-buttons-row">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-2.5">Filtrar por streaming</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-foreground/40 mb-2.5">Filtrar por streaming</p>
                     <div className="flex flex-wrap gap-2">
                         {STREAMINGS.map((p) => {
                             const b = brandFor(p);
@@ -212,15 +212,15 @@ export default function Search() {
                 {genres.length > 0 && (
                     <div className="mt-5" data-testid="genre-buttons-row">
                         <div className="flex items-center justify-between gap-3 flex-wrap mb-2.5">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40">Filtrar por gênero</p>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-foreground/40">Filtrar por gênero</p>
                             {selectedGenre && (
                                 <div className="inline-flex items-center gap-1.5">
-                                    <ArrowUpDown className="w-3.5 h-3.5 text-white/40" />
+                                    <ArrowUpDown className="w-3.5 h-3.5 text-foreground/40" />
                                     <select
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value)}
                                         data-testid="genre-sort-select"
-                                        className="bg-white/5 border border-white/10 rounded-full text-xs font-semibold px-3 py-1.5 outline-none focus:border-[#FF2A54]/50"
+                                        className="bg-white/5 border border-border rounded-full text-xs font-semibold px-3 py-1.5 outline-none focus:border-[#FF2A54]/50"
                                     >
                                         {SORT_OPTIONS.map((o) => (
                                             <option key={o.value} value={o.value}>{o.label}</option>
@@ -239,8 +239,8 @@ export default function Search() {
                                         data-testid={`genre-btn-${g.id}`}
                                         className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border inline-flex items-center gap-1.5 ${
                                             active
-                                                ? "bg-white text-black border-white ring-2 ring-white/30 shadow-lg"
-                                                : "bg-white/5 text-white/75 border-white/10 hover:scale-105"
+                                                ? "bg-foreground text-background border-foreground ring-2 ring-foreground/30 shadow-lg"
+                                                : "bg-white/5 text-foreground/75 border-border hover:scale-105"
                                         }`}
                                     >
                                         <Tag className="w-3.5 h-3.5" />
@@ -266,20 +266,20 @@ export default function Search() {
                 ) : selectedGenre ? (
                     <div data-testid="genre-results">
                         <div className="flex items-center gap-3 mb-6 flex-wrap">
-                            <h2 className="font-display text-xl font-bold text-white/70">
+                            <h2 className="font-display text-xl font-bold text-foreground/70">
                                 Séries de {selectedGenre.name}
                             </h2>
-                            {loadingDiscover && <Loader2 className="w-4 h-4 animate-spin text-white/50" />}
+                            {loadingDiscover && <Loader2 className="w-4 h-4 animate-spin text-foreground/50" />}
                             <button
                                 onClick={() => setSelectedGenre(null)}
                                 data-testid="genre-clear-btn"
-                                className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/70"
+                                className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-border text-xs font-semibold text-foreground/70"
                             >
                                 <X className="w-3.5 h-3.5" /> Limpar
                             </button>
                         </div>
                         {discoverResults.length === 0 && !loadingDiscover ? (
-                            <p className="text-white/50">Nenhuma série encontrada em {selectedGenre.name}.</p>
+                            <p className="text-foreground/50">Nenhuma série encontrada em {selectedGenre.name}.</p>
                         ) : (
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
                                 {discoverResults.map((s) => <PosterCard key={s.id} show={s} />)}
@@ -288,10 +288,10 @@ export default function Search() {
                     </div>
                 ) : q.trim() ? (
                     results.length === 0 && !loadingSeries ? (
-                        <p className="text-white/50">Nenhuma série encontrada para "{q}".</p>
+                        <p className="text-foreground/50">Nenhuma série encontrada para "{q}".</p>
                     ) : (
                         <>
-                            <h2 className="font-display text-xl font-bold mb-6 text-white/70">
+                            <h2 className="font-display text-xl font-bold mb-6 text-foreground/70">
                                 {results.length} {results.length === 1 ? "resultado" : "resultados"} para "{q}"
                             </h2>
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
@@ -301,7 +301,7 @@ export default function Search() {
                     )
                 ) : (
                     <>
-                        <h2 className="font-display text-xl font-bold mb-6 text-white/70">Populares para você descobrir</h2>
+                        <h2 className="font-display text-xl font-bold mb-6 text-foreground/70">Populares para você descobrir</h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
                             {popular.map((s) => <PosterCard key={s.id} show={s} />)}
                         </div>
@@ -319,7 +319,7 @@ function StreamingResults({ streaming, data, loading, onClose }) {
         return (
             <div className="flex items-center gap-3 py-6">
                 <Loader2 className="w-6 h-6 animate-spin text-[#FF2A54]" />
-                <span className="text-white/60 text-sm">Buscando últimos episódios em {streaming}...</span>
+                <span className="text-foreground/60 text-sm">Buscando últimos episódios em {streaming}...</span>
             </div>
         );
     }
@@ -333,13 +333,13 @@ function StreamingResults({ streaming, data, loading, onClose }) {
                 >
                     <Tv className="w-3.5 h-3.5 mr-1.5" /> {streaming}
                 </span>
-                <h2 className="font-display text-xl font-bold text-white/80">
+                <h2 className="font-display text-xl font-bold text-foreground/80">
                     Últimos episódios em {streaming}
                 </h2>
                 <button
                     onClick={onClose}
                     data-testid="streaming-clear-btn"
-                    className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/70"
+                    className="ml-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-border text-xs font-semibold text-foreground/70"
                 >
                     <X className="w-3.5 h-3.5" /> Limpar
                 </button>
@@ -347,9 +347,9 @@ function StreamingResults({ streaming, data, loading, onClose }) {
 
             {eps.length === 0 ? (
                 <div className="glass rounded-2xl py-16 px-6 text-center">
-                    <CalIcon className="w-10 h-10 mx-auto text-white/30" />
+                    <CalIcon className="w-10 h-10 mx-auto text-foreground/30" />
                     <p className="font-display text-xl font-bold mt-4">Nenhum episódio recente em {streaming}</p>
-                    <p className="text-white/60 mt-2 max-w-md mx-auto">
+                    <p className="text-foreground/60 mt-2 max-w-md mx-auto">
                         Não conseguimos encontrar episódios recentes ou próximos para essa plataforma na sua região.
                     </p>
                 </div>
@@ -360,7 +360,7 @@ function StreamingResults({ streaming, data, loading, onClose }) {
                             key={`${e.tmdb_id}-${e.season_number}-${e.episode_number}-${i}`}
                             to={`/series/${e.tmdb_id}`}
                             data-testid={`streaming-episode-${i}`}
-                            className="glass rounded-xl overflow-hidden flex hover:border-white/20 transition-all"
+                            className="glass rounded-xl overflow-hidden flex hover:border-border transition-all"
                         >
                             <div className="w-32 aspect-[2/3] shrink-0 bg-surface">
                                 {e.poster_url && <img src={e.poster_url} alt="" className="w-full h-full object-cover" />}
@@ -384,8 +384,8 @@ function StreamingResults({ streaming, data, loading, onClose }) {
                                     )}
                                 </div>
                                 <p className="font-display font-bold text-base line-clamp-1 mt-1">{e.series_name}</p>
-                                <p className="text-white/60 text-sm">T{e.season_number}·E{e.episode_number} — {e.episode_name}</p>
-                                {e.overview && <p className="text-white/50 text-xs mt-1 line-clamp-2">{e.overview}</p>}
+                                <p className="text-foreground/60 text-sm">T{e.season_number}·E{e.episode_number} — {e.episode_name}</p>
+                                {e.overview && <p className="text-foreground/50 text-xs mt-1 line-clamp-2">{e.overview}</p>}
                             </div>
                         </Link>
                     ))}

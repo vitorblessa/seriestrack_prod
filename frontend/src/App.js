@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import "@/App.css";
 import "./themes.css";
 import { AuthProvider } from "./lib/auth";
-import { ThemeProvider } from "./lib/theme";
+import { ThemeProvider, useTheme } from "./lib/theme";
 import { Toaster } from "sonner";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { registerSW } from "./lib/push";
@@ -52,6 +52,34 @@ function NativeBridge() {
     return null;
 }
 
+/** Keeps sonner's own toast skin (separate from our CSS vars) in sync with
+ * the light/dark preference from lib/theme.jsx. */
+function ThemedToaster() {
+    const { mode } = useTheme();
+    const isLight = mode === "light";
+    return (
+        <Toaster
+            theme={isLight ? "light" : "dark"}
+            position="bottom-right"
+            toastOptions={{
+                style: isLight
+                    ? {
+                        background: "rgba(255,255,255,0.92)",
+                        border: "1px solid rgba(0,0,0,0.08)",
+                        color: "#15151A",
+                        backdropFilter: "blur(12px)",
+                    }
+                    : {
+                        background: "rgba(22,22,26,0.9)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        color: "#fff",
+                        backdropFilter: "blur(12px)",
+                    },
+            }}
+        />
+    );
+}
+
 export default function App() {
     return (
         <div className="App">
@@ -59,18 +87,7 @@ export default function App() {
                 <AuthProvider>
                     <ThemeProvider>
                         <NativeBridge />
-                        <Toaster
-                            theme="dark"
-                            position="bottom-right"
-                            toastOptions={{
-                                style: {
-                                    background: "rgba(22,22,26,0.9)",
-                                    border: "1px solid rgba(255,255,255,0.08)",
-                                    color: "#fff",
-                                    backdropFilter: "blur(12px)",
-                                },
-                            }}
-                        />
+                        <ThemedToaster />
                         <InstallPromptBanner />
                         <Routes>
                             <Route path="/" element={<Splash />} />

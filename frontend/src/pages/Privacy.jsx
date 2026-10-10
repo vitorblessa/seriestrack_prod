@@ -7,14 +7,14 @@ import { Link } from "react-router-dom";
  */
 export default function Privacy() {
     return (
-        <div className="min-h-screen bg-[#0A0A0C] text-white/90 py-14 px-6" data-testid="privacy-page">
+        <div className="min-h-screen bg-background text-foreground/90 py-14 px-6" data-testid="privacy-page">
             <div className="max-w-3xl mx-auto space-y-6 leading-relaxed">
                 <div className="flex items-center justify-between mb-8">
                     <Link to="/" className="text-[#FF2A54] font-bold text-lg">SeriesTrack</Link>
-                    <Link to="/" className="text-sm text-white/60 hover:text-white">← Início</Link>
+                    <Link to="/" className="text-sm text-foreground/60 hover:text-foreground">← Início</Link>
                 </div>
                 <h1 className="font-display text-4xl font-bold">Política de Privacidade</h1>
-                <p className="text-white/50 text-sm">Última atualização: 22 de setembro de 2026.</p>
+                <p className="text-foreground/50 text-sm">Última atualização: 22 de setembro de 2026.</p>
 
                 <h2 className="font-bold text-xl mt-8">1. Quem somos</h2>
                 <p>SeriesTrack é um aplicativo que ajuda usuários a acompanhar episódios de séries entre serviços de streaming. Esta política descreve como tratamos os dados pessoais de quem usa o app, tanto na versão web quanto na versão Android.</p>

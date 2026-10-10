@@ -39,9 +39,9 @@ export default function ForgotPassword() {
                             <CheckCircle2 className="w-7 h-7 text-emerald-400" />
                         </div>
                         <h1 className="font-display text-3xl font-black">Verifique seu e-mail</h1>
-                        <p className="text-white/50 mt-3">
+                        <p className="text-foreground/50 mt-3">
                             Se existir uma conta com o e-mail{" "}
-                            <span className="text-white/80 font-semibold">{email}</span>, enviamos um link para
+                            <span className="text-foreground/80 font-semibold">{email}</span>, enviamos um link para
                             redefinir a senha. Ele expira em 1 hora.
                         </p>
 
@@ -65,7 +65,7 @@ export default function ForgotPassword() {
                     <form onSubmit={onSubmit}>
                         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Recuperar acesso</p>
                         <h1 className="font-display text-4xl font-black mt-2">Esqueceu a senha?</h1>
-                        <p className="text-white/50 mt-3">
+                        <p className="text-foreground/50 mt-3">
                             Informe seu e-mail e enviaremos um link para redefinir sua senha.
                         </p>
 
@@ -76,9 +76,9 @@ export default function ForgotPassword() {
                         )}
 
                         <label className="block mt-8">
-                            <span className="text-xs font-bold uppercase tracking-wider text-white/60">Email</span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">Email</span>
                             <div className="mt-2 relative">
-                                <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                                <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
                                 <input
                                     data-testid="forgot-email-input"
                                     type="email"
@@ -86,7 +86,7 @@ export default function ForgotPassword() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="voce@email.com"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
                                 />
                             </div>
                         </label>
@@ -101,7 +101,7 @@ export default function ForgotPassword() {
                             Enviar link de redefinição
                         </button>
 
-                        <p className="mt-6 text-sm text-center text-white/50">
+                        <p className="mt-6 text-sm text-center text-foreground/50">
                             Lembrou a senha?{" "}
                             <Link to="/login" className="text-[#FF2A54] hover:text-[#FF4D71] font-semibold">Entrar</Link>
                         </p>

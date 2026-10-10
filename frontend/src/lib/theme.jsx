@@ -4,6 +4,9 @@ import api from "./api";
 const THEME_LS_KEY = "seriestrack_theme";
 const DEFAULT_THEME = "default";
 
+const MODE_LS_KEY = "seriestrack_color_mode";
+const DEFAULT_MODE = "dark";
+
 export const FREE_THEMES = ["default"];
 export const PRO_THEMES = [
     "oled", "netflix", "disney_plus", "hbo_max",
@@ -39,9 +42,16 @@ function applyThemeToDom(theme) {
     document.body.setAttribute("data-theme", theme || DEFAULT_THEME);
 }
 
+function applyModeToDom(mode) {
+    if (typeof document === "undefined") return;
+    document.documentElement.setAttribute("data-mode", mode || DEFAULT_MODE);
+}
+
 const ThemeCtx = createContext({
     theme: DEFAULT_THEME,
     setTheme: () => {},
+    mode: DEFAULT_MODE,
+    setMode: () => {},
     isPro: false,
 });
 
@@ -50,9 +60,14 @@ export function ThemeProvider({ children }) {
         if (typeof window === "undefined") return DEFAULT_THEME;
         return localStorage.getItem(THEME_LS_KEY) || DEFAULT_THEME;
     });
+    const [mode, setModeState] = useState(() => {
+        if (typeof window === "undefined") return DEFAULT_MODE;
+        return localStorage.getItem(MODE_LS_KEY) || DEFAULT_MODE;
+    });
 
-    // Apply initial theme
+    // Apply initial theme/mode
     useEffect(() => { applyThemeToDom(theme); }, [theme]);
+    useEffect(() => { applyModeToDom(mode); }, [mode]);
 
     // Re-sync from backend on mount (overrides localStorage if user has saved pref)
     useEffect(() => {
@@ -60,10 +75,15 @@ export function ThemeProvider({ children }) {
         (async () => {
             try {
                 const { data } = await api.get("/me/preferences");
-                const remote = data?.preferences?.ui_theme;
-                if (!cancelled && remote && remote !== theme) {
-                    setThemeState(remote);
-                    localStorage.setItem(THEME_LS_KEY, remote);
+                const remoteTheme = data?.preferences?.ui_theme;
+                if (!cancelled && remoteTheme && remoteTheme !== theme) {
+                    setThemeState(remoteTheme);
+                    localStorage.setItem(THEME_LS_KEY, remoteTheme);
+                }
+                const remoteMode = data?.preferences?.ui_mode;
+                if (!cancelled && remoteMode && remoteMode !== mode) {
+                    setModeState(remoteMode);
+                    localStorage.setItem(MODE_LS_KEY, remoteMode);
                 }
             } catch {
                 /* not logged in or backend unreachable — keep local */
@@ -86,8 +106,21 @@ export function ThemeProvider({ children }) {
         }
     }, []);
 
+    const setMode = useCallback(async (next) => {
+        // Optimistic local switch — unlike setTheme, this is free for every
+        // user, so we don't need to roll back on a Pro-gating error.
+        setModeState(next);
+        localStorage.setItem(MODE_LS_KEY, next);
+        applyModeToDom(next);
+        try {
+            await api.patch("/me/preferences", { ui_mode: next });
+        } catch {
+            /* not logged in, or backend unreachable — local switch still applies */
+        }
+    }, []);
+
     return (
-        <ThemeCtx.Provider value={{ theme, setTheme }}>
+        <ThemeCtx.Provider value={{ theme, setTheme, mode, setMode }}>
             {children}
         </ThemeCtx.Provider>
     );

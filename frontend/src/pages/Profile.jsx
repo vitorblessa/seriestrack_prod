@@ -74,7 +74,7 @@ export default function Profile() {
                         {(user?.name || "?").charAt(0).toUpperCase()}
                     </div>
                     <h2 className="font-display text-2xl font-bold mt-5">{user?.name}</h2>
-                    <p className="text-white/50 text-sm mt-1 flex items-center justify-center gap-1">
+                    <p className="text-foreground/50 text-sm mt-1 flex items-center justify-center gap-1">
                         <Mail className="w-3.5 h-3.5" /> {user?.email}
                     </p>
                     {user?.subscription_tier === "pro" ? (
@@ -87,7 +87,7 @@ export default function Profile() {
                         </Link>
                     )}
                     {user?.created_at && (
-                        <p className="text-white/40 text-xs mt-3 flex items-center justify-center gap-1">
+                        <p className="text-foreground/40 text-xs mt-3 flex items-center justify-center gap-1">
                             <Calendar className="w-3 h-3" /> Membro desde {String(user.created_at).slice(0, 10)}
                         </p>
                     )}
@@ -121,7 +121,7 @@ export default function Profile() {
                             <Stat label="Finalizadas" value={stats.finished} />
                         </div>
                     ) : (
-                        <p className="text-white/50">Carregando...</p>
+                        <p className="text-foreground/50">Carregando...</p>
                     )}
                 </div>
             </section>
@@ -142,7 +142,7 @@ export default function Profile() {
                                         {billing.days_left !== null && billing.days_left !== undefined && ` (faltam ${billing.days_left} ${billing.days_left === 1 ? "dia" : "dias"})`}, depois volta pro plano Free.
                                     </p>
                                 ) : (
-                                    <p className="text-white/60 text-sm mt-1" data-testid="subscription-active">
+                                    <p className="text-foreground/60 text-sm mt-1" data-testid="subscription-active">
                                         Próxima renovação em {formatDate(billing.renews_at)}
                                         {billing.days_left !== null && billing.days_left !== undefined && ` · ${billing.days_left} ${billing.days_left === 1 ? "dia restante" : "dias restantes"}`}
                                     </p>
@@ -169,7 +169,7 @@ export default function Profile() {
                                         </button>
                                     ) : (
                                         <div className="w-full rounded-xl border border-amber-400/30 bg-amber-400/5 p-4" data-testid="subscription-cancel-confirm">
-                                            <p className="text-sm text-white/80">
+                                            <p className="text-sm text-foreground/80">
                                                 Tem certeza? Você <b>continua Pro até {formatDate(billing.renews_at)}</b>, mas não renovamos depois disso. Sem cobrança extra, sem reembolso do período pago.
                                             </p>
                                             <div className="mt-3 flex gap-2">
@@ -185,7 +185,7 @@ export default function Profile() {
                                                     onClick={() => setConfirming(false)}
                                                     disabled={busy}
                                                     data-testid="subscription-cancel-keep-btn"
-                                                    className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold uppercase tracking-wider"
+                                                    className="px-4 py-2 rounded-full bg-muted hover:bg-muted/70 border border-border text-xs font-bold uppercase tracking-wider"
                                                 >
                                                     Voltar
                                                 </button>
@@ -205,8 +205,8 @@ export default function Profile() {
 
 function Stat({ label, value, accent }) {
     return (
-        <div className={`rounded-xl p-5 border ${accent ? "bg-[#FF2A54]/10 border-[#FF2A54]/30" : "bg-white/5 border-white/10"}`}>
-            <p className="text-xs font-bold uppercase tracking-wider text-white/60">{label}</p>
+        <div className={`rounded-xl p-5 border ${accent ? "bg-[#FF2A54]/10 border-[#FF2A54]/30" : "bg-muted border-border"}`}>
+            <p className="text-xs font-bold uppercase tracking-wider text-foreground/60">{label}</p>
             <p className="font-display text-4xl font-black mt-2">{value || 0}</p>
         </div>
     );

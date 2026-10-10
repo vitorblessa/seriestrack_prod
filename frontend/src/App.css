@@ -1,2 +1,6 @@
-/* App-level styles */
-.App { min-height: 100vh; background: #0A0A0C; color: #fff; }
+/* App-level styles. No hardcoded background/color here — this used to pin
+   #0A0A0C/#fff, which silently covered the light-mode CSS vars set on
+   body/#root in index.css (same specificity issue, just a different file).
+   Letting it inherit means the body background (which already flips with
+   html[data-mode="light"], see index.css) shows through correctly. */
+.App { min-height: 100vh; }

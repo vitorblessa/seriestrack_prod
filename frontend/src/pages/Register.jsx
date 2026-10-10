@@ -62,7 +62,7 @@ export default function Register() {
 
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Comece grátis</p>
                     <h1 className="font-display text-4xl md:text-5xl font-black mt-2">Criar conta</h1>
-                    <p className="text-white/50 mt-3">Junte-se a milhares acompanhando lançamentos em tempo real.</p>
+                    <p className="text-foreground/50 mt-3">Junte-se a milhares acompanhando lançamentos em tempo real.</p>
 
                     {error && (
                         <div data-testid="auth-error" className="mt-6 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
@@ -72,9 +72,9 @@ export default function Register() {
 
                     <div className="mt-8 space-y-4">
                         <label className="block">
-                            <span className="text-xs font-bold uppercase tracking-wider text-white/60">Nome</span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">Nome</span>
                             <div className="mt-2 relative">
-                                <UserIcon className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                                <UserIcon className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
                                 <input
                                     data-testid="auth-name-input"
                                     type="text"
@@ -83,15 +83,15 @@ export default function Register() {
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="Seu nome"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
                                 />
                             </div>
                         </label>
 
                         <label className="block">
-                            <span className="text-xs font-bold uppercase tracking-wider text-white/60">Email</span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">Email</span>
                             <div className="mt-2 relative">
-                                <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                                <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
                                 <input
                                     data-testid="auth-email-input"
                                     type="email"
@@ -99,15 +99,15 @@ export default function Register() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="voce@email.com"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
                                 />
                             </div>
                         </label>
 
                         <label className="block">
-                            <span className="text-xs font-bold uppercase tracking-wider text-white/60">Senha</span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">Senha</span>
                             <div className="mt-2 relative">
-                                <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                                <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
                                 <input
                                     data-testid="auth-password-input"
                                     type="password"
@@ -116,7 +116,7 @@ export default function Register() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Mínimo 6 caracteres"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
                                 />
                             </div>
                         </label>
@@ -132,10 +132,10 @@ export default function Register() {
                         Criar minha conta
                     </button>
 
-                    <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-white/40 font-bold">
-                        <div className="flex-1 h-px bg-white/10" />
+                    <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-foreground/40 font-bold">
+                        <div className="flex-1 h-px bg-border" />
                         ou
-                        <div className="flex-1 h-px bg-white/10" />
+                        <div className="flex-1 h-px bg-border" />
                     </div>
 
                     <GoogleSignInButton className="w-full inline-flex items-center justify-center gap-3 rounded-full bg-white text-black px-8 py-3.5 font-bold tracking-wide hover:bg-white/90 transition-all disabled:opacity-60">
@@ -148,7 +148,7 @@ export default function Register() {
                         Continuar com Google
                     </GoogleSignInButton>
 
-                    <p className="mt-6 text-sm text-center text-white/50">
+                    <p className="mt-6 text-sm text-center text-foreground/50">
                         Já tem uma conta?{" "}
                         <Link to="/login" className="text-[#FF2A54] hover:text-[#FF4D71] font-semibold">Entrar</Link>
                     </p>

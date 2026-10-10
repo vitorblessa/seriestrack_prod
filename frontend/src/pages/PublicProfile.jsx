@@ -71,14 +71,14 @@ export default function PublicProfile() {
                             )}
                         </h1>
                         {profile.joined_at && (
-                            <p className="text-white/50 mt-2 flex items-center gap-1 text-sm">
+                            <p className="text-foreground/50 mt-2 flex items-center gap-1 text-sm">
                                 <Calendar className="w-3.5 h-3.5" /> Membro desde {String(profile.joined_at).slice(0, 10)}
                             </p>
                         )}
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-6 max-w-3xl" data-testid="public-stats">
                             {["watching", "want", "paused", "finished", "total"].map((k) => (
-                                <div key={k} className={`rounded-xl p-4 border ${k === "total" ? "bg-[#FF2A54]/10 border-[#FF2A54]/30" : "bg-white/5 border-white/10"}`}>
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">{
+                                <div key={k} className={`rounded-xl p-4 border ${k === "total" ? "bg-[#FF2A54]/10 border-[#FF2A54]/30" : "bg-muted/50 border-border"}`}>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/60">{
                                         { watching: "Assistindo", want: "Quero", paused: "Pausadas", finished: "Finalizadas", total: "Total" }[k]
                                     }</p>
                                     <p className="font-display text-2xl font-black mt-1">{profile.stats[k] || 0}</p>
@@ -96,14 +96,14 @@ export default function PublicProfile() {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {profile.recent_reviews.map((r, i) => (
-                            <Link key={i} to={`/series/${r.tmdb_id}`} className="glass rounded-xl p-4 hover:border-white/20 transition-all">
+                            <Link key={i} to={`/series/${r.tmdb_id}`} className="glass rounded-xl p-4 hover:border-border transition-all">
                                 <div className="flex items-center gap-1 mb-2">
                                     {[1, 2, 3, 4, 5].map((n) => (
-                                        <Star key={n} className={`w-4 h-4 ${n <= r.rating ? "fill-amber-400 text-amber-400" : "text-white/20"}`} />
+                                        <Star key={n} className={`w-4 h-4 ${n <= r.rating ? "fill-amber-400 text-amber-400" : "text-foreground/20"}`} />
                                     ))}
                                 </div>
-                                {r.comment && <p className="text-white/80 text-sm">{r.comment}</p>}
-                                <p className="text-white/40 text-xs mt-2">{(r.updated_at || "").slice(0, 10)}</p>
+                                {r.comment && <p className="text-foreground/80 text-sm">{r.comment}</p>}
+                                <p className="text-foreground/40 text-xs mt-2">{(r.updated_at || "").slice(0, 10)}</p>
                             </Link>
                         ))}
                     </div>
@@ -115,7 +115,7 @@ export default function PublicProfile() {
                     <UserIcon className="w-5 h-5 text-[#FF2A54]" /> Biblioteca pública
                 </h2>
                 {library.length === 0 ? (
-                    <p className="text-white/50">Este usuário ainda não tem séries na biblioteca.</p>
+                    <p className="text-foreground/50">Este usuário ainda não tem séries na biblioteca.</p>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
                         {library.map((it) => (

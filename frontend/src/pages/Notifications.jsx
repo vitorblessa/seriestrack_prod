@@ -48,9 +48,9 @@ export default function Notifications() {
                     <Loader2 className="w-6 h-6 animate-spin text-[#FF2A54]" />
                 ) : items.length === 0 ? (
                     <div className="glass rounded-2xl py-20 px-6 text-center">
-                        <Bell className="w-10 h-10 mx-auto text-white/30" />
+                        <Bell className="w-10 h-10 mx-auto text-foreground/30" />
                         <p className="font-display text-xl font-bold mt-4">Nenhuma notificação ainda</p>
-                        <p className="text-white/60 mt-2">Adicione séries à sua biblioteca para receber atualizações.</p>
+                        <p className="text-foreground/60 mt-2">Adicione séries à sua biblioteca para receber atualizações.</p>
                     </div>
                 ) : (
                     <div className="space-y-3 max-w-3xl">
@@ -58,7 +58,7 @@ export default function Notifications() {
                             <Link
                                 key={i}
                                 to={n.tmdb_id ? `/series/${n.tmdb_id}` : "/notifications"}
-                                className={`glass rounded-xl p-4 flex gap-4 hover:border-white/20 transition-all ${!n.read ? "border-[#FF2A54]/40" : ""}`}
+                                className={`glass rounded-xl p-4 flex gap-4 hover:border-border transition-all ${!n.read ? "border-[#FF2A54]/40" : ""}`}
                             >
                                 <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
                                     <Bell className="w-5 h-5 text-[#FF2A54]" />
@@ -68,8 +68,8 @@ export default function Notifications() {
                                         <p className="font-display font-bold">{n.title}</p>
                                         {!n.read && <span className="w-2 h-2 rounded-full bg-[#FF2A54]" />}
                                     </div>
-                                    <p className="text-white/60 text-sm mt-1">{n.message}</p>
-                                    <p className="text-white/40 text-xs mt-2">{n.created_at?.slice(0, 16).replace("T", " ")}</p>
+                                    <p className="text-foreground/60 text-sm mt-1">{n.message}</p>
+                                    <p className="text-foreground/40 text-xs mt-2">{n.created_at?.slice(0, 16).replace("T", " ")}</p>
                                 </div>
                                 {n.poster_url && <img src={n.poster_url} alt="" className="w-12 aspect-[2/3] object-cover rounded" />}
                             </Link>

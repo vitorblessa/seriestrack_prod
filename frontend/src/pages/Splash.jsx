@@ -47,9 +47,9 @@ export default function Splash() {
     };
 
     return (
-        <div className="min-h-screen bg-obsidian text-white overflow-hidden">
+        <div className="min-h-screen bg-background text-foreground overflow-hidden">
             {/* Top nav */}
-            <nav className="fixed top-0 inset-x-0 z-50 bg-[#0A0A0C]/60 backdrop-blur-xl border-b border-white/5">
+            <nav className="fixed top-0 inset-x-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border">
                 <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-4 flex items-center">
                     <div className="flex items-center gap-2">
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_0_20px_rgba(255,42,84,0.4)]">
@@ -64,7 +64,7 @@ export default function Splash() {
                             </Link>
                         ) : (
                             <>
-                                <Link to="/login" data-testid="splash-login-button" className="text-sm font-semibold text-white/70 hover:text-white px-4 py-2">
+                                <Link to="/login" data-testid="splash-login-button" className="text-sm font-semibold text-foreground/70 hover:text-foreground px-4 py-2">
                                     Entrar
                                 </Link>
                                 <Link to="/register" data-testid="splash-register-button" className="btn-primary text-sm">
@@ -130,7 +130,7 @@ export default function Splash() {
             <section className="px-6 md:px-10 max-w-[1400px] mx-auto pt-4">
                 <div className="max-w-3xl">
                     <h2 className="font-display text-2xl md:text-3xl font-bold">O que é o SeriesTrack?</h2>
-                    <p className="mt-4 text-white/70 leading-relaxed">
+                    <p className="mt-4 text-foreground/70 leading-relaxed">
                         SeriesTrack é um aplicativo web gratuito para quem acompanha séries de TV.
                         Você cria uma conta, monta sua biblioteca pessoal com as séries que assiste
                         (Netflix, Prime Video, Disney+, Max, Apple TV+, Paramount+, Crunchyroll e outros),
@@ -150,12 +150,12 @@ export default function Splash() {
                         { icon: Calendar, title: "Calendário de estreias", desc: "Veja episódios do dia, semana e mês com filtros por streaming, e sincronize automaticamente com seu Google Calendar." },
                         { icon: Bell, title: "Alertas inteligentes", desc: "Notificações quando novos episódios saírem ou novas temporadas estrearem." },
                     ].map((f) => (
-                        <div key={f.title} className="glass rounded-2xl p-8 hover:border-white/20 transition-all">
+                        <div key={f.title} className="glass rounded-2xl p-8 hover:border-foreground/20 transition-all">
                             <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center mb-5">
                                 <f.icon className="w-5 h-5 text-[#FF2A54]" />
                             </div>
                             <h3 className="font-display text-xl font-bold mb-2">{f.title}</h3>
-                            <p className="text-white/60 leading-relaxed text-sm">{f.desc}</p>
+                            <p className="text-foreground/60 leading-relaxed text-sm">{f.desc}</p>
                         </div>
                     ))}
                 </div>
@@ -211,12 +211,12 @@ export default function Splash() {
 
                         {/* Edge fades */}
                         <div
-                            className={`hidden md:block pointer-events-none absolute inset-y-0 left-0 w-12 -ml-6 md:-ml-10 bg-gradient-to-r from-[#0A0A0C] to-transparent transition-opacity duration-200 ${
+                            className={`hidden md:block pointer-events-none absolute inset-y-0 left-0 w-12 -ml-6 md:-ml-10 bg-gradient-to-r from-background to-transparent transition-opacity duration-200 ${
                                 canLeft ? "opacity-100" : "opacity-0"
                             }`}
                         />
                         <div
-                            className={`hidden md:block pointer-events-none absolute inset-y-0 right-0 w-12 -mr-6 md:-mr-10 bg-gradient-to-l from-[#0A0A0C] to-transparent transition-opacity duration-200 ${
+                            className={`hidden md:block pointer-events-none absolute inset-y-0 right-0 w-12 -mr-6 md:-mr-10 bg-gradient-to-l from-background to-transparent transition-opacity duration-200 ${
                                 canRight ? "opacity-100" : "opacity-0"
                             }`}
                         />
@@ -232,7 +232,7 @@ export default function Splash() {
                         <h2 className="font-display text-4xl md:text-5xl font-black tracking-tight">
                             Pronto para nunca mais perder um episódio?
                         </h2>
-                        <p className="mt-6 text-white/60 max-w-2xl mx-auto text-lg">
+                        <p className="mt-6 text-foreground/60 max-w-2xl mx-auto text-lg">
                             Comece grátis. Sem cartão de crédito. Cancele quando quiser.
                         </p>
                         <Link to="/register" className="btn-primary mt-10 text-base inline-flex" data-testid="splash-cta-bottom">
@@ -242,12 +242,12 @@ export default function Splash() {
                 </div>
             </section>
 
-            <footer className="border-t border-white/5 py-10 px-6 text-center text-white/40 text-sm">
+            <footer className="border-t border-border py-10 px-6 text-center text-foreground/40 text-sm">
                 <p>SeriesTrack © 2026 — Powered by TMDB. Feito para fãs de série.</p>
                 <div className="flex justify-center gap-6 mt-3 text-xs">
-                    <Link to="/privacy" className="hover:text-white/80">Privacidade</Link>
-                    <Link to="/terms" className="hover:text-white/80">Termos</Link>
-                    <Link to="/delete-account" className="hover:text-white/80">Excluir conta</Link>
+                    <Link to="/privacy" className="hover:text-foreground/80">Privacidade</Link>
+                    <Link to="/terms" className="hover:text-foreground/80">Termos</Link>
+                    <Link to="/delete-account" className="hover:text-foreground/80">Excluir conta</Link>
                 </div>
             </footer>
         </div>

@@ -54,13 +54,13 @@ export default function UpsellPreview() {
                         <Link to={`/series/${rec.tmdb_id}`} className="font-display text-2xl md:text-3xl font-black mt-2 hover:text-[#FF2A54] transition-colors">
                             {rec.name}
                         </Link>
-                        <div className="flex items-center gap-3 text-xs text-white/50 mt-1">
+                        <div className="flex items-center gap-3 text-xs text-foreground/50 mt-1">
                             {rec.first_air_date && <span>{String(rec.first_air_date).slice(0, 4)}</span>}
                             {rec.vote_average ? <span>⭐ {Number(rec.vote_average).toFixed(1)}</span> : null}
                             {rec.seed_name && <span className="hidden md:inline">· Porque você assiste {rec.seed_name}</span>}
                         </div>
                         {rec.overview && (
-                            <p className="text-white/70 text-sm mt-3 line-clamp-3 max-w-2xl">{rec.overview}</p>
+                            <p className="text-foreground/70 text-sm mt-3 line-clamp-3 max-w-2xl">{rec.overview}</p>
                         )}
 
                         {/* Locked teaser slots */}
@@ -68,15 +68,15 @@ export default function UpsellPreview() {
                             {[0, 1, 2, 3].map((i) => (
                                 <div
                                     key={i}
-                                    className="aspect-[2/3] rounded-lg bg-white/[0.03] border border-white/10 flex items-center justify-center backdrop-blur-sm relative overflow-hidden"
+                                    className="aspect-[2/3] rounded-lg bg-foreground/[0.03] border border-border flex items-center justify-center backdrop-blur-sm relative overflow-hidden"
                                     data-testid={`upsell-locked-slot-${i}`}
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-br from-[#FF2A54]/10 to-transparent" />
-                                    <Lock className="w-4 h-4 text-white/40 relative z-10" />
+                                    <Lock className="w-4 h-4 text-foreground/40 relative z-10" />
                                 </div>
                             ))}
                         </div>
-                        <p className="text-white/40 text-[11px] mt-2">+ 4 recomendações 100% personalizadas com Claude AI no Pro</p>
+                        <p className="text-foreground/40 text-[11px] mt-2">+ 4 recomendações 100% personalizadas com Claude AI no Pro</p>
 
                         <div className="mt-5 flex flex-wrap gap-3">
                             <Link
@@ -89,7 +89,7 @@ export default function UpsellPreview() {
                             </Link>
                             <Link
                                 to={`/series/${rec.tmdb_id}`}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-semibold"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-border text-sm font-semibold"
                                 data-testid="upsell-details-link"
                             >
                                 Ver detalhes

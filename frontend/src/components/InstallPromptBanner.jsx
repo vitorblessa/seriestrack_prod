@@ -84,11 +84,11 @@ export default function InstallPromptBanner() {
             >
                 <div className="flex items-start gap-3">
                     <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shrink-0">
-                        <Smartphone className="w-5 h-5" strokeWidth={2.5} />
+                        <Smartphone className="w-5 h-5 text-white" strokeWidth={2.5} />
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="font-display font-bold text-sm">Instale o SeriesTrack</p>
-                        <p className="text-white/60 text-xs mt-0.5">Um clique. Aparece na tela inicial. Sem loja, sem espera.</p>
+                        <p className="text-foreground/60 text-xs mt-0.5">Um clique. Aparece na tela inicial. Sem loja, sem espera.</p>
                         <div className="mt-3 flex gap-2">
                             <button
                                 onClick={install}
@@ -100,13 +100,13 @@ export default function InstallPromptBanner() {
                             <button
                                 onClick={dismiss}
                                 data-testid="install-dismiss-btn"
-                                className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-xs font-semibold text-white/70"
+                                className="px-3 py-1.5 rounded-full bg-foreground/5 hover:bg-foreground/10 text-xs font-semibold text-foreground/70"
                             >
                                 Depois
                             </button>
                         </div>
                     </div>
-                    <button onClick={dismiss} className="text-white/40 hover:text-white shrink-0 p-1" aria-label="Fechar">
+                    <button onClick={dismiss} className="text-foreground/40 hover:text-foreground shrink-0 p-1" aria-label="Fechar">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
@@ -117,21 +117,21 @@ export default function InstallPromptBanner() {
                     <div className="glass rounded-2xl p-6 max-w-sm w-full" data-testid="ios-install-help" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="font-display text-lg font-bold">Instalar no iPhone</h3>
-                            <button onClick={() => setShowIosHelp(false)} className="text-white/50 hover:text-white p-1">
+                            <button onClick={() => setShowIosHelp(false)} className="text-foreground/50 hover:text-foreground p-1">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <ol className="space-y-3 text-sm text-white/80">
+                        <ol className="space-y-3 text-sm text-foreground/80">
                             <li className="flex items-start gap-3">
-                                <span className="w-6 h-6 rounded-full bg-[#FF2A54] flex items-center justify-center text-xs font-black shrink-0">1</span>
+                                <span className="w-6 h-6 rounded-full bg-[#FF2A54] text-white flex items-center justify-center text-xs font-black shrink-0">1</span>
                                 <span>Toque no ícone <Share className="w-4 h-4 inline mx-1 -mt-0.5" /> <b>Compartilhar</b> na barra do Safari.</span>
                             </li>
                             <li className="flex items-start gap-3">
-                                <span className="w-6 h-6 rounded-full bg-[#FF2A54] flex items-center justify-center text-xs font-black shrink-0">2</span>
+                                <span className="w-6 h-6 rounded-full bg-[#FF2A54] text-white flex items-center justify-center text-xs font-black shrink-0">2</span>
                                 <span>Role e toque em <b>&quot;Adicionar à Tela de Início&quot;</b>.</span>
                             </li>
                             <li className="flex items-start gap-3">
-                                <span className="w-6 h-6 rounded-full bg-[#FF2A54] flex items-center justify-center text-xs font-black shrink-0">3</span>
+                                <span className="w-6 h-6 rounded-full bg-[#FF2A54] text-white flex items-center justify-center text-xs font-black shrink-0">3</span>
                                 <span>Toque em <b>Adicionar</b>. Pronto — o SeriesTrack vira um app na sua tela inicial.</span>
                             </li>
                         </ol>

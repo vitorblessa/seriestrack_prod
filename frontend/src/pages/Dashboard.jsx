@@ -156,7 +156,7 @@ export default function Dashboard() {
                 <h2 className="font-display text-2xl md:text-3xl font-bold">
                     Olá, <span className="text-[#FF2A54]">{user?.name?.split(" ")[0] || "fã de séries"}</span>!
                 </h2>
-                <p className="text-white/50 text-sm mt-1">{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
+                <p className="text-foreground/50 text-sm mt-1">{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
             </section>
 
             {/* Empty-library onboarding: seed the library with one tap */}
@@ -189,14 +189,14 @@ export default function Dashboard() {
                                 <CalIcon className="w-6 h-6 text-[#FF2A54]" />
                                 {kind === "upcoming" ? "Próximos episódios" : "Recém lançados"}
                             </h2>
-                            <p className="text-white/50 text-sm mt-1">Da sua biblioteca</p>
+                            <p className="text-foreground/50 text-sm mt-1">Da sua biblioteca</p>
                         </div>
-                        <div className="inline-flex p-1 rounded-full bg-white/5 border border-white/10" data-testid="dashboard-kind-toggle">
+                        <div className="inline-flex p-1 rounded-full bg-white/5 border border-border" data-testid="dashboard-kind-toggle">
                             <button
                                 onClick={() => setKind("upcoming")}
                                 data-testid="dashboard-kind-upcoming"
                                 className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
-                                    kind === "upcoming" ? "bg-white text-black" : "text-white/60 hover:text-white"
+                                    kind === "upcoming" ? "bg-foreground text-background" : "text-foreground/60 hover:text-foreground"
                                 }`}
                             >
                                 Próximos
@@ -205,7 +205,7 @@ export default function Dashboard() {
                                 onClick={() => setKind("recent")}
                                 data-testid="dashboard-kind-recent"
                                 className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
-                                    kind === "recent" ? "bg-white text-black" : "text-white/60 hover:text-white"
+                                    kind === "recent" ? "bg-foreground text-background" : "text-foreground/60 hover:text-foreground"
                                 }`}
                             >
                                 Recém lançados
@@ -222,7 +222,7 @@ export default function Dashboard() {
                                 onClick={() => setProviderFilter("all")}
                                 data-testid="dashboard-filter-all"
                                 className={`shrink-0 px-2.5 py-1 md:px-3.5 md:py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all ${
-                                    providerFilter === "all" ? "bg-white text-black" : "bg-white/5 text-white/70 hover:bg-white/10"
+                                    providerFilter === "all" ? "bg-foreground text-background" : "bg-white/5 text-foreground/70 hover:bg-white/10"
                                 }`}
                             >
                                 Todos <span className="opacity-60">({eventsOfKind.length})</span>
@@ -260,21 +260,21 @@ export default function Dashboard() {
                     )}
 
                     {filteredEvents.length === 0 ? (
-                        <div className="glass rounded-xl py-10 text-center text-white/50 text-sm" data-testid="dashboard-events-empty">
+                        <div className="glass rounded-xl py-10 text-center text-foreground/50 text-sm" data-testid="dashboard-events-empty">
                             Nenhum episódio {kind === "upcoming" ? "próximo" : "recente"} {providerFilter !== "all" ? `em ${providerFilter}` : ""}.
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="dashboard-events-grid">
                             {filteredEvents.map((e, i) => (
-                                <Link key={`${e.tmdb_id}-${e.season_number}-${e.episode_number}-${i}`} to={`/series/${e.tmdb_id}`} className="glass rounded-xl overflow-hidden flex hover:border-white/20 transition-all">
+                                <Link key={`${e.tmdb_id}-${e.season_number}-${e.episode_number}-${i}`} to={`/series/${e.tmdb_id}`} className="glass rounded-xl overflow-hidden flex hover:border-border transition-all">
                                     <div className="w-28 aspect-[2/3] shrink-0 bg-surface">
                                         {e.poster_url && <img src={e.poster_url} alt="" className="w-full h-full object-cover" />}
                                     </div>
                                     <div className="p-4 flex-1 min-w-0">
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-[#FF2A54]">{e.air_date}</p>
                                         <p className="font-display font-bold text-base line-clamp-1 mt-1">{e.series_name}</p>
-                                        <p className="text-white/60 text-sm">T{e.season_number}·E{e.episode_number}</p>
-                                        <p className="text-white/50 text-xs mt-1 line-clamp-2">{e.episode_name}</p>
+                                        <p className="text-foreground/60 text-sm">T{e.season_number}·E{e.episode_number}</p>
+                                        <p className="text-foreground/50 text-xs mt-1 line-clamp-2">{e.episode_name}</p>
                                         {e.providers?.length > 0 && (
                                             <div className="flex flex-wrap gap-1 mt-2">
                                                 {e.providers.slice(0, 3).map((p) => {
