@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent } from "./ui/dialog";
-import { Sparkles, Search, CalendarClock, ChevronRight } from "lucide-react";
+import { Sparkles, Search, CalendarClock, Bell, CalendarDays, UserCog, ChevronRight } from "lucide-react";
 
 export const ONBOARDING_STORAGE_KEY = "seriestrack_onboarding_done";
 const STORAGE_KEY = ONBOARDING_STORAGE_KEY;
@@ -19,15 +20,36 @@ const STEPS = [
     {
         icon: CalendarClock,
         title: "Fique por dentro",
-        body: "Veja os próximos episódios no calendário e receba avisos quando um novo episódio sair.",
+        body: "O Dashboard mostra os próximos episódios das séries que você acompanha, direto na tela inicial.",
+    },
+    {
+        icon: Bell,
+        title: "Ative as notificações",
+        body: "Em Configurações você liga os avisos push do SeriesTrack e recebe um aviso assim que um novo episódio estrear — no navegador, no app instalado (PWA) ou no Android.",
+        cta: { label: "Ativar notificações", to: "/settings" },
+    },
+    {
+        icon: CalendarDays,
+        title: "Sincronize com o Google Calendar",
+        body: "Também em Configurações, conecte sua conta do Google e os próximos episódios entram automaticamente na sua agenda — sem copiar nada manualmente. Prefere Apple Calendar ou Outlook? Dá pra assinar por link também.",
+        cta: { label: "Conectar Google Calendar", to: "/settings" },
+    },
+    {
+        icon: UserCog,
+        title: "Perfil e Configurações",
+        body: "No Perfil você vê suas estatísticas e o status da sua assinatura. Em Configurações ficam o tema (claro/escuro), notificações, sincronização de calendário e importação de outras plataformas — tudo num só lugar.",
     },
 ];
 
-/** One-time, dismissible 3-step tour. Shows only while the user's library is
- * empty and only until they've seen (or skipped) it once — tracked in
+/** One-time, dismissible tour. Shows only while the user's library is empty
+ * and only until they've seen (or skipped) it once — tracked in
  * localStorage, not the backend, since missing it on another device costs
- * nothing (Fase 2 roadmap item: "Onboarding guiado"). */
+ * nothing (Fase 2 roadmap item: "Onboarding guiado"). Covers the core loop
+ * (library → calendar) plus the two most-missed Settings features —
+ * push notifications and Google Calendar sync — and points to Perfil/
+ * Configurações as the home for everything else. */
 export default function OnboardingTour({ show, force = false, onDismiss }) {
+    const navigate = useNavigate();
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState(0);
 
@@ -56,6 +78,12 @@ export default function OnboardingTour({ show, force = false, onDismiss }) {
     const Icon = current.icon;
     const isLast = step === STEPS.length - 1;
 
+    const goToCta = () => {
+        const to = current.cta.to;
+        dismiss();
+        navigate(to);
+    };
+
     return (
         <Dialog open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
             <DialogContent
@@ -68,6 +96,15 @@ export default function OnboardingTour({ show, force = false, onDismiss }) {
                     </div>
                     <h3 className="font-display text-xl font-bold">{current.title}</h3>
                     <p className="text-foreground/60 text-sm mt-2 leading-relaxed">{current.body}</p>
+                    {current.cta && (
+                        <button
+                            onClick={goToCta}
+                            data-testid="onboarding-tour-cta"
+                            className="text-[#FF2A54] text-sm font-bold mt-3 hover:underline"
+                        >
+                            {current.cta.label} →
+                        </button>
+                    )}
 
                     <div className="flex items-center gap-1.5 mt-6" data-testid="onboarding-tour-dots">
                         {STEPS.map((_, i) => (
