@@ -85,7 +85,12 @@ async def ai_recommendations(user: dict = Depends(require_pro)):
         raise HTTPException(503, "Recomendações IA indisponíveis no momento")
     user_id = str(user["_id"])
 
-    lib = await db.library.find({"user_id": user_id}, {"_id": 0}).limit(40).to_list(40)
+    # No cap here beyond what a Pro user could plausibly have — Pro has no
+    # library-size limit, and every status (watching/paused/finished/want/
+    # etc.) must count toward "already in the library" below, not just the
+    # most recent 40 (previously could miss older entries and let AI recs
+    # re-suggest something the user already has).
+    lib = await db.library.find({"user_id": user_id}, {"_id": 0}).limit(500).to_list(500)
     reviews = await db.reviews.find({"user_id": user_id}, {"_id": 0}).limit(20).to_list(20)
     if not lib and not reviews:
         return {"recommendations": [], "reason": "no_history"}
@@ -95,14 +100,21 @@ async def ai_recommendations(user: dict = Depends(require_pro)):
     if cached and cached[1] > time.time():
         return {**cached[0], "cached": True}
 
-    seen_lines = [f"- {it.get('name')} ({it.get('status')})" for it in lib[:30]]
+    seen_lines = [f"- {it.get('name')} ({it.get('status')})" for it in lib[:60]]
     review_lines = []
     for r in reviews:
         c = (r.get('comment') or '').strip()
         review_lines.append(f"- {r.get('user_name','')}: rated {r.get('rating')}/5{(' — ' + c) if c else ''}")
 
+    # Ask for more than the 5 we'll show: the LLM's "don't repeat library
+    # titles" instruction is a soft hint, not a guarantee (it can still
+    # suggest something already in the library, especially past the 60
+    # shown in the prompt) — the real enforcement is the lib_ids filter
+    # below, done in code after TMDB enrichment gives us real tmdb_ids to
+    # compare. Asking for 8 instead of 5 leaves enough headroom that
+    # filtering rarely leaves the user with fewer than 5.
     system = (
-        "Você é um curador especialista em séries de TV. Recomende 5 séries que o usuário "
+        "Você é um curador especialista em séries de TV. Recomende 8 séries que o usuário "
         "provavelmente vai amar, baseado no que ele já assistiu e avaliou. Cada recomendação "
         "DEVE ser de uma série diferente, NÃO repita séries que já estão na lista do usuário. "
         "Responda APENAS com JSON válido no formato: "
@@ -111,7 +123,7 @@ async def ai_recommendations(user: dict = Depends(require_pro)):
     prompt = (
         "Séries que o usuário tem na biblioteca:\n" + "\n".join(seen_lines or ["(vazio)"]) +
         "\n\nAvaliações do usuário:\n" + "\n".join(review_lines or ["(nenhuma)"]) +
-        "\n\nGere as 5 recomendações em JSON puro. Sem markdown, sem ```."
+        "\n\nGere as 8 recomendações em JSON puro. Sem markdown, sem ```."
     )
 
     try:
@@ -137,7 +149,7 @@ async def ai_recommendations(user: dict = Depends(require_pro)):
         txt = re.sub(r"^```(?:json)?\s*|\s*```$", "", txt, flags=re.MULTILINE)
     try:
         data = json.loads(txt)
-        recs = data.get("recommendations", [])[:5]
+        recs = data.get("recommendations", [])[:8]
     except Exception:
         logger.warning(f"Bad LLM JSON: {txt[:300]}")
         raise HTTPException(502, "Resposta inválida do modelo")
@@ -174,9 +186,18 @@ async def ai_recommendations(user: dict = Depends(require_pro)):
     enriched = await asyncio.gather(*(enrich(r) for r in recs))
     out = [e for e in enriched if e]
 
+    # Enforce "never a series already in the library, in any status" here,
+    # in code, against the real TMDB id — not just by asking the LLM nicely.
+    # Also drop duplicate tmdb_ids the LLM/TMDB search occasionally returns
+    # for two different title guesses that resolve to the same show.
     lib_ids = {it["tmdb_id"] for it in lib}
+    deduped, seen_ids = [], set()
     for e in out:
-        e["in_library"] = e["tmdb_id"] in lib_ids
+        if e["tmdb_id"] in lib_ids or e["tmdb_id"] in seen_ids:
+            continue
+        seen_ids.add(e["tmdb_id"])
+        deduped.append(e)
+    out = deduped[:5]
 
     result = {"recommendations": out, "model": GEMINI_MODEL}
     _ai_recs_cache[cache_key] = (result, time.time() + _AI_RECS_TTL)
