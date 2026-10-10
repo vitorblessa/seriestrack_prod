@@ -101,7 +101,7 @@ export default function SeriesReviews({ tmdbId }) {
                     placeholder="Deixe um comentário (opcional)..."
                     maxLength={1000}
                     data-testid="review-comment"
-                    className="mt-4 w-full px-4 py-3 rounded-xl bg-foreground/5 border border-border focus:border-[#FF2A54] outline-none text-sm resize-none"
+                    className="mt-4 w-full px-4 py-3 rounded-xl bg-foreground/5 border border-border focus:border-primary outline-none text-sm resize-none"
                     rows={3}
                 />
                 <div className="mt-4 flex gap-2">
@@ -120,7 +120,7 @@ export default function SeriesReviews({ tmdbId }) {
             {/* Other reviews */}
             <div className="mt-8 space-y-3 max-w-3xl">
                 {loading ? (
-                    <Loader2 className="w-6 h-6 animate-spin text-[#FF2A54]" />
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 ) : list.reviews.filter((r) => r.user_id !== (user?.id || "")).length === 0 ? (
                     <p className="text-foreground/50 text-sm flex items-center gap-2">
                         <MessageSquare className="w-4 h-4" /> Seja o primeiro da comunidade a comentar.
@@ -130,7 +130,7 @@ export default function SeriesReviews({ tmdbId }) {
                         <div key={i} className="glass rounded-xl p-4">
                             <div className="flex items-center justify-between flex-wrap gap-2">
                                 <Link to={`/u/${r.user_id}`} className="flex items-center gap-2 hover:underline" data-testid={`review-author-${r.user_id}`}>
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${r.user_is_pro ? "bg-gradient-to-br from-amber-400 to-[#FF2A54] ring-2 ring-amber-400/40" : "bg-gradient-to-br from-[#FF2A54] to-[#7c1531]"}`}>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${r.user_is_pro ? "bg-gradient-to-br from-amber-400 to-primary ring-2 ring-amber-400/40" : "bg-gradient-to-br from-primary to-primary/60"}`}>
                                         {r.user_avatar
                                             ? <img src={r.user_avatar} alt={r.user_name} className="w-full h-full rounded-full object-cover" />
                                             : (r.user_name || "?").charAt(0).toUpperCase()}
@@ -138,7 +138,7 @@ export default function SeriesReviews({ tmdbId }) {
                                     <span className="font-semibold text-sm flex items-center gap-1">
                                         {r.user_name}
                                         {r.user_is_pro && (
-                                            <span title="Assinante Pro" data-testid={`review-pro-badge-${r.user_id}`} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-[#FF2A54]">
+                                            <span title="Assinante Pro" data-testid={`review-pro-badge-${r.user_id}`} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-primary">
                                                 <Crown className="w-2.5 h-2.5 text-white" strokeWidth={3} />
                                             </span>
                                         )}

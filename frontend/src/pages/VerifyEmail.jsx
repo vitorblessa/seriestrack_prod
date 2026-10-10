@@ -34,7 +34,7 @@ export default function VerifyEmail() {
         <div className="min-h-screen flex items-center justify-center p-6">
             <div className="w-full max-w-md animate-fade-up text-center">
                 <Link to="/login" className="flex items-center justify-center gap-2 mb-10">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                         <Tv className="w-5 h-5" strokeWidth={2.5} />
                     </div>
                     <span className="font-display font-black text-xl">SeriesTrack</span>
@@ -54,7 +54,7 @@ export default function VerifyEmail() {
                         </div>
                         <h1 className="font-display text-3xl font-black">E-mail confirmado!</h1>
                         <p className="text-foreground/50 mt-3">Sua conta está verificada. Pode continuar aproveitando o SeriesTrack.</p>
-                        <Link to={user ? "/dashboard" : "/login"} className="inline-block mt-8 text-[#FF2A54] hover:text-[#FF4D71] font-semibold">
+                        <Link to={user ? "/dashboard" : "/login"} className="inline-block mt-8 text-primary hover:text-primary/80 font-semibold">
                             {user ? "Ir para o início" : "Ir para o login"}
                         </Link>
                     </div>
@@ -72,7 +72,7 @@ export default function VerifyEmail() {
                                 : (error || "Esse link expirou ou já foi usado.")}
                             {" "}Entre na sua conta para reenviar o e-mail de confirmação.
                         </p>
-                        <Link to="/login" className="inline-block mt-8 text-[#FF2A54] hover:text-[#FF4D71] font-semibold">
+                        <Link to="/login" className="inline-block mt-8 text-primary hover:text-primary/80 font-semibold">
                             Ir para o login
                         </Link>
                     </div>

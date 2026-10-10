@@ -66,10 +66,10 @@ export default function AIRecommendations() {
         return (
             <AppLayout>
                 <section className="px-6 md:px-10 pt-16 pb-24 max-w-2xl mx-auto text-center" data-testid="ai-paywall">
-                    <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_30px_80px_-20px_rgba(255,42,84,0.5)]">
+                    <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-[0_30px_80px_-20px_hsl(var(--primary)/0.5)]">
                         <Sparkles className="w-10 h-10 text-foreground" strokeWidth={2.5} />
                     </div>
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54] mt-8">Recurso Pro</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mt-8">Recurso Pro</p>
                     <h1 className="font-display text-4xl md:text-5xl font-black mt-3 tracking-tight">
                         IA que conhece seu gosto
                     </h1>
@@ -89,7 +89,7 @@ export default function AIRecommendations() {
             <section className="px-6 md:px-10 pt-10">
                 <div className="flex items-end justify-between flex-wrap gap-4">
                     <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54] flex items-center gap-2">
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary flex items-center gap-2">
                             <Sparkles className="w-3 h-3" /> Pro · Recomendações IA
                         </p>
                         <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2">
@@ -109,7 +109,7 @@ export default function AIRecommendations() {
             <section className="px-6 md:px-10 mt-10" data-testid="ai-recs-list">
                 {loading && !recs ? (
                     <div className="flex flex-col items-center py-20 gap-4">
-                        <Loader2 className="w-10 h-10 animate-spin text-[#FF2A54]" />
+                        <Loader2 className="w-10 h-10 animate-spin text-primary" />
                         <p className="text-foreground/60 text-sm">Analisando seu gosto...</p>
                     </div>
                 ) : error ? (
@@ -131,7 +131,7 @@ export default function AIRecommendations() {
                                     {r.poster_url && <img src={r.poster_url} alt="" className="w-full h-full object-cover" />}
                                 </Link>
                                 <div className="flex-1 p-5 flex flex-col">
-                                    <Link to={`/series/${r.tmdb_id}`} className="font-display font-black text-lg leading-tight hover:text-[#FF2A54] transition-colors">
+                                    <Link to={`/series/${r.tmdb_id}`} className="font-display font-black text-lg leading-tight hover:text-primary transition-colors">
                                         {r.name}
                                     </Link>
                                     <div className="flex items-center gap-3 mt-1 text-xs text-foreground/50">
@@ -143,8 +143,8 @@ export default function AIRecommendations() {
                                             </span>
                                         ) : null}
                                     </div>
-                                    <div className="mt-3 px-3 py-2 rounded-lg bg-[#FF2A54]/10 border border-[#FF2A54]/20">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#FF2A54] mb-1 flex items-center gap-1">
+                                    <div className="mt-3 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1 flex items-center gap-1">
                                             <Sparkles className="w-3 h-3" /> Por que você vai gostar
                                         </p>
                                         <p className="text-sm text-foreground/80 leading-snug">{r.ai_why}</p>

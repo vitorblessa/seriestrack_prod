@@ -9,8 +9,8 @@ import { ShieldCheck, Search, Loader2, Crown, XCircle, Users, UserCheck, UserX, 
 function StatCard({ icon: Icon, label, value }) {
     return (
         <div className="glass rounded-2xl p-5 flex items-center gap-4" data-testid={`admin-stat-${label}`}>
-            <div className="w-11 h-11 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                <Icon className="w-5 h-5 text-[#FF2A54]" />
+            <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                <Icon className="w-5 h-5 text-primary" />
             </div>
             <div>
                 <p className="text-2xl font-black font-display">{value ?? "–"}</p>
@@ -93,7 +93,7 @@ export default function Admin() {
     return (
         <AppLayout>
             <section className="px-6 md:px-10 pt-10">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54] flex items-center gap-2">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary flex items-center gap-2">
                     <ShieldCheck className="w-3.5 h-3.5" /> Admin
                 </p>
                 <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2">Painel</h1>
@@ -118,7 +118,7 @@ export default function Admin() {
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="parte do e-mail..."
                             data-testid="admin-search-input"
-                            className="min-w-0 flex-1 bg-muted border border-border rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#FF2A54]/50"
+                            className="min-w-0 flex-1 bg-muted border border-border rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50"
                         />
                         <div className="flex items-center gap-2">
                             <label className="text-xs text-foreground/50 whitespace-nowrap">dias Pro</label>
@@ -128,7 +128,7 @@ export default function Admin() {
                                 value={days}
                                 onChange={(e) => setDays(Number(e.target.value) || 1)}
                                 data-testid="admin-grant-days-input"
-                                className="w-20 min-w-0 bg-muted border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#FF2A54]/50"
+                                className="w-20 min-w-0 bg-muted border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary/50"
                             />
                             <button type="submit" disabled={searching} data-testid="admin-search-btn" className="btn-primary text-sm shrink-0">
                                 {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}

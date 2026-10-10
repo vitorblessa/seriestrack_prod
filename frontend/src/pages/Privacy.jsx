@@ -10,7 +10,7 @@ export default function Privacy() {
         <div className="min-h-screen bg-background text-foreground/90 py-14 px-6" data-testid="privacy-page">
             <div className="max-w-3xl mx-auto space-y-6 leading-relaxed">
                 <div className="flex items-center justify-between mb-8">
-                    <Link to="/" className="text-[#FF2A54] font-bold text-lg">SeriesTrack</Link>
+                    <Link to="/" className="text-primary font-bold text-lg">SeriesTrack</Link>
                     <Link to="/" className="text-sm text-foreground/60 hover:text-foreground">← Início</Link>
                 </div>
                 <h1 className="font-display text-4xl font-bold">Política de Privacidade</h1>
@@ -35,8 +35,8 @@ export default function Privacy() {
 
                 <h2 className="font-bold text-xl mt-8">4. Compartilhamento com terceiros</h2>
                 <ul className="list-disc pl-6 space-y-2">
-                    <li><strong>Stripe (EUA):</strong> processa pagamentos da assinatura Pro. Recebe seu e-mail e valor cobrado. Política: <a className="text-[#FF2A54]" href="https://stripe.com/privacy" target="_blank" rel="noreferrer">stripe.com/privacy</a>.</li>
-                    <li><strong>Google (via login opcional):</strong> se você optar por entrar com o Google, o Google nos envia seu e-mail, nome e foto. Política: <a className="text-[#FF2A54]" href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">policies.google.com/privacy</a>.</li>
+                    <li><strong>Stripe (EUA):</strong> processa pagamentos da assinatura Pro. Recebe seu e-mail e valor cobrado. Política: <a className="text-primary" href="https://stripe.com/privacy" target="_blank" rel="noreferrer">stripe.com/privacy</a>.</li>
+                    <li><strong>Google (via login opcional):</strong> se você optar por entrar com o Google, o Google nos envia seu e-mail, nome e foto. Política: <a className="text-primary" href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">policies.google.com/privacy</a>.</li>
                     <li><strong>TMDB:</strong> as informações sobre séries vêm do The Movie Database. Nenhum dado seu é enviado para eles.</li>
                     <li><strong>Emergent (infraestrutura):</strong> hospeda backend e banco. Assinamos contrato de tratamento de dados.</li>
                 </ul>
@@ -49,16 +49,16 @@ export default function Privacy() {
                 <p>Mantemos os dados enquanto sua conta existir. Ao excluir a conta (ver seção 8), todos os dados pessoais são removidos em até 7 dias, exceto registros de pagamento — que a legislação brasileira exige reter por 5 anos, e são anonimizados imediatamente.</p>
 
                 <h2 className="font-bold text-xl mt-8">7. Seus direitos (LGPD / GDPR)</h2>
-                <p>Você pode a qualquer momento: acessar seus dados (endpoint <code>/api/auth/me</code>), corrigir informações do perfil, exportar sua biblioteca (Configurações → Trakt export/iCal), e excluir sua conta permanentemente (ver seção 8). Solicitações adicionais: <a className="text-[#FF2A54]" href="mailto:contato@seriestrack.app">contato@seriestrack.app</a>.</p>
+                <p>Você pode a qualquer momento: acessar seus dados (endpoint <code>/api/auth/me</code>), corrigir informações do perfil, exportar sua biblioteca (Configurações → Trakt export/iCal), e excluir sua conta permanentemente (ver seção 8). Solicitações adicionais: <a className="text-primary" href="mailto:contato@seriestrack.app">contato@seriestrack.app</a>.</p>
 
                 <h2 className="font-bold text-xl mt-8">8. Exclusão de conta</h2>
-                <p>Para excluir sua conta e todos os dados associados, acesse <Link className="text-[#FF2A54]" to="/delete-account">/delete-account</Link> ou vá em <strong>Configurações → Excluir minha conta</strong> dentro do app. A exclusão é imediata e irreversível.</p>
+                <p>Para excluir sua conta e todos os dados associados, acesse <Link className="text-primary" to="/delete-account">/delete-account</Link> ou vá em <strong>Configurações → Excluir minha conta</strong> dentro do app. A exclusão é imediata e irreversível.</p>
 
                 <h2 className="font-bold text-xl mt-8">9. Crianças</h2>
                 <p>SeriesTrack não é direcionado a menores de 13 anos e não coleta conscientemente dados dessa faixa. Se tomarmos conhecimento, os dados são removidos.</p>
 
                 <h2 className="font-bold text-xl mt-8">10. Contato</h2>
-                <p>Dúvidas sobre esta política: <a className="text-[#FF2A54]" href="mailto:contato@seriestrack.app">contato@seriestrack.app</a>.</p>
+                <p>Dúvidas sobre esta política: <a className="text-primary" href="mailto:contato@seriestrack.app">contato@seriestrack.app</a>.</p>
             </div>
         </div>
     );

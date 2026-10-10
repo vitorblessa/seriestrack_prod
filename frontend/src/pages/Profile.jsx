@@ -64,13 +64,13 @@ export default function Profile() {
     return (
         <AppLayout>
             <section className="px-6 md:px-10 pt-10">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Perfil</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Perfil</p>
                 <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2">Sua conta</h1>
             </section>
 
             <section className="px-6 md:px-10 mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="glass rounded-2xl p-8 text-center">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center mx-auto text-3xl font-display font-black shadow-[0_0_40px_rgba(255,42,84,0.4)]">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mx-auto text-3xl font-display font-black shadow-[0_0_40px_hsl(var(--primary)/0.4)]">
                         {(user?.name || "?").charAt(0).toUpperCase()}
                     </div>
                     <h2 className="font-display text-2xl font-bold mt-5">{user?.name}</h2>
@@ -78,11 +78,11 @@ export default function Profile() {
                         <Mail className="w-3.5 h-3.5" /> {user?.email}
                     </p>
                     {user?.subscription_tier === "pro" ? (
-                        <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-[#FF2A54]/20 border border-amber-400/50 text-amber-200 text-xs font-black uppercase tracking-wider" data-testid="profile-pro-badge">
+                        <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-primary/20 border border-amber-400/50 text-amber-200 text-xs font-black uppercase tracking-wider" data-testid="profile-pro-badge">
                             <Crown className="w-3.5 h-3.5" /> Pro 💎
                         </div>
                     ) : (
-                        <Link to="/pricing" data-testid="profile-upgrade-link" className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF2A54]/15 border border-[#FF2A54]/40 text-[#FF8a8a] text-xs font-bold uppercase tracking-wider hover:bg-[#FF2A54]/25">
+                        <Link to="/pricing" data-testid="profile-upgrade-link" className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/15 border border-primary/40 text-primary/80 text-xs font-bold uppercase tracking-wider hover:bg-primary/25">
                             <Crown className="w-3.5 h-3.5" /> Fazer upgrade
                         </Link>
                     )}
@@ -109,7 +109,7 @@ export default function Profile() {
 
                 <div className="lg:col-span-2 glass rounded-2xl p-8">
                     <div className="flex items-center gap-2 mb-6">
-                        <Trophy className="w-5 h-5 text-[#FF2A54]" />
+                        <Trophy className="w-5 h-5 text-primary" />
                         <h2 className="font-display text-2xl font-bold">Suas estatísticas</h2>
                     </div>
                     {stats ? (
@@ -205,7 +205,7 @@ export default function Profile() {
 
 function Stat({ label, value, accent }) {
     return (
-        <div className={`rounded-xl p-5 border ${accent ? "bg-[#FF2A54]/10 border-[#FF2A54]/30" : "bg-muted border-border"}`}>
+        <div className={`rounded-xl p-5 border ${accent ? "bg-primary/10 border-primary/30" : "bg-muted border-border"}`}>
             <p className="text-xs font-bold uppercase tracking-wider text-foreground/60">{label}</p>
             <p className="font-display text-4xl font-black mt-2">{value || 0}</p>
         </div>

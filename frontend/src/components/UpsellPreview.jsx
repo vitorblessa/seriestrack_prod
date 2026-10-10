@@ -31,7 +31,7 @@ export default function UpsellPreview() {
 
     return (
         <section className="px-6 md:px-10 mt-12" data-testid="upsell-preview-container">
-            <div className="relative glass rounded-2xl overflow-hidden border border-[#FF2A54]/25">
+            <div className="relative glass rounded-2xl overflow-hidden border border-primary/25">
                 {/* Backdrop blur layer */}
                 {rec.backdrop_url && (
                     <div className="absolute inset-0 opacity-20">
@@ -41,17 +41,17 @@ export default function UpsellPreview() {
                 <div className="relative grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 p-5 md:p-8">
                     <Link
                         to={`/series/${rec.tmdb_id}`}
-                        className="w-32 md:w-40 aspect-[2/3] rounded-xl overflow-hidden bg-surface mx-auto md:mx-0 shadow-[0_20px_60px_-15px_rgba(255,42,84,0.4)]"
+                        className="w-32 md:w-40 aspect-[2/3] rounded-xl overflow-hidden bg-surface mx-auto md:mx-0 shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.4)]"
                         data-testid="upsell-poster-link"
                     >
                         {rec.poster_url && <img src={rec.poster_url} alt={rec.name} className="w-full h-full object-cover" />}
                     </Link>
 
                     <div className="flex flex-col">
-                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54] flex items-center gap-2">
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary flex items-center gap-2">
                             <Sparkles className="w-3 h-3" /> IA escolheu pra você hoje
                         </p>
-                        <Link to={`/series/${rec.tmdb_id}`} className="font-display text-2xl md:text-3xl font-black mt-2 hover:text-[#FF2A54] transition-colors">
+                        <Link to={`/series/${rec.tmdb_id}`} className="font-display text-2xl md:text-3xl font-black mt-2 hover:text-primary/80 transition-colors">
                             {rec.name}
                         </Link>
                         <div className="flex items-center gap-3 text-xs text-foreground/50 mt-1">
@@ -71,7 +71,7 @@ export default function UpsellPreview() {
                                     className="aspect-[2/3] rounded-lg bg-foreground/[0.03] border border-border flex items-center justify-center backdrop-blur-sm relative overflow-hidden"
                                     data-testid={`upsell-locked-slot-${i}`}
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-[#FF2A54]/10 to-transparent" />
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
                                     <Lock className="w-4 h-4 text-foreground/40 relative z-10" />
                                 </div>
                             ))}
@@ -82,7 +82,7 @@ export default function UpsellPreview() {
                             <Link
                                 to="/pricing"
                                 data-testid="upsell-pro-cta"
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#FF2A54] to-[#7c1531] hover:from-[#FF4D71] text-white text-sm font-black uppercase tracking-wider shadow-[0_0_25px_rgba(255,42,84,0.4)]"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary to-primary/60 hover:from-primary/90 text-white text-sm font-black uppercase tracking-wider shadow-[0_0_25px_hsl(var(--primary)/0.4)]"
                             >
                                 <Crown className="w-4 h-4" /> Ver mais 4 no Pro
                                 <ArrowRight className="w-4 h-4" />

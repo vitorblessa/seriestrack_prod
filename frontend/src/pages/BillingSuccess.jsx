@@ -58,21 +58,21 @@ export default function BillingSuccess() {
             <section className="px-6 md:px-10 pt-16 pb-24 max-w-2xl mx-auto text-center" data-testid="billing-success-page">
                 {phase === "polling" && (
                     <>
-                        <Loader2 className="w-12 h-12 mx-auto animate-spin text-[#FF2A54]" />
+                        <Loader2 className="w-12 h-12 mx-auto animate-spin text-primary" />
                         <h1 className="font-display text-3xl md:text-4xl font-black mt-8">Confirmando seu pagamento...</h1>
                         <p className="text-foreground/60 mt-3">Isso leva alguns segundos. Não feche a página.</p>
                     </>
                 )}
                 {phase === "success" && (
                     <>
-                        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_30px_80px_-20px_rgba(255,42,84,0.5)]">
+                        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-[0_30px_80px_-20px_hsl(var(--primary)/0.5)]">
                             <Crown className="w-10 h-10 text-white" strokeWidth={2.5} />
                         </div>
                         <span className="inline-flex items-center gap-2 mt-6 px-4 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold uppercase tracking-[0.2em]" data-testid="billing-success-badge">
                             <CheckCircle2 className="w-3.5 h-3.5" /> Pagamento confirmado
                         </span>
                         <h1 className="font-display text-4xl md:text-5xl font-black mt-6 tracking-tight">
-                            Bem-vindo ao <span className="bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] bg-clip-text text-transparent">Pro 💎</span>
+                            Bem-vindo ao <span className="bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">Pro 💎</span>
                         </h1>
                         <p className="text-foreground/70 mt-4 text-lg">Sua biblioteca acaba de ficar ilimitada.</p>
                         {info?.new_renews_at && (
@@ -88,7 +88,7 @@ export default function BillingSuccess() {
                                 "Estatísticas avançadas",
                             ].map((f) => (
                                 <div key={f} className="glass rounded-xl p-4 flex items-center gap-3">
-                                    <Sparkles className="w-4 h-4 text-[#FF2A54]" />
+                                    <Sparkles className="w-4 h-4 text-primary" />
                                     <span className="text-sm font-semibold">{f}</span>
                                 </div>
                             ))}

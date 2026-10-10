@@ -34,7 +34,7 @@ export default function PublicProfile() {
         return (
             <AppLayout>
                 <div className="min-h-[60vh] flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#FF2A54]" />
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
             </AppLayout>
         );
@@ -52,9 +52,9 @@ export default function PublicProfile() {
     return (
         <AppLayout>
             <section className="px-6 md:px-10 pt-10">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Perfil público</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Perfil público</p>
                 <div className="mt-6 flex flex-col md:flex-row gap-6 items-start">
-                    <div className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl font-display font-black shrink-0 ${profile.is_pro ? "bg-gradient-to-br from-amber-400 to-[#FF2A54] ring-4 ring-amber-400/30 shadow-[0_0_40px_rgba(245,158,11,0.4)]" : "bg-gradient-to-br from-[#FF2A54] to-[#7c1531] shadow-[0_0_40px_rgba(255,42,84,0.4)]"}`}>
+                    <div className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl font-display font-black shrink-0 ${profile.is_pro ? "bg-gradient-to-br from-amber-400 to-primary ring-4 ring-amber-400/30 shadow-[0_0_40px_rgba(245,158,11,0.4)]" : "bg-gradient-to-br from-primary to-primary/60 shadow-[0_0_40px_hsl(var(--primary)/0.4)]"}`}>
                         {profile.avatar_url ? (
                             <img src={profile.avatar_url} alt={profile.name} className="w-full h-full rounded-full object-cover" />
                         ) : (
@@ -65,7 +65,7 @@ export default function PublicProfile() {
                         <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight flex items-center gap-3 flex-wrap">
                             {profile.name}
                             {profile.is_pro && (
-                                <span data-testid="public-profile-pro-badge" className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400/20 to-[#FF2A54]/20 border border-amber-400/50 text-amber-200 text-xs font-bold uppercase tracking-wider">
+                                <span data-testid="public-profile-pro-badge" className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400/20 to-primary/20 border border-amber-400/50 text-amber-200 text-xs font-bold uppercase tracking-wider">
                                     <Crown className="w-3.5 h-3.5" /> Pro
                                 </span>
                             )}
@@ -77,7 +77,7 @@ export default function PublicProfile() {
                         )}
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-6 max-w-3xl" data-testid="public-stats">
                             {["watching", "want", "paused", "finished", "total"].map((k) => (
-                                <div key={k} className={`rounded-xl p-4 border ${k === "total" ? "bg-[#FF2A54]/10 border-[#FF2A54]/30" : "bg-muted/50 border-border"}`}>
+                                <div key={k} className={`rounded-xl p-4 border ${k === "total" ? "bg-primary/10 border-primary/30" : "bg-muted/50 border-border"}`}>
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/60">{
                                         { watching: "Assistindo", want: "Quero", paused: "Pausadas", finished: "Finalizadas", total: "Total" }[k]
                                     }</p>
@@ -92,7 +92,7 @@ export default function PublicProfile() {
             {profile.recent_reviews?.length > 0 && (
                 <section className="px-6 md:px-10 mt-12">
                     <h2 className="font-display text-2xl font-bold mb-4 flex items-center gap-2">
-                        <Star className="w-5 h-5 text-[#FF2A54]" /> Avaliações recentes
+                        <Star className="w-5 h-5 text-primary" /> Avaliações recentes
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {profile.recent_reviews.map((r, i) => (
@@ -112,7 +112,7 @@ export default function PublicProfile() {
 
             <section className="px-6 md:px-10 mt-12 mb-20">
                 <h2 className="font-display text-2xl font-bold mb-4 flex items-center gap-2">
-                    <UserIcon className="w-5 h-5 text-[#FF2A54]" /> Biblioteca pública
+                    <UserIcon className="w-5 h-5 text-primary" /> Biblioteca pública
                 </h2>
                 {library.length === 0 ? (
                     <p className="text-foreground/50">Este usuário ainda não tem séries na biblioteca.</p>

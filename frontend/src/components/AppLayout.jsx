@@ -45,7 +45,7 @@ export default function AppLayout({ children }) {
                 <div className="max-w-[1400px] mx-auto px-3 sm:px-6 md:px-10 py-3 sm:py-4 flex items-center gap-3 md:gap-8">
                     <Link to="/dashboard" className="group/nav flex items-center shrink-0" data-testid="brand-logo" title="SeriesTrack">
                         <div className="relative shrink-0">
-                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_0_20px_rgba(255,42,84,0.4)]">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.4)]">
                                 <Tv className="w-5 h-5 text-white" strokeWidth={2.5} />
                             </div>
                         </div>
@@ -96,14 +96,14 @@ export default function AppLayout({ children }) {
                             <button
                                 onClick={() => navigate("/pricing")}
                                 data-testid="nav-upgrade-btn"
-                                className="hidden md:inline-flex items-center gap-1.5 px-2.5 xl:px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#FF2A54] to-[#7c1531] hover:from-[#FF4D71] hover:to-[#7c1531] text-white text-xs font-black uppercase tracking-wider shadow-[0_0_20px_rgba(255,42,84,0.3)] whitespace-nowrap shrink-0"
+                                className="hidden md:inline-flex items-center gap-1.5 px-2.5 xl:px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary to-primary/60 hover:from-primary/90 hover:to-primary/60 text-white text-xs font-black uppercase tracking-wider shadow-[0_0_20px_hsl(var(--primary)/0.3)] whitespace-nowrap shrink-0"
                                 title="Fazer upgrade para Pro"
                             >
                                 <Crown className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Upgrade</span>
                             </button>
                         )}
                         {user?.subscription_tier === "pro" && (
-                            <span data-testid="nav-pro-badge" className="hidden md:inline-flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-[#FF2A54]/20 border border-amber-400/40 text-amber-200 text-xs font-bold uppercase tracking-wider whitespace-nowrap shrink-0">
+                            <span data-testid="nav-pro-badge" className="hidden md:inline-flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-primary/20 border border-amber-400/40 text-amber-200 text-xs font-bold uppercase tracking-wider whitespace-nowrap shrink-0">
                                 <Crown className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Pro</span>
                             </span>
                         )}
@@ -115,7 +115,7 @@ export default function AppLayout({ children }) {
                         >
                             <Bell className="w-4 h-4" />
                             {unread > 0 && (
-                                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF2A54] text-white text-[10px] font-bold flex items-center justify-center">
+                                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">
                                     {unread > 9 ? "9+" : unread}
                                 </span>
                             )}
@@ -126,7 +126,7 @@ export default function AppLayout({ children }) {
                             className="flex items-center gap-2 p-1 md:pl-1 md:pr-3 md:py-1 rounded-full bg-foreground/5 hover:bg-foreground/10 border border-border"
                             title="Perfil"
                         >
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center text-white text-xs font-bold">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-xs font-bold">
                                 {(user?.name || "?").charAt(0).toUpperCase()}
                             </div>
                             <span className="hidden xl:inline text-xs font-semibold text-foreground/80 max-w-[100px] truncate">

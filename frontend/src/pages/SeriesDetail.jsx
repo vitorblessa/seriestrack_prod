@@ -180,7 +180,7 @@ export default function SeriesDetail() {
         return (
             <AppLayout>
                 <div className="min-h-[60vh] flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#FF2A54]" />
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
             </AppLayout>
         );
@@ -208,7 +208,7 @@ export default function SeriesDetail() {
                         </div>
                         <div className="flex-1 min-w-0 animate-fade-up">
                             {series.tagline && (
-                                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">{series.tagline}</p>
+                                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{series.tagline}</p>
                             )}
                             <h1 className="font-display text-4xl md:text-6xl font-black tracking-tight leading-tight mt-2">
                                 {series.name}
@@ -275,7 +275,7 @@ export default function SeriesDetail() {
                                             data-testid={`series-action-${s.key}`}
                                             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all border ${
                                                 active
-                                                    ? "bg-[#FF2A54] border-[#FF2A54] text-white shadow-[0_0_20px_rgba(255,42,84,0.4)]"
+                                                    ? "bg-primary border-primary text-white shadow-[0_0_20px_hsl(var(--primary)/0.4)]"
                                                     : "bg-white/5 border-white/10 hover:bg-white/10"
                                             }`}
                                         >
@@ -304,7 +304,7 @@ export default function SeriesDetail() {
                                         <span>{progressSummary.total_watched}/{progressSummary.total_episodes} eps · {progressSummary.percent}%</span>
                                     </div>
                                     <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                                        <div className="h-full bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] transition-all duration-500" style={{ width: `${progressSummary.percent}%` }} />
+                                        <div className="h-full bg-gradient-to-r from-primary to-primary/50 transition-all duration-500" style={{ width: `${progressSummary.percent}%` }} />
                                     </div>
                                 </div>
                             )}
@@ -317,11 +317,11 @@ export default function SeriesDetail() {
             {series.next_episode_to_air && (
                 <section className="px-6 md:px-10 mt-16">
                     <div className="glass rounded-2xl p-6 md:p-8 flex items-center gap-4 md:gap-6">
-                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                            <Clock className="w-5 h-5 text-[#FF2A54] animate-pulse-glow" />
+                        <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                            <Clock className="w-5 h-5 text-primary animate-pulse-glow" />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Próximo episódio</p>
+                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Próximo episódio</p>
                             <p className="font-display text-xl md:text-2xl font-bold mt-1">
                                 T{series.next_episode_to_air.season_number}·E{series.next_episode_to_air.episode_number} — {series.next_episode_to_air.name}
                             </p>
@@ -357,7 +357,7 @@ export default function SeriesDetail() {
                                             <span>{currentSeasonProgress.watched}/{currentSeasonProgress.total} · {currentSeasonProgress.percent}%</span>
                                         </div>
                                         <div className="mt-2 h-2 rounded-full bg-white/5 overflow-hidden">
-                                            <div className="h-full bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] transition-all duration-500" style={{ width: `${currentSeasonProgress.percent}%` }} />
+                                            <div className="h-full bg-gradient-to-r from-primary to-primary/50 transition-all duration-500" style={{ width: `${currentSeasonProgress.percent}%` }} />
                                         </div>
                                     </div>
                                     {inLib && currentSeasonProgress.total > 0 && (
@@ -388,7 +388,7 @@ export default function SeriesDetail() {
                                 </div>
                             )}
                             {seasonLoading ? (
-                                <Loader2 className="w-6 h-6 animate-spin text-[#FF2A54]" />
+                                <Loader2 className="w-6 h-6 animate-spin text-primary" />
                             ) : season ? (
                                 <div className="space-y-3">
                                     {season.episodes.map((ep) => {
@@ -402,7 +402,7 @@ export default function SeriesDetail() {
                                                 )}
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-baseline gap-3 flex-wrap">
-                                                        <span className="text-xs font-bold uppercase tracking-wider text-[#FF2A54]">EP {ep.episode_number}</span>
+                                                        <span className="text-xs font-bold uppercase tracking-wider text-primary">EP {ep.episode_number}</span>
                                                         <h3 className="font-display font-bold text-lg">{ep.name}</h3>
                                                         {ep.air_date && <span className="text-xs text-foreground/50">{ep.air_date}</span>}
                                                     </div>

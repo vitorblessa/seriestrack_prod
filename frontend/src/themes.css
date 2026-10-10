@@ -1,5 +1,26 @@
-/* UI themes — applied via [data-theme="X"] attribute on <body>.
-   Default leaves the obsidian + coral aesthetic untouched. */
+/* UI themes — applied via [data-theme="X"] attribute on <body>, combined
+   with the light/dark toggle via [data-mode="light"] on <html> (see
+   index.css). Default leaves the obsidian + coral aesthetic untouched.
+
+   Each non-default skin defines FOUR things, twice (once for dark — the
+   skin's original look, unchanged — and once for light):
+   - background (+ optional radial-gradient tint)
+   - --primary / --primary-foreground / --ring — the shadcn tokens that
+     drive bg-primary/text-primary/border-primary/ring-primary etc.
+     app-wide (badges, links, icons, borders, focus rings — everywhere
+     outside the CTA button), so picking a skin re-colors the whole
+     platform, not just .btn-primary.
+   - --app-accent and friends (unchanged from before) — kept separately
+     from --primary because .btn-primary's two-tone gradient look doesn't
+     map cleanly onto a single Tailwind opacity-modifier color, and a
+     filled button doesn't need a lightness adjustment for light-page
+     contrast the way thin text/icons/borders do.
+
+   Light-mode accents are NOT just the dark accent reused: a few skins
+   (oled, apple_tv) use white as their accent, which is invisible on a
+   light page, so their light variant swaps to near-black instead; the
+   rest get a darker/more saturated version of the same hue so text stays
+   readable at roughly WCAG AA against a near-white background. */
 
 :root {
     --app-accent: #FF2A54;
@@ -12,7 +33,7 @@
         radial-gradient(at 100% 100%, rgba(0, 168, 225, 0.05) 0px, transparent 50%);
 }
 
-/* OLED pure-black — no gradients, no glow */
+/* ===================== OLED — pure black / pure white, no gradients ===================== */
 body[data-theme="oled"] {
     background: #000 !important;
     background-image: none !important;
@@ -21,10 +42,22 @@ body[data-theme="oled"] {
     --app-accent-hover: #f0f0f0;
     --app-accent-dark: #888;
     --app-accent-glow: rgba(255, 255, 255, 0.15);
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 4%;
+    --ring: 0 0% 100%;
 }
 body[data-theme="oled"] ::selection { background: rgba(255, 255, 255, 0.3); }
 
-/* Netflix red on near-black */
+html[data-mode="light"] body[data-theme="oled"] {
+    background: #ffffff !important;
+    background-image: none !important;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 0 0% 9%;
+}
+html[data-mode="light"] body[data-theme="oled"] ::selection { background: rgba(0, 0, 0, 0.15); }
+
+/* ===================== Netflix — red on near-black / red on white ===================== */
 body[data-theme="netflix"] {
     background: #0a0000 !important;
     background-image:
@@ -34,9 +67,19 @@ body[data-theme="netflix"] {
     --app-accent-hover: #F40612;
     --app-accent-dark: #831010;
     --app-accent-glow: rgba(229, 9, 20, 0.45);
+    --primary: 357 92% 47%;
+    --ring: 357 92% 47%;
+}
+html[data-mode="light"] body[data-theme="netflix"] {
+    background: #FFF6F6 !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(229, 9, 20, 0.08) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(229, 9, 20, 0.04) 0, transparent 50%) !important;
+    --primary: 357 85% 40%;
+    --ring: 357 85% 40%;
 }
 
-/* Disney+ deep blue */
+/* ===================== Disney+ — deep blue / blue on white ===================== */
 body[data-theme="disney_plus"] {
     background: #001A33 !important;
     background-image:
@@ -46,9 +89,19 @@ body[data-theme="disney_plus"] {
     --app-accent-hover: #2C81FA;
     --app-accent-dark: #0A3B82;
     --app-accent-glow: rgba(20, 110, 245, 0.45);
+    --primary: 216 92% 52%;
+    --ring: 216 92% 52%;
+}
+html[data-mode="light"] body[data-theme="disney_plus"] {
+    background: #F2F8FF !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(20, 110, 245, 0.08) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(20, 110, 245, 0.04) 0, transparent 50%) !important;
+    --primary: 216 85% 42%;
+    --ring: 216 85% 42%;
 }
 
-/* HBO Max violet */
+/* ===================== HBO Max — violet on near-black / violet on white ===================== */
 body[data-theme="hbo_max"] {
     background: #0C0028 !important;
     background-image:
@@ -58,9 +111,19 @@ body[data-theme="hbo_max"] {
     --app-accent-hover: #A06EFF;
     --app-accent-dark: #4A1F99;
     --app-accent-glow: rgba(140, 78, 255, 0.45);
+    --primary: 261 100% 65%;
+    --ring: 261 100% 65%;
+}
+html[data-mode="light"] body[data-theme="hbo_max"] {
+    background: #F7F2FF !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(140, 78, 255, 0.10) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(140, 78, 255, 0.05) 0, transparent 50%) !important;
+    --primary: 261 75% 48%;
+    --ring: 261 75% 48%;
 }
 
-/* Prime Video cyan */
+/* ===================== Prime Video — cyan on near-black / cyan on white ===================== */
 body[data-theme="prime_video"] {
     background: #001F2E !important;
     background-image:
@@ -70,9 +133,19 @@ body[data-theme="prime_video"] {
     --app-accent-hover: #1FBDF0;
     --app-accent-dark: #00567A;
     --app-accent-glow: rgba(0, 168, 225, 0.45);
+    --primary: 195 100% 44%;
+    --ring: 195 100% 44%;
+}
+html[data-mode="light"] body[data-theme="prime_video"] {
+    background: #EFFBFF !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(0, 168, 225, 0.10) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(0, 168, 225, 0.05) 0, transparent 50%) !important;
+    --primary: 195 100% 32%;
+    --ring: 195 100% 32%;
 }
 
-/* Apple TV+ — pristine white on pure black */
+/* ===================== Apple TV+ — pristine white on pure black / pure white ===================== */
 body[data-theme="apple_tv"] {
     background: #000 !important;
     background-image: none !important;
@@ -80,9 +153,19 @@ body[data-theme="apple_tv"] {
     --app-accent-hover: #e8e8e8;
     --app-accent-dark: #999;
     --app-accent-glow: rgba(255, 255, 255, 0.2);
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 4%;
+    --ring: 0 0% 100%;
+}
+html[data-mode="light"] body[data-theme="apple_tv"] {
+    background: #ffffff !important;
+    background-image: none !important;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 0 0% 9%;
 }
 
-/* Paramount+ blue gradient */
+/* ===================== Paramount+ — blue gradient / blue on white ===================== */
 body[data-theme="paramount_plus"] {
     background: #001028 !important;
     background-image:
@@ -92,9 +175,19 @@ body[data-theme="paramount_plus"] {
     --app-accent-hover: #2A7DFF;
     --app-accent-dark: #003580;
     --app-accent-glow: rgba(0, 100, 255, 0.45);
+    --primary: 216 100% 50%;
+    --ring: 216 100% 50%;
+}
+html[data-mode="light"] body[data-theme="paramount_plus"] {
+    background: #F0F6FF !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(0, 100, 255, 0.08) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(0, 70, 200, 0.04) 0, transparent 50%) !important;
+    --primary: 216 100% 40%;
+    --ring: 216 100% 40%;
 }
 
-/* Globoplay — red/orange Brasil */
+/* ===================== Globoplay — red/orange Brasil ===================== */
 body[data-theme="globoplay"] {
     background: #1A0008 !important;
     background-image:
@@ -104,9 +197,23 @@ body[data-theme="globoplay"] {
     --app-accent-hover: #FF6A2B;
     --app-accent-dark: #8A2A00;
     --app-accent-glow: rgba(255, 79, 0, 0.45);
+    --primary: 19 100% 50%;
+    --ring: 19 100% 50%;
+}
+html[data-mode="light"] body[data-theme="globoplay"] {
+    background: #FFF4EF !important;
+    background-image:
+        radial-gradient(at 20% -10%, rgba(255, 79, 0, 0.08) 0, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(255, 0, 78, 0.04) 0, transparent 50%) !important;
+    --primary: 19 90% 40%;
+    --ring: 19 90% 40%;
 }
 
-/* Apply accent var to the primary call-to-action button on every theme */
+/* Apply accent var to the primary call-to-action button on every theme.
+   Unchanged from before — a filled, white-text button reads fine at the
+   same vivid lightness on either a light or dark page, so this doesn't
+   need a separate light-mode version the way --primary (used for thin
+   text/icons/borders) does. */
 body[data-theme]:not([data-theme="default"]) .btn-primary {
     background: linear-gradient(90deg, var(--app-accent), var(--app-accent-dark)) !important;
     box-shadow: 0 0 24px var(--app-accent-glow) !important;

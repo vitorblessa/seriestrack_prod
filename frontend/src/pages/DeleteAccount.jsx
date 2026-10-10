@@ -38,7 +38,7 @@ export default function DeleteAccount() {
         <div className="min-h-screen bg-background text-foreground/90 py-14 px-6" data-testid="delete-account-page">
             <div className="max-w-2xl mx-auto space-y-6">
                 <div className="flex items-center justify-between mb-4">
-                    <Link to="/" className="text-[#FF2A54] font-bold text-lg">SeriesTrack</Link>
+                    <Link to="/" className="text-primary font-bold text-lg">SeriesTrack</Link>
                     <Link to="/" className="text-sm text-foreground/60 hover:text-foreground">← Início</Link>
                 </div>
 

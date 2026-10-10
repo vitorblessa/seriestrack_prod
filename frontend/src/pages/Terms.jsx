@@ -5,14 +5,14 @@ export default function Terms() {
         <div className="min-h-screen bg-background text-foreground/90 py-14 px-6" data-testid="terms-page">
             <div className="max-w-3xl mx-auto space-y-6 leading-relaxed">
                 <div className="flex items-center justify-between mb-8">
-                    <Link to="/" className="text-[#FF2A54] font-bold text-lg">SeriesTrack</Link>
+                    <Link to="/" className="text-primary font-bold text-lg">SeriesTrack</Link>
                     <Link to="/" className="text-sm text-foreground/60 hover:text-foreground">← Início</Link>
                 </div>
                 <h1 className="font-display text-4xl font-bold">Termos de Uso</h1>
                 <p className="text-foreground/50 text-sm">Última atualização: 22 de setembro de 2026.</p>
 
                 <h2 className="font-bold text-xl mt-8">1. Aceitação</h2>
-                <p>Ao criar uma conta ou usar o SeriesTrack, você concorda com estes Termos e com nossa <Link className="text-[#FF2A54]" to="/privacy">Política de Privacidade</Link>.</p>
+                <p>Ao criar uma conta ou usar o SeriesTrack, você concorda com estes Termos e com nossa <Link className="text-primary" to="/privacy">Política de Privacidade</Link>.</p>
 
                 <h2 className="font-bold text-xl mt-8">2. Conta</h2>
                 <p>Você é responsável por manter suas credenciais em segurança. Só pode criar uma conta se tiver 13 anos ou mais. Você garante que as informações fornecidas são verdadeiras.</p>
@@ -24,7 +24,7 @@ export default function Terms() {
                 <p>Suas avaliações e listas são de sua autoria. Ao publicá-las como públicas, você concede ao SeriesTrack licença não-exclusiva para exibi-las dentro do serviço. Você mantém a titularidade.</p>
 
                 <h2 className="font-bold text-xl mt-8">5. Dados de séries (TMDB)</h2>
-                <p>Informações de séries, sinopses, imagens e datas vêm do <a className="text-[#FF2A54]" href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">The Movie Database (TMDB)</a>. SeriesTrack não é endossado ou certificado pelo TMDB.</p>
+                <p>Informações de séries, sinopses, imagens e datas vêm do <a className="text-primary" href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">The Movie Database (TMDB)</a>. SeriesTrack não é endossado ou certificado pelo TMDB.</p>
 
                 <h2 className="font-bold text-xl mt-8">6. Assinatura Pro</h2>
                 <ul className="list-disc pl-6 space-y-2">
@@ -38,7 +38,7 @@ export default function Terms() {
                 <p>Fazemos esforços razoáveis para manter o serviço no ar 24/7, mas não garantimos disponibilidade ininterrupta. Interrupções podem ocorrer para manutenção ou por falhas em provedores externos (Google, Stripe, TMDB).</p>
 
                 <h2 className="font-bold text-xl mt-8">8. Encerramento</h2>
-                <p>Podemos suspender ou encerrar contas que violem estes Termos. Você pode encerrar sua conta a qualquer momento em <Link className="text-[#FF2A54]" to="/delete-account">/delete-account</Link>.</p>
+                <p>Podemos suspender ou encerrar contas que violem estes Termos. Você pode encerrar sua conta a qualquer momento em <Link className="text-primary" to="/delete-account">/delete-account</Link>.</p>
 
                 <h2 className="font-bold text-xl mt-8">9. Propriedade intelectual</h2>
                 <p>Todo o código, marca, layout e conteúdo produzido pela SeriesTrack pertence à SeriesTrack. Você não recebe licença para revenda ou reprodução.</p>
@@ -53,7 +53,7 @@ export default function Terms() {
                 <p>Estes Termos regem-se pela lei brasileira. Foro da Comarca do usuário para questões de consumo; demais, foro de São Paulo/SP.</p>
 
                 <h2 className="font-bold text-xl mt-8">13. Contato</h2>
-                <p><a className="text-[#FF2A54]" href="mailto:contato@seriestrack.app">contato@seriestrack.app</a></p>
+                <p><a className="text-primary" href="mailto:contato@seriestrack.app">contato@seriestrack.app</a></p>
             </div>
         </div>
     );

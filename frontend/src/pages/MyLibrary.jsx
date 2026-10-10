@@ -54,10 +54,10 @@ export default function MyLibrary() {
     return (
         <AppLayout>
             <section className="px-6 md:px-10 pt-10">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Sua biblioteca</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Sua biblioteca</p>
                 <div className="flex items-end justify-between gap-4 flex-wrap mt-2">
                     <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight flex items-center gap-3">
-                        <LibIcon className="w-9 h-9 text-[#FF2A54]" /> Minha biblioteca
+                        <LibIcon className="w-9 h-9 text-primary" /> Minha biblioteca
                     </h1>
                     {user?.id && (
                         <button
@@ -82,7 +82,7 @@ export default function MyLibrary() {
                                 key={s.key}
                                 onClick={() => setTab(s.key)}
                                 data-testid={`library-stat-${s.key}`}
-                                className={`glass rounded-xl p-4 text-left transition-all ${tab === s.key ? "border-[#FF2A54]/50" : ""}`}
+                                className={`glass rounded-xl p-4 text-left transition-all ${tab === s.key ? "border-primary/50" : ""}`}
                             >
                                 <div className="flex items-center gap-2 text-foreground/60 text-xs font-bold uppercase tracking-wider">
                                     <s.icon className="w-3.5 h-3.5" /> {s.label}
@@ -92,7 +92,7 @@ export default function MyLibrary() {
                         ))}
                         <div className="glass rounded-xl p-4">
                             <p className="text-foreground/60 text-xs font-bold uppercase tracking-wider">Total</p>
-                            <p className="font-display text-3xl font-black mt-2 text-[#FF2A54]">{stats.total || 0}</p>
+                            <p className="font-display text-3xl font-black mt-2 text-primary">{stats.total || 0}</p>
                         </div>
                     </div>
                 )}
@@ -116,7 +116,7 @@ export default function MyLibrary() {
                     <TabsContent value={tab} className="mt-8">
                         {loading ? (
                             <div className="flex items-center justify-center py-20">
-                                <Loader2 className="w-8 h-8 animate-spin text-[#FF2A54]" />
+                                <Loader2 className="w-8 h-8 animate-spin text-primary" />
                             </div>
                         ) : filtered.length === 0 ? (
                             <div className="glass rounded-2xl py-20 px-6 text-center">

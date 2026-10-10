@@ -70,7 +70,7 @@ export default function Wrapped() {
         return (
             <Layout>
                 <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-                    <Loader2 className="w-10 h-10 animate-spin text-[#FF2A54]" />
+                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
                     <p className="text-foreground/60 text-sm">Montando seu ano em séries...</p>
                 </div>
             </Layout>
@@ -92,10 +92,10 @@ export default function Wrapped() {
         return (
             <Layout>
                 <section className="px-6 md:px-10 pt-16 pb-24 max-w-2xl mx-auto text-center" data-testid="wrapped-empty">
-                    <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center mb-8 shadow-[0_30px_80px_-20px_rgba(255,42,84,0.5)]">
+                    <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mb-8 shadow-[0_30px_80px_-20px_hsl(var(--primary)/0.5)]">
                         <Sparkles className="w-12 h-12 text-white" strokeWidth={2.5} />
                     </div>
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Wrapped {year}</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Wrapped {year}</p>
                     <h1 className="font-display text-4xl md:text-5xl font-black mt-3 tracking-tight">
                         Ainda sem dados pra {year}
                     </h1>
@@ -117,11 +117,11 @@ export default function Wrapped() {
             <section className="px-6 md:px-10 pt-10 max-w-5xl mx-auto" data-testid="wrapped-container">
                 {/* Hero */}
                 <div className="text-center wrapped-fadeup">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
                         {isShareView && data.user ? `${data.user.name} · Wrapped ${year}` : `Seu Wrapped ${year}`}
                     </p>
                     <h1 className="font-display text-5xl md:text-7xl font-black tracking-tight mt-4 leading-none">
-                        Seu ano em <span className="text-[#FF2A54]">séries</span>.
+                        Seu ano em <span className="text-primary">séries</span>.
                     </h1>
                     {!isShareView && (
                         <button onClick={share} className="btn-glass mt-6 inline-flex" data-testid="wrapped-share-btn">
@@ -165,7 +165,7 @@ export default function Wrapped() {
                                     <img src={s.poster_url} alt={s.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform" />
                                 ) : null}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                                <span className="absolute top-2 left-2 w-9 h-9 rounded-full bg-[#FF2A54] text-white text-base font-black flex items-center justify-center shadow-lg">
+                                <span className="absolute top-2 left-2 w-9 h-9 rounded-full bg-primary text-white text-base font-black flex items-center justify-center shadow-lg">
                                     {i + 1}
                                 </span>
                                 <div className="absolute bottom-0 left-0 right-0 p-3">
@@ -218,7 +218,7 @@ export default function Wrapped() {
                 {top_genres?.length > 0 && (
                     <div className="mt-12 wrapped-stagger" data-testid="wrapped-genres-card">
                         <h2 className="font-display text-3xl md:text-4xl font-black tracking-tight mb-6">
-                            Você é fã de <span className="text-[#FF2A54]">{top_genres[0].genre}</span>
+                            Você é fã de <span className="text-primary">{top_genres[0].genre}</span>
                         </h2>
                         <div className="flex flex-wrap gap-2">
                             {top_genres.map((g, i) => (
@@ -226,7 +226,7 @@ export default function Wrapped() {
                                     key={g.genre}
                                     className="px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider"
                                     style={{
-                                        background: i === 0 ? "#FF2A54" : "rgba(255,255,255,0.06)",
+                                        background: i === 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.06)",
                                         color: i === 0 ? "#fff" : "rgba(255,255,255,0.8)",
                                         border: i === 0 ? "none" : "1px solid rgba(255,255,255,0.1)",
                                     }}
@@ -264,9 +264,9 @@ export default function Wrapped() {
 
                 {/* Outro */}
                 <div className="mt-16 mb-16 text-center wrapped-fadeup">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">SeriesTrack Wrapped</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">SeriesTrack Wrapped</p>
                     <h2 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-3">
-                        Bora pra mais um ano <span className="text-[#FF2A54]">memorável</span>?
+                        Bora pra mais um ano <span className="text-primary">memorável</span>?
                     </h2>
                     {!isShareView && (
                         <div className="mt-8 flex flex-wrap gap-3 justify-center">
@@ -313,7 +313,7 @@ function EpisodeBookend({ label, ep }) {
                 {ep.poster_url && <img src={ep.poster_url} alt="" className="w-full h-full object-cover" />}
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#FF2A54]">{label}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary">{label}</p>
                 <p className="font-display font-bold text-base line-clamp-1 mt-1">{ep.name}</p>
                 <p className="text-foreground/60 text-xs">T{ep.season}·E{ep.episode}</p>
                 <p className="text-foreground/40 text-xs mt-1">{formatDatePt(ep.watched_at)}</p>
@@ -327,7 +327,7 @@ function ShareLayout({ children }) {
         <div className="min-h-screen bg-obsidian text-white">
             <header className="border-b border-white/5 px-6 md:px-10 py-4 flex items-center justify-between">
                 <Link to="/" className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                         <Tv className="w-4 h-4 text-white" />
                     </div>
                     <span className="font-display font-black text-lg">SeriesTrack</span>

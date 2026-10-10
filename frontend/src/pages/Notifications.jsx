@@ -30,9 +30,9 @@ export default function Notifications() {
             <section className="px-6 md:px-10 pt-10">
                 <div className="flex items-end justify-between flex-wrap gap-4">
                     <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Atualizações</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Atualizações</p>
                         <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2 flex items-center gap-3">
-                            <BellRing className="w-9 h-9 text-[#FF2A54]" /> Notificações
+                            <BellRing className="w-9 h-9 text-primary" /> Notificações
                         </h1>
                     </div>
                     {items.some((i) => !i.read) && (
@@ -45,7 +45,7 @@ export default function Notifications() {
 
             <section className="px-6 md:px-10 mt-8" data-testid="notifications-list">
                 {loading ? (
-                    <Loader2 className="w-6 h-6 animate-spin text-[#FF2A54]" />
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 ) : items.length === 0 ? (
                     <div className="glass rounded-2xl py-20 px-6 text-center">
                         <Bell className="w-10 h-10 mx-auto text-foreground/30" />
@@ -58,15 +58,15 @@ export default function Notifications() {
                             <Link
                                 key={i}
                                 to={n.tmdb_id ? `/series/${n.tmdb_id}` : "/notifications"}
-                                className={`glass rounded-xl p-4 flex gap-4 hover:border-border transition-all ${!n.read ? "border-[#FF2A54]/40" : ""}`}
+                                className={`glass rounded-xl p-4 flex gap-4 hover:border-border transition-all ${!n.read ? "border-primary/40" : ""}`}
                             >
-                                <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                                    <Bell className="w-5 h-5 text-[#FF2A54]" />
+                                <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                                    <Bell className="w-5 h-5 text-primary" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-baseline gap-2">
                                         <p className="font-display font-bold">{n.title}</p>
-                                        {!n.read && <span className="w-2 h-2 rounded-full bg-[#FF2A54]" />}
+                                        {!n.read && <span className="w-2 h-2 rounded-full bg-primary" />}
                                     </div>
                                     <p className="text-foreground/60 text-sm mt-1">{n.message}</p>
                                     <p className="text-foreground/40 text-xs mt-2">{n.created_at?.slice(0, 16).replace("T", " ")}</p>

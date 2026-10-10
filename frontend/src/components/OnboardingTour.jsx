@@ -91,8 +91,8 @@ export default function OnboardingTour({ show, force = false, onDismiss }) {
                 data-testid="onboarding-tour"
             >
                 <div className="flex flex-col items-center text-center py-2">
-                    <div className="w-14 h-14 rounded-full bg-[#FF2A54]/15 flex items-center justify-center mb-4">
-                        <Icon className="w-7 h-7 text-[#FF2A54]" />
+                    <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-4">
+                        <Icon className="w-7 h-7 text-primary" />
                     </div>
                     <h3 className="font-display text-xl font-bold">{current.title}</h3>
                     <p className="text-foreground/60 text-sm mt-2 leading-relaxed">{current.body}</p>
@@ -100,7 +100,7 @@ export default function OnboardingTour({ show, force = false, onDismiss }) {
                         <button
                             onClick={goToCta}
                             data-testid="onboarding-tour-cta"
-                            className="text-[#FF2A54] text-sm font-bold mt-3 hover:underline"
+                            className="text-primary text-sm font-bold mt-3 hover:underline"
                         >
                             {current.cta.label} →
                         </button>
@@ -111,7 +111,7 @@ export default function OnboardingTour({ show, force = false, onDismiss }) {
                             <span
                                 key={i}
                                 className={`h-1.5 rounded-full transition-all ${
-                                    i === step ? "w-6 bg-[#FF2A54]" : "w-1.5 bg-foreground/20"
+                                    i === step ? "w-6 bg-primary" : "w-1.5 bg-foreground/20"
                                 }`}
                             />
                         ))}

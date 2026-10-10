@@ -85,7 +85,7 @@ export default function StartLibrarySuggestions({ shows, onAdded }) {
                                 data-testid={`start-suggestion-add-${tmdbId}`}
                                 aria-label={isAdded ? "Adicionada" : "Adicionar à biblioteca"}
                                 className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-lg ${
-                                    isAdded ? "bg-emerald-500 text-white" : "bg-black/70 text-white hover:bg-[#FF2A54] backdrop-blur border border-white/10"
+                                    isAdded ? "bg-emerald-500 text-white" : "bg-black/70 text-white hover:bg-primary/90 backdrop-blur border border-white/10"
                                 }`}
                             >
                                 {isAdding ? (

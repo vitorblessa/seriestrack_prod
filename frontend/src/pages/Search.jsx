@@ -150,7 +150,7 @@ export default function Search() {
     return (
         <AppLayout>
             <section className="px-6 md:px-10 pt-10">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Buscar</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Buscar</p>
                 <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2">
                     Encontre sua próxima obsessão
                 </h1>
@@ -173,7 +173,7 @@ export default function Search() {
                             }
                         }}
                         placeholder="Ex: Breaking Bad, House of the Dragon..."
-                        className="w-full pl-14 pr-6 py-5 rounded-2xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none text-lg transition-all"
+                        className="w-full pl-14 pr-6 py-5 rounded-2xl bg-white/5 border border-border focus:border-primary focus:bg-white/10 outline-none text-lg transition-all"
                     />
                     {loadingSeries && <Loader2 className="w-5 h-5 absolute right-5 top-1/2 -translate-y-1/2 animate-spin text-foreground/50" />}
                 </div>
@@ -220,7 +220,7 @@ export default function Search() {
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value)}
                                         data-testid="genre-sort-select"
-                                        className="bg-white/5 border border-border rounded-full text-xs font-semibold px-3 py-1.5 outline-none focus:border-[#FF2A54]/50"
+                                        className="bg-white/5 border border-border rounded-full text-xs font-semibold px-3 py-1.5 outline-none focus:border-primary/50"
                                     >
                                         {SORT_OPTIONS.map((o) => (
                                             <option key={o.value} value={o.value}>{o.label}</option>
@@ -318,7 +318,7 @@ function StreamingResults({ streaming, data, loading, onClose }) {
     if (loading || !data) {
         return (
             <div className="flex items-center gap-3 py-6">
-                <Loader2 className="w-6 h-6 animate-spin text-[#FF2A54]" />
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 <span className="text-foreground/60 text-sm">Buscando últimos episódios em {streaming}...</span>
             </div>
         );
@@ -367,12 +367,12 @@ function StreamingResults({ streaming, data, loading, onClose }) {
                             </div>
                             <div className="p-4 flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF2A54]">{e.air_date}</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{e.air_date}</span>
                                     <span
                                         className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
                                         style={{
-                                            background: e.kind === "upcoming" ? "rgba(255,42,84,0.2)" : "rgba(255,255,255,0.1)",
-                                            color: e.kind === "upcoming" ? "#FF8a8a" : "rgba(255,255,255,0.7)",
+                                            background: e.kind === "upcoming" ? "hsl(var(--primary) / 0.2)" : "rgba(255,255,255,0.1)",
+                                            color: e.kind === "upcoming" ? "hsl(var(--primary))" : "rgba(255,255,255,0.7)",
                                         }}
                                     >
                                         {e.kind === "upcoming" ? "Próximo" : "Recém lançado"}

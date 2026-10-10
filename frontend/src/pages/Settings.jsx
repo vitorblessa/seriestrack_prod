@@ -226,15 +226,15 @@ export default function Settings() {
     return (
         <AppLayout>
             <section className="px-6 md:px-10 pt-10">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Configurações</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Configurações</p>
                 <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2">Preferências</h1>
             </section>
 
             <section className="px-6 md:px-10 mt-10 space-y-4 max-w-3xl">
                 <div className="glass rounded-2xl p-6 md:p-8" data-testid="theme-card">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                            <Palette className="w-5 h-5 text-[#FF2A54]" />
+                        <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                            <Palette className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1">
                             <h2 className="font-display text-xl font-bold flex items-center gap-2">
@@ -259,12 +259,12 @@ export default function Settings() {
                                     aria-checked={mode === "light"}
                                     data-testid="color-mode-toggle"
                                     onClick={() => handleModeChange(mode === "light" ? "dark" : "light")}
-                                    className={`relative h-7 w-14 shrink-0 rounded-full transition-colors ${mode === "light" ? "bg-[#FF2A54]" : "bg-secondary"}`}
+                                    className={`relative h-7 w-14 shrink-0 rounded-full transition-colors ${mode === "light" ? "bg-primary" : "bg-secondary"}`}
                                 >
                                     <span
                                         className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-card shadow transition-transform flex items-center justify-center ${mode === "light" ? "translate-x-7" : "translate-x-0"}`}
                                     >
-                                        {mode === "light" ? <Sun className="w-3.5 h-3.5 text-[#FF2A54]" /> : <Moon className="w-3.5 h-3.5 text-foreground/60" />}
+                                        {mode === "light" ? <Sun className="w-3.5 h-3.5 text-primary" /> : <Moon className="w-3.5 h-3.5 text-foreground/60" />}
                                     </span>
                                 </button>
                             </div>
@@ -311,7 +311,7 @@ export default function Settings() {
                                 })}
                             </div>
                             {!isPro && (
-                                <Link to="/pricing" className="mt-5 inline-flex items-center gap-2 text-xs font-bold text-[#FF2A54] hover:underline" data-testid="theme-upgrade-link">
+                                <Link to="/pricing" className="mt-5 inline-flex items-center gap-2 text-xs font-bold text-primary hover:underline" data-testid="theme-upgrade-link">
                                     <Crown className="w-3.5 h-3.5" /> Desbloquear todos os temas no Pro
                                 </Link>
                             )}
@@ -321,8 +321,8 @@ export default function Settings() {
 
                 <div className="glass rounded-2xl p-6 md:p-8">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                            <Bell className="w-5 h-5 text-[#FF2A54]" />
+                        <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                            <Bell className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                             <h2 className="font-display text-xl font-bold">Notificações Push</h2>
@@ -361,8 +361,8 @@ export default function Settings() {
 
                 <div className="glass rounded-2xl p-6 md:p-8">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                            <Smartphone className="w-5 h-5 text-[#FF2A54]" />
+                        <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                            <Smartphone className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1">
                             <h2 className="font-display text-xl font-bold">Instalar como app (PWA)</h2>
@@ -392,8 +392,8 @@ export default function Settings() {
 
                 <div className="glass rounded-2xl p-6 md:p-8" data-testid="import-trakt-card">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                            <Upload className="w-5 h-5 text-[#FF2A54]" />
+                        <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                            <Upload className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1">
                             <h2 className="font-display text-xl font-bold">
@@ -449,7 +449,7 @@ export default function Settings() {
                                         <div><span className="text-foreground/40">Bloqueadas (limite):</span> {importResults.trakt.skipped_cap}</div>
                                     </div>
                                     {importResults.trakt.skipped_cap > 0 && (
-                                        <Link to="/pricing" className="mt-3 inline-block text-xs font-bold text-[#FF2A54] hover:underline">
+                                        <Link to="/pricing" className="mt-3 inline-block text-xs font-bold text-primary hover:underline">
                                             🔓 Desbloquear ilimitado no Pro →
                                         </Link>
                                     )}
@@ -469,8 +469,8 @@ export default function Settings() {
 
                 <div className="glass rounded-2xl p-6 md:p-8" data-testid="import-letterboxd-card">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                            <Upload className="w-5 h-5 text-[#FF2A54]" />
+                        <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                            <Upload className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1">
                             <h2 className="font-display text-xl font-bold">
@@ -529,7 +529,7 @@ export default function Settings() {
                                         <div><span className="text-foreground/40">Bloqueadas (limite):</span> {importResults.letterboxd.skipped_cap}</div>
                                     </div>
                                     {importResults.letterboxd.skipped_cap > 0 && (
-                                        <Link to="/pricing" className="mt-3 inline-block text-xs font-bold text-[#FF2A54] hover:underline">
+                                        <Link to="/pricing" className="mt-3 inline-block text-xs font-bold text-primary hover:underline">
                                             🔓 Desbloquear ilimitado no Pro →
                                         </Link>
                                     )}
@@ -549,8 +549,8 @@ export default function Settings() {
 
                 <div className="glass rounded-2xl p-6 md:p-8" data-testid="export-ical-card">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                            <CalendarDays className="w-5 h-5 text-[#FF2A54]" />
+                        <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                            <CalendarDays className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                             <h2 className="font-display text-xl font-bold">Calendário (iCal)</h2>
@@ -593,8 +593,8 @@ export default function Settings() {
 
                 <div className="glass rounded-2xl p-6 md:p-8" data-testid="google-calendar-sync-card">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center shrink-0">
-                            <CalendarDays className="w-5 h-5 text-[#FF2A54]" />
+                        <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                            <CalendarDays className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                             <h2 className="font-display text-xl font-bold">Google Calendar (sincronização automática)</h2>

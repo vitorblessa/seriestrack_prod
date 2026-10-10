@@ -69,7 +69,7 @@ export default function AuthCallback() {
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
-            <Loader2 className="w-10 h-10 animate-spin text-[#FF2A54]" />
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
             <p className="mt-6 font-display font-bold text-lg">Conectando sua conta Google...</p>
             <p className="text-foreground/50 text-sm mt-1">Só um instante</p>
         </div>

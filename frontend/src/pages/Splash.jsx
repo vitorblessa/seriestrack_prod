@@ -52,7 +52,7 @@ export default function Splash() {
             <nav className="fixed top-0 inset-x-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border">
                 <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-4 flex items-center">
                     <div className="flex items-center gap-2">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shadow-[0_0_20px_rgba(255,42,84,0.4)]">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.4)]">
                             <Tv className="w-5 h-5" strokeWidth={2.5} />
                         </div>
                         <span className="font-display font-black text-xl tracking-tight">SeriesTrack</span>
@@ -87,13 +87,13 @@ export default function Splash() {
                 <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-10 py-20 md:py-32 w-full">
                     <div className="max-w-3xl animate-fade-up">
                         <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs font-bold uppercase tracking-[0.2em] text-white/80 mb-6">
-                            <Sparkles className="w-3 h-3 text-[#FF2A54]" />
+                            <Sparkles className="w-3 h-3 text-primary" />
                             Lançamento ao vivo via TMDB
                         </span>
                         <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.95] text-balance">
                             Suas séries.<br/>
                             <span className="text-white/60">Todos os streamings.</span><br/>
-                            <span className="bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] bg-clip-text text-transparent">Um só lugar.</span>
+                            <span className="bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">Um só lugar.</span>
                         </h1>
                         <p className="mt-8 text-lg md:text-xl text-white/70 leading-relaxed max-w-2xl">
                             Acompanhe automaticamente o lançamento de episódios em <span className="text-white font-semibold">Netflix, Prime Video, Disney+, Max, Apple TV+, Paramount+, Crunchyroll</span> e mais. Receba alertas, monte calendários e nunca perca uma estreia.
@@ -151,8 +151,8 @@ export default function Splash() {
                         { icon: Bell, title: "Alertas inteligentes", desc: "Notificações quando novos episódios saírem ou novas temporadas estrearem." },
                     ].map((f) => (
                         <div key={f.title} className="glass rounded-2xl p-8 hover:border-foreground/20 transition-all">
-                            <div className="w-12 h-12 rounded-xl bg-[#FF2A54]/15 border border-[#FF2A54]/30 flex items-center justify-center mb-5">
-                                <f.icon className="w-5 h-5 text-[#FF2A54]" />
+                            <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center mb-5">
+                                <f.icon className="w-5 h-5 text-primary" />
                             </div>
                             <h3 className="font-display text-xl font-bold mb-2">{f.title}</h3>
                             <p className="text-foreground/60 leading-relaxed text-sm">{f.desc}</p>
@@ -170,7 +170,7 @@ export default function Splash() {
                 >
                     <div className="flex items-end justify-between mb-6">
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Em alta agora</p>
+                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Em alta agora</p>
                             <h2 className="font-display text-3xl md:text-4xl font-bold mt-2">Trending da semana</h2>
                         </div>
                     </div>
@@ -227,7 +227,7 @@ export default function Splash() {
             {/* CTA */}
             <section className="py-24 px-6 md:px-10 max-w-[1400px] mx-auto">
                 <div className="glass rounded-3xl p-12 md:p-16 text-center relative overflow-hidden">
-                    <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-[#FF2A54]/20 blur-3xl" />
+                    <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-primary/20 blur-3xl" />
                     <div className="relative">
                         <h2 className="font-display text-4xl md:text-5xl font-black tracking-tight">
                             Pronto para nunca mais perder um episódio?

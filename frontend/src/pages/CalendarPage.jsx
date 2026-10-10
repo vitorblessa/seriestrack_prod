@@ -75,9 +75,9 @@ export default function CalendarPage() {
     return (
         <AppLayout>
             <section className="px-6 md:px-10 pt-10">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Calendário</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Calendário</p>
                 <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2 flex items-center gap-3">
-                    <CalIcon className="w-9 h-9 text-[#FF2A54]" /> Próximas estreias
+                    <CalIcon className="w-9 h-9 text-primary" /> Próximas estreias
                 </h1>
                 <p className="text-foreground/50 mt-2 max-w-2xl">Episódios das séries da sua biblioteca, organizados por data e por streaming.</p>
 
@@ -158,10 +158,10 @@ export default function CalendarPage() {
                         const dayEvents = dateStr ? eventsByDate[dateStr] || [] : [];
                         const isToday = dateStr === todayStr;
                         return (
-                            <div key={i} className={`bg-background min-h-[100px] md:min-h-[120px] p-2 ${isToday ? "ring-1 ring-[#FF2A54]/50 ring-inset" : ""}`}>
+                            <div key={i} className={`bg-background min-h-[100px] md:min-h-[120px] p-2 ${isToday ? "ring-1 ring-primary/50 ring-inset" : ""}`}>
                                 {d && (
                                     <>
-                                        <div className={`text-xs font-bold ${isToday ? "text-[#FF2A54]" : "text-foreground/60"}`}>{d.getDate()}</div>
+                                        <div className={`text-xs font-bold ${isToday ? "text-primary" : "text-foreground/60"}`}>{d.getDate()}</div>
                                         <div className="mt-1 space-y-1">
                                             {dayEvents.slice(0, 3).map((e, j) => (
                                                 <Link
@@ -189,7 +189,7 @@ export default function CalendarPage() {
                 <div className="mt-12">
                     <h2 className="font-display text-2xl md:text-3xl font-bold mb-6">Lista completa de próximos eps</h2>
                     {loading ? (
-                        <Loader2 className="w-6 h-6 animate-spin text-[#FF2A54]" />
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     ) : filteredEvents.length === 0 ? (
                         <div className="glass rounded-2xl py-16 px-6 text-center">
                             <p className="font-display text-xl font-bold">Nenhum episódio próximo encontrado.</p>
@@ -209,7 +209,7 @@ export default function CalendarPage() {
                                         {e.poster_url && <img src={e.poster_url} alt="" className="w-full h-full object-cover" />}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#FF2A54]">{e.air_date}</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary">{e.air_date}</p>
                                         <p className="font-display font-bold text-lg mt-1">{e.series_name}</p>
                                         <p className="text-foreground/70 text-sm">T{e.season_number}·E{e.episode_number} — {e.episode_name}</p>
                                         {e.providers?.length > 0 && (

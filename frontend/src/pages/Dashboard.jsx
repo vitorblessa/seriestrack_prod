@@ -99,7 +99,7 @@ export default function Dashboard() {
         return (
             <AppLayout>
                 <div className="min-h-[60vh] flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#FF2A54]" />
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
             </AppLayout>
         );
@@ -131,7 +131,7 @@ export default function Dashboard() {
                     </div>
                     <div className="relative h-full flex items-end px-6 md:px-10 pb-12 md:pb-16">
                         <div className="max-w-2xl animate-fade-up">
-                            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">
+                            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
                                 <Sparkles className="w-3 h-3" /> Em destaque agora
                             </span>
                             <h1 className="font-display text-4xl md:text-6xl font-black mt-3 tracking-tight leading-tight">
@@ -154,7 +154,7 @@ export default function Dashboard() {
             {/* Greeting */}
             <section className="px-6 md:px-10 mt-8">
                 <h2 className="font-display text-2xl md:text-3xl font-bold">
-                    Olá, <span className="text-[#FF2A54]">{user?.name?.split(" ")[0] || "fã de séries"}</span>!
+                    Olá, <span className="text-primary">{user?.name?.split(" ")[0] || "fã de séries"}</span>!
                 </h2>
                 <p className="text-foreground/50 text-sm mt-1">{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
             </section>
@@ -186,7 +186,7 @@ export default function Dashboard() {
                     <div className="flex items-end justify-between flex-wrap gap-4 mb-5">
                         <div>
                             <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
-                                <CalIcon className="w-6 h-6 text-[#FF2A54]" />
+                                <CalIcon className="w-6 h-6 text-primary" />
                                 {kind === "upcoming" ? "Próximos episódios" : "Recém lançados"}
                             </h2>
                             <p className="text-foreground/50 text-sm mt-1">Da sua biblioteca</p>
@@ -271,7 +271,7 @@ export default function Dashboard() {
                                         {e.poster_url && <img src={e.poster_url} alt="" className="w-full h-full object-cover" />}
                                     </div>
                                     <div className="p-4 flex-1 min-w-0">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#FF2A54]">{e.air_date}</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary">{e.air_date}</p>
                                         <p className="font-display font-bold text-base line-clamp-1 mt-1">{e.series_name}</p>
                                         <p className="text-foreground/60 text-sm">T{e.season_number}·E{e.episode_number}</p>
                                         <p className="text-foreground/50 text-xs mt-1 line-clamp-2">{e.episode_name}</p>

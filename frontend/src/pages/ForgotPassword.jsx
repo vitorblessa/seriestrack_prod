@@ -27,7 +27,7 @@ export default function ForgotPassword() {
         <div className="min-h-screen flex items-center justify-center p-6">
             <div className="w-full max-w-md animate-fade-up">
                 <Link to="/login" className="flex items-center gap-2 mb-10">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                         <Tv className="w-5 h-5" strokeWidth={2.5} />
                     </div>
                     <span className="font-display font-black text-xl">SeriesTrack</span>
@@ -57,13 +57,13 @@ export default function ForgotPassword() {
                             </p>
                         </div>
 
-                        <Link to="/login" className="inline-block mt-8 text-[#FF2A54] hover:text-[#FF4D71] font-semibold">
+                        <Link to="/login" className="inline-block mt-8 text-primary hover:text-primary/80 font-semibold">
                             Voltar para o login
                         </Link>
                     </div>
                 ) : (
                     <form onSubmit={onSubmit}>
-                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Recuperar acesso</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Recuperar acesso</p>
                         <h1 className="font-display text-4xl font-black mt-2">Esqueceu a senha?</h1>
                         <p className="text-foreground/50 mt-3">
                             Informe seu e-mail e enviaremos um link para redefinir sua senha.
@@ -86,7 +86,7 @@ export default function ForgotPassword() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="voce@email.com"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-primary focus:bg-white/10 outline-none transition-all"
                                 />
                             </div>
                         </label>
@@ -103,7 +103,7 @@ export default function ForgotPassword() {
 
                         <p className="mt-6 text-sm text-center text-foreground/50">
                             Lembrou a senha?{" "}
-                            <Link to="/login" className="text-[#FF2A54] hover:text-[#FF4D71] font-semibold">Entrar</Link>
+                            <Link to="/login" className="text-primary hover:text-primary/80 font-semibold">Entrar</Link>
                         </p>
                     </form>
                 )}

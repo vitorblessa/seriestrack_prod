@@ -73,10 +73,10 @@ export default function Pricing() {
         <AppLayout>
             <section className="px-6 md:px-10 pt-10 pb-6 text-center max-w-4xl mx-auto">
                 <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs font-bold uppercase tracking-[0.2em] text-foreground/80">
-                    <Sparkles className="w-3 h-3 text-[#FF2A54]" /> Planos
+                    <Sparkles className="w-3 h-3 text-primary" /> Planos
                 </span>
                 <h1 className="font-display text-5xl md:text-7xl font-black tracking-tighter leading-[0.95] mt-6">
-                    Pra quem é fã <span className="bg-gradient-to-r from-[#FF2A54] to-[#FF8a6a] bg-clip-text text-transparent">de verdade</span>.
+                    Pra quem é fã <span className="bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">de verdade</span>.
                 </h1>
                 <p className="text-foreground/60 mt-6 text-lg max-w-2xl mx-auto">
                     Comece grátis. Faça upgrade quando seus 50 lugares na biblioteca acabarem ou quando quiser as features avançadas.
@@ -102,7 +102,7 @@ export default function Pricing() {
                     >
                         Anual
                         {yearlyDiscount > 0 && (
-                            <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-[#FF2A54] text-white text-[9px] font-black tracking-wide">
+                            <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-primary text-white text-[9px] font-black tracking-wide">
                                 -{yearlyDiscount}%
                             </span>
                         )}
@@ -139,11 +139,11 @@ export default function Pricing() {
                 </div>
 
                 {/* Pro */}
-                <div className="rounded-2xl p-8 flex flex-col relative bg-gradient-to-br from-[#FF2A54]/10 via-[#FF2A54]/5 to-transparent border border-[#FF2A54]/30 shadow-[0_30px_80px_-30px_rgba(255,42,84,0.4)]" data-testid="plan-card-pro">
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#FF2A54] text-white text-[10px] font-black tracking-[0.2em] uppercase shadow-lg">
+                <div className="rounded-2xl p-8 flex flex-col relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/30 shadow-[0_30px_80px_-30px_hsl(var(--primary)/0.4)]" data-testid="plan-card-pro">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-white text-[10px] font-black tracking-[0.2em] uppercase shadow-lg">
                         <Flame className="w-3 h-3 inline mr-1" /> Mais escolhido
                     </div>
-                    <div className="flex items-center gap-2 text-[#FF2A54] text-xs font-bold uppercase tracking-[0.2em]">
+                    <div className="flex items-center gap-2 text-primary text-xs font-bold uppercase tracking-[0.2em]">
                         <Crown className="w-4 h-4" /> Pro
                     </div>
                     <h2 className="font-display text-3xl font-black mt-4">SeriesTrack Pro</h2>
@@ -162,7 +162,7 @@ export default function Pricing() {
                                 <span className="text-foreground/60 text-sm">/{period === "monthly" ? "mês" : "ano"}</span>
                             </div>
                             {period === "yearly" && yearlyMonthEq && (
-                                <p className="text-[#FF8a8a] text-xs font-semibold mt-1">
+                                <p className="text-primary/80 text-xs font-semibold mt-1">
                                     Apenas R$ {yearlyMonthEq}/mês — economize {yearlyDiscount}%
                                 </p>
                             )}
@@ -173,7 +173,7 @@ export default function Pricing() {
                     <ul className="mt-6 space-y-2.5 flex-1">
                         {FEATURES_PRO.map((f) => (
                             <li key={f} className="text-foreground text-sm flex items-start gap-2">
-                                <Check className="w-4 h-4 text-[#FF2A54] shrink-0 mt-0.5" />
+                                <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                                 {f}
                             </li>
                         ))}
@@ -182,7 +182,7 @@ export default function Pricing() {
                         onClick={startCheckout}
                         disabled={busy || isPro}
                         data-testid="pricing-cta-pro"
-                        className="mt-8 w-full px-6 py-3.5 rounded-full bg-[#FF2A54] hover:bg-[#FF4D71] text-white text-sm font-black tracking-wide uppercase transition-all disabled:opacity-60 inline-flex items-center justify-center gap-2 shadow-[0_10px_40px_-10px_rgba(255,42,84,0.6)]"
+                        className="mt-8 w-full px-6 py-3.5 rounded-full bg-primary hover:bg-primary/90 text-white text-sm font-black tracking-wide uppercase transition-all disabled:opacity-60 inline-flex items-center justify-center gap-2 shadow-[0_10px_40px_-10px_hsl(var(--primary)/0.6)]"
                     >
                         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
                         {isPro ? "Você já é Pro 💎" : "Assinar Pro agora"}

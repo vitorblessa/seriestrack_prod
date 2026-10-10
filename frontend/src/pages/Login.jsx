@@ -39,7 +39,7 @@ export default function Login() {
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#0A0A0C] via-[#0A0A0C]/40 to-transparent" />
                 <div className="absolute bottom-12 left-12 right-12">
                     <div className="flex items-center gap-2 mb-6">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                             <Tv className="w-5 h-5" strokeWidth={2.5} />
                         </div>
                         <span className="font-display font-black text-2xl">SeriesTrack</span>
@@ -55,13 +55,13 @@ export default function Login() {
             <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12">
                 <form onSubmit={onSubmit} className="w-full max-w-md animate-fade-up">
                     <Link to="/" className="lg:hidden flex items-center gap-2 mb-10">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
                             <Tv className="w-5 h-5" strokeWidth={2.5} />
                         </div>
                         <span className="font-display font-black text-xl">SeriesTrack</span>
                     </Link>
 
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF2A54]">Bem-vindo de volta</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Bem-vindo de volta</p>
                     <h1 className="font-display text-4xl md:text-5xl font-black mt-2">Entrar</h1>
                     <p className="text-foreground/50 mt-3">Continue acompanhando suas séries onde parou.</p>
 
@@ -83,7 +83,7 @@ export default function Login() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="voce@email.com"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-primary focus:bg-white/10 outline-none transition-all"
                                 />
                             </div>
                         </label>
@@ -91,7 +91,7 @@ export default function Login() {
                         <label className="block">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">Senha</span>
-                                <Link to="/forgot-password" className="text-xs font-semibold text-[#FF2A54] hover:text-[#FF4D71]">
+                                <Link to="/forgot-password" className="text-xs font-semibold text-primary hover:text-primary/80">
                                     Esqueceu a senha?
                                 </Link>
                             </div>
@@ -104,7 +104,7 @@ export default function Login() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-[#FF2A54] focus:bg-white/10 outline-none transition-all"
+                                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/5 border border-border focus:border-primary focus:bg-white/10 outline-none transition-all"
                                 />
                             </div>
                         </label>
@@ -138,7 +138,7 @@ export default function Login() {
 
                     <p className="mt-6 text-sm text-center text-foreground/50">
                         Ainda não tem conta?{" "}
-                        <Link to="/register" className="text-[#FF2A54] hover:text-[#FF4D71] font-semibold">Criar agora</Link>
+                        <Link to="/register" className="text-primary hover:text-primary/80 font-semibold">Criar agora</Link>
                     </p>
                 </form>
             </div>

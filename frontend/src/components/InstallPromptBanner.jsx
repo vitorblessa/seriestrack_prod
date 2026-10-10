@@ -80,10 +80,10 @@ export default function InstallPromptBanner() {
         <>
             <div
                 data-testid="install-banner"
-                className="fixed left-3 right-3 bottom-3 md:left-auto md:right-6 md:bottom-6 md:w-96 z-[60] glass rounded-2xl p-4 shadow-[0_20px_60px_-15px_rgba(255,42,84,0.35)] border border-[#FF2A54]/30 animate-slide-up"
+                className="fixed left-3 right-3 bottom-3 md:left-auto md:right-6 md:bottom-6 md:w-96 z-[60] glass rounded-2xl p-4 shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.35)] border border-primary/30 animate-slide-up"
             >
                 <div className="flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF2A54] to-[#7c1531] flex items-center justify-center shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shrink-0">
                         <Smartphone className="w-5 h-5 text-white" strokeWidth={2.5} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -123,15 +123,15 @@ export default function InstallPromptBanner() {
                         </div>
                         <ol className="space-y-3 text-sm text-foreground/80">
                             <li className="flex items-start gap-3">
-                                <span className="w-6 h-6 rounded-full bg-[#FF2A54] text-white flex items-center justify-center text-xs font-black shrink-0">1</span>
+                                <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black shrink-0">1</span>
                                 <span>Toque no ícone <Share className="w-4 h-4 inline mx-1 -mt-0.5" /> <b>Compartilhar</b> na barra do Safari.</span>
                             </li>
                             <li className="flex items-start gap-3">
-                                <span className="w-6 h-6 rounded-full bg-[#FF2A54] text-white flex items-center justify-center text-xs font-black shrink-0">2</span>
+                                <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black shrink-0">2</span>
                                 <span>Role e toque em <b>&quot;Adicionar à Tela de Início&quot;</b>.</span>
                             </li>
                             <li className="flex items-start gap-3">
-                                <span className="w-6 h-6 rounded-full bg-[#FF2A54] text-white flex items-center justify-center text-xs font-black shrink-0">3</span>
+                                <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-black shrink-0">3</span>
                                 <span>Toque em <b>Adicionar</b>. Pronto — o SeriesTrack vira um app na sua tela inicial.</span>
                             </li>
                         </ol>

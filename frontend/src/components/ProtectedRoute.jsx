@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }) {
     if (!bootstrapped) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-obsidian">
-                <Loader2 className="w-8 h-8 animate-spin text-[#FF2A54]" />
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         );
     }
