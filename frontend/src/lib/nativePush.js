@@ -14,22 +14,28 @@
 import { Capacitor } from "@capacitor/core";
 import api from "./api";
 
-let installed = false;
+let listenersAttached = false;
+// True once a token has actually reached the backend successfully. Used to
+// skip redundant retries — e.g. App.js calls ensureNativePushRegistered()
+// again on every login, but there's nothing to do once it already worked.
+let registered = false;
 
 /**
- * @param {boolean} manual When true (user tapped a "reactivate" button in
- * Settings), returns a Promise that resolves only once the token actually
- * reached the backend (or rejects with a human-readable reason) — unlike the
- * silent, fire-and-forget auto path below, the Settings UI needs a real
- * success/failure to report back to the user.
+ * Always waits for the real outcome (token requested → backend accepted it)
+ * instead of firing-and-forgetting — the original auto path used to resolve
+ * as soon as PushNotifications.register() was *called*, without waiting to
+ * see whether the token ever reached the backend. That silently dropped the
+ * registration whenever it ran before login finished (the POST 401'd with
+ * nothing retrying it), which is exactly why notifications only worked after
+ * manually tapping "Reativar notificações" in Settings — not intuitive, and
+ * now fixed by retrying automatically on login (see ensureNativePushRegistered).
  */
-async function doRegister(navigate, manual = false) {
+async function doRegister(navigate) {
     let PushNotifications;
     try {
         ({ PushNotifications } = await import("@capacitor/push-notifications"));
     } catch {
-        if (manual) throw new Error("Push nativo não disponível nesta versão do app.");
-        return; // plugin not bundled in this build — nothing to do
+        throw new Error("Push nativo não disponível nesta versão do app.");
     }
 
     let perm = await PushNotifications.checkPermissions();
@@ -37,76 +43,87 @@ async function doRegister(navigate, manual = false) {
         perm = await PushNotifications.requestPermissions();
     }
     if (perm.receive !== "granted") {
-        if (manual) throw new Error("Permissão de notificações negada nas configurações do Android.");
-        return; // user declined — respect it, don't nag here
+        throw new Error("Permissão de notificações negada nas configurações do Android.");
     }
 
-    // Tapping a notification while the app is backgrounded/closed — route to
-    // the series page the same way Web Push's `url` payload does. Registered
-    // every call (auto or manual); harmless if it ends up attached twice.
-    PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-        const url = action.notification?.data?.url;
-        if (url && navigate) navigate(url);
-    });
-
-    if (!manual) {
-        PushNotifications.addListener("registration", async (token) => {
-            try {
-                // Fails soft (e.g. 401 if the user hasn't logged in yet) — the
-                // token is re-sent on the next app launch, no retry loop needed.
-                await api.post("/push/register_fcm_token", { token: token.value });
-            } catch {}
+    if (!listenersAttached) {
+        listenersAttached = true;
+        // Tapping a notification while the app is backgrounded/closed — route
+        // to the series page the same way Web Push's `url` payload does.
+        PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
+            const url = action.notification?.data?.url;
+            if (url && navigate) navigate(url);
         });
-        PushNotifications.addListener("registrationError", (err) => {
-            console.warn("FCM registration failed:", err);
-        });
-        await PushNotifications.register();
-        return;
     }
 
-    // Manual path: wait for the real outcome instead of failing soft.
     return new Promise((resolve, reject) => {
         let settled = false;
-        PushNotifications.addListener("registration", async (token) => {
+        let regHandle, errHandle;
+        const cleanup = () => {
+            regHandle?.then((h) => h.remove()).catch(() => {});
+            errHandle?.then((h) => h.remove()).catch(() => {});
+        };
+
+        regHandle = PushNotifications.addListener("registration", async (token) => {
             if (settled) return;
+            settled = true;
             try {
                 await api.post("/push/register_fcm_token", { token: token.value });
-                settled = true;
+                registered = true;
                 resolve();
             } catch {
-                settled = true;
                 reject(new Error("Token obtido, mas o servidor recusou o registro."));
+            } finally {
+                cleanup();
             }
         });
-        PushNotifications.addListener("registrationError", () => {
+        errHandle = PushNotifications.addListener("registrationError", () => {
             if (settled) return;
             settled = true;
             reject(new Error("Não foi possível obter um token de notificações do Google Play Services."));
+            cleanup();
         });
         PushNotifications.register();
     });
 }
 
-/** Auto path — called once on app launch (see App.js). Silent, best-effort. */
+/**
+ * Called once on app launch (see App.js) — silent, best-effort. Often runs
+ * before the user is logged in (token POST would 401), so this alone isn't
+ * enough; ensureNativePushRegistered() below covers that case.
+ */
 export async function registerNativePush(navigate) {
-    if (installed || !Capacitor.isNativePlatform()) return;
-    installed = true;
+    if (!Capacitor.isNativePlatform()) return;
     try {
-        await doRegister(navigate, false);
+        await doRegister(navigate);
     } catch (e) {
         console.warn("Native push setup failed:", e);
     }
 }
 
 /**
- * Manual path — called from a "Reativar notificações" button in Settings so
- * the user (and support) can recover from the auto path failing silently
- * (e.g. the token arrived before login finished, so the backend POST 401'd
- * and was never retried). Throws with a message safe to show in a toast.
+ * Called whenever the user becomes authenticated (see App.js's effect on
+ * `user` from useAuth()) — covers both a fresh login/register and a token
+ * restored from storage on relaunch. Silent no-op once already registered
+ * successfully, so this is safe to call on every login.
+ */
+export async function ensureNativePushRegistered(navigate) {
+    if (registered || !Capacitor.isNativePlatform()) return;
+    try {
+        await doRegister(navigate);
+    } catch (e) {
+        console.warn("Native push registration retry failed:", e);
+    }
+}
+
+/**
+ * Manual path — the "Reativar notificações" button in Settings. Same logic
+ * as the two above, but throws so the UI can show a real error (denied
+ * permission, no Play Services, etc.) instead of failing silently.
  */
 export async function reregisterNativePush(navigate) {
     if (!Capacitor.isNativePlatform()) {
         throw new Error("Disponível só dentro do app instalado.");
     }
-    await doRegister(navigate, true);
+    await doRegister(navigate);
 }

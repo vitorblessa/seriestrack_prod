@@ -2,13 +2,13 @@ import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import "@/App.css";
 import "./themes.css";
-import { AuthProvider } from "./lib/auth";
+import { AuthProvider, useAuth } from "./lib/auth";
 import { ThemeProvider, useTheme } from "./lib/theme";
 import { Toaster } from "sonner";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { registerSW } from "./lib/push";
 import { installNativeBridge } from "./lib/native";
-import { registerNativePush } from "./lib/nativePush";
+import { registerNativePush, ensureNativePushRegistered } from "./lib/nativePush";
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -45,10 +45,19 @@ registerSW();
  */
 function NativeBridge() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     useEffect(() => {
         installNativeBridge(navigate);
         registerNativePush(navigate);
     }, [navigate]);
+    // Login (or a restored session) often happens AFTER the app-launch
+    // registration above already tried and failed — that POST needs a valid
+    // token, which doesn't exist yet on first launch. Retrying here (no-op
+    // once it already succeeded) is what used to require manually tapping
+    // "Reativar notificações" in Settings; this makes it automatic.
+    useEffect(() => {
+        if (user) ensureNativePushRegistered(navigate);
+    }, [user, navigate]);
     return null;
 }
 
