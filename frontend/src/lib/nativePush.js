@@ -54,6 +54,40 @@ async function doRegister(navigate) {
             const url = action.notification?.data?.url;
             if (url && navigate) navigate(url);
         });
+
+        // Android only auto-shows a system-tray entry for a push message when
+        // the app is backgrounded/closed. While the app is open, this event
+        // still fires, but nothing appears unless we display it ourselves —
+        // so mirror it as a local notification for foreground parity.
+        PushNotifications.addListener("pushNotificationReceived", async (notification) => {
+            try {
+                const { LocalNotifications } = await import("@capacitor/local-notifications");
+                await LocalNotifications.schedule({
+                    notifications: [
+                        {
+                            id: Math.floor(Math.random() * 2147483647),
+                            title: notification.title || "SeriesTrack",
+                            body: notification.body || "",
+                            extra: notification.data,
+                        },
+                    ],
+                });
+            } catch (e) {
+                console.warn("Could not show foreground notification:", e);
+            }
+        });
+
+        // Tapping one of the locally-mirrored notifications above — same
+        // routing as pushNotificationActionPerformed, just a different event
+        // name/shape (LocalNotifications nests the payload under `extra`).
+        import("@capacitor/local-notifications")
+            .then(({ LocalNotifications }) => {
+                LocalNotifications.addListener("localNotificationActionPerformed", (action) => {
+                    const url = action.notification?.extra?.url;
+                    if (url && navigate) navigate(url);
+                });
+            })
+            .catch(() => {});
     }
 
     return new Promise((resolve, reject) => {
