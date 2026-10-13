@@ -49,7 +49,10 @@ export default function Splash() {
     return (
         <div className="min-h-screen bg-background text-foreground overflow-hidden">
             {/* Top nav */}
-            <nav className="fixed top-0 inset-x-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border">
+            <nav
+                className="fixed top-0 inset-x-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border"
+                style={{ paddingTop: "env(safe-area-inset-top)" }}
+            >
                 <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-4 flex items-center">
                     <div className="flex items-center gap-2">
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.4)]">
