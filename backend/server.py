@@ -54,6 +54,11 @@ app.add_middleware(
     allow_credentials=False,  # cross-origin uses Authorization: Bearer, not cookies
     allow_methods=["*"],
     allow_headers=["*"],
+    # Browsers hide all but a small safe-list of response headers from JS by
+    # default — without this, frontend code reading res.headers["content-
+    # disposition"] (account export's suggested filename, routes/account.py)
+    # silently gets undefined on every cross-origin request.
+    expose_headers=["Content-Disposition"],
 )
 
 

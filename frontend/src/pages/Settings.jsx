@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import AppLayout from "../components/AppLayout";
-import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink, Palette, Crown, Lock, RefreshCw, Unlink, Sun, Moon } from "lucide-react";
+import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink, Palette, Crown, Lock, RefreshCw, Unlink, Sun, Moon, Download, FileJson, FileSpreadsheet } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { getPushStatus, subscribePush, unsubscribePush, sendTestPush } from "../lib/push";
 import { reregisterNativePush } from "../lib/nativePush";
@@ -184,6 +184,39 @@ export default function Settings() {
             toast.success("URL revogada — quem tinha o link perdeu acesso");
         } catch {
             toast.error("Erro ao revogar");
+        }
+    };
+
+    // ---------------------- Exportar dados (LGPD, Art. 18 IX — portabilidade) ----------------------
+    const [exportFormat, setExportFormat] = useState("json");
+    const [exporting, setExporting] = useState(false);
+
+    const exportData = async () => {
+        setExporting(true);
+        try {
+            const res = await api.get("/account/export", {
+                params: { format: exportFormat },
+                responseType: "blob",
+            });
+            const disposition = res.headers["content-disposition"] || "";
+            const match = disposition.match(/filename="?([^"]+)"?/);
+            const filename = match
+                ? match[1]
+                : (exportFormat === "csv" ? "seriestrack-biblioteca.csv" : "seriestrack-dados.json");
+            const blob = new Blob([res.data], { type: exportFormat === "csv" ? "text/csv" : "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success(`${filename} baixado com sucesso`);
+        } catch {
+            toast.error("Erro ao exportar seus dados");
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -656,6 +689,59 @@ export default function Settings() {
                                     </button>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+                <div className="glass rounded-2xl p-6 md:p-8" data-testid="export-data-card">
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                            <Download className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h2 className="font-display text-xl font-bold">Seus dados</h2>
+                            <p className="text-foreground/60 text-sm mt-1">
+                                Baixe uma cópia de tudo que guardamos sobre você (LGPD, Art. 18 — portabilidade de dados).
+                            </p>
+
+                            <div className="mt-4 space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setExportFormat("json")}
+                                    data-testid="export-format-json"
+                                    className={`w-full flex items-start gap-3 text-left p-3.5 rounded-xl border transition-colors ${
+                                        exportFormat === "json" ? "border-primary/50 bg-primary/8" : "border-border bg-muted"
+                                    }`}
+                                >
+                                    <FileJson className={`w-4 h-4 mt-0.5 shrink-0 ${exportFormat === "json" ? "text-primary" : "text-foreground/40"}`} />
+                                    <span>
+                                        <span className="block text-sm font-bold">Tudo (JSON)</span>
+                                        <span className="block text-xs text-foreground/50 mt-0.5">
+                                            Perfil, biblioteca, progresso de episódios, resenhas e histórico — formato completo para portabilidade.
+                                        </span>
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setExportFormat("csv")}
+                                    data-testid="export-format-csv"
+                                    className={`w-full flex items-start gap-3 text-left p-3.5 rounded-xl border transition-colors ${
+                                        exportFormat === "csv" ? "border-primary/50 bg-primary/8" : "border-border bg-muted"
+                                    }`}
+                                >
+                                    <FileSpreadsheet className={`w-4 h-4 mt-0.5 shrink-0 ${exportFormat === "csv" ? "text-primary" : "text-foreground/40"}`} />
+                                    <span>
+                                        <span className="block text-sm font-bold">Só a biblioteca (CSV)</span>
+                                        <span className="block text-xs text-foreground/50 mt-0.5">
+                                            Uma planilha com suas séries, status e datas — abre direto no Excel ou Google Sheets.
+                                        </span>
+                                    </span>
+                                </button>
+                            </div>
+
+                            <button onClick={exportData} disabled={exporting} data-testid="export-data-btn" className="btn-primary text-sm mt-4">
+                                {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                                Baixar arquivo
+                            </button>
                         </div>
                     </div>
                 </div>

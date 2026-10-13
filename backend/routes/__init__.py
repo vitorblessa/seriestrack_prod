@@ -12,6 +12,7 @@ from .imports import router as imports_router
 from .preferences import router as preferences_router
 from .wrapped import router as wrapped_router
 from .admin import router as admin_router
+from .account import router as account_router
 
 
 api_router = APIRouter(prefix="/api")
@@ -27,6 +28,7 @@ api_router.include_router(imports_router)
 api_router.include_router(preferences_router)
 api_router.include_router(wrapped_router)
 api_router.include_router(admin_router)
+api_router.include_router(account_router)
 
 
 @api_router.get("/")
