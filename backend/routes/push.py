@@ -69,17 +69,32 @@ async def push_register_fcm_token(payload: FcmTokenIn, user: dict = Depends(get_
     (not endpoint/keys) for dedup. `endpoint` is set to a synthetic
     "fcm:<token>" value purely so the existing unique index on
     (user_id, endpoint) still applies — _send_push below branches on
-    `platform` before ever touching `endpoint` for real."""
+    `platform` before ever touching `endpoint` for real.
+
+    Every reinstall of the app (debug APK over debug APK, during testing,
+    or just a normal reinstall) gets issued a BRAND NEW FCM token — the old
+    one is never invalidated server-side, so without this it just piles up
+    as a second (third, fourth...) subscription that still happily receives
+    pushes. Android defers delivery to an idle/rarely-used app in batches,
+    so those stale tokens end up delivering the SAME old push hours apart —
+    which looks like "the notification keeps randomly coming back" even
+    though nothing new was sent. Assumes one Android device per account
+    (true for this app today); replacing the old token on every fresh
+    registration keeps exactly one FCM subscription alive at a time."""
     user_id = str(user["_id"])
+    new_endpoint = f"fcm:{payload.token}"
     doc = {
         "user_id": user_id,
-        "endpoint": f"fcm:{payload.token}",
+        "endpoint": new_endpoint,
         "platform": "fcm",
         "fcm_token": payload.token,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
+    await db.push_subscriptions.delete_many({
+        "user_id": user_id, "platform": "fcm", "endpoint": {"$ne": new_endpoint},
+    })
     await db.push_subscriptions.update_one(
-        {"user_id": user_id, "endpoint": doc["endpoint"]},
+        {"user_id": user_id, "endpoint": new_endpoint},
         {"$set": doc},
         upsert=True,
     )

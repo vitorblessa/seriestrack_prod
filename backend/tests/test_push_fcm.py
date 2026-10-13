@@ -41,6 +41,28 @@ async def test_register_fcm_token_upserts_subscription(client):
     assert count == 1
 
 
+@pytest.mark.asyncio
+async def test_register_fcm_token_replaces_stale_token(client):
+    """Reinstalling the app issues a brand new FCM token — the old one must
+    be dropped, not kept alongside it. Otherwise a stale token (still valid
+    for a while after reinstall) keeps receiving pushes, and Android's
+    battery-saving delivery batching for a rarely-used app makes that look
+    like the same old notification randomly reappearing hours later."""
+    data = await register_user(client, "fcmreinstall@example.com")
+    headers = auth_headers(data["access_token"])
+
+    await client.post("/api/push/register_fcm_token", json={"token": "OLD_TOKEN"}, headers=headers)
+    r = await client.post("/api/push/register_fcm_token", json={"token": "NEW_TOKEN"}, headers=headers)
+    assert r.status_code == 200, r.text
+
+    subs = await db.push_subscriptions.find({"user_id": data["user"]["id"], "platform": "fcm"}).to_list(10)
+    assert len(subs) == 1
+    assert subs[0]["fcm_token"] == "NEW_TOKEN"
+
+    old = await db.push_subscriptions.find_one({"user_id": data["user"]["id"], "fcm_token": "OLD_TOKEN"})
+    assert old is None
+
+
 def test_send_push_dispatches_fcm_subs_to_send_fcm(monkeypatch):
     """A sub with platform="fcm" must be routed to core.fcm.send_fcm, never
     to the Web Push (pywebpush) branch — the two have incompatible payload
