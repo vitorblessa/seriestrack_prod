@@ -55,7 +55,7 @@ jobs:
           ls -lh backup/
 
       - name: Upload backup artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mongodb-backup-${{ github.run_id }}
           path: backup/*.gz

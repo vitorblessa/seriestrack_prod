@@ -32,7 +32,7 @@ jobs:
 
       - name: Guardar screenshot em caso de erro
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: erro-screenshot
           path: erro.png
