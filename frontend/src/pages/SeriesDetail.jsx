@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../lib/api";
+import {
+    getCache, setCache, addOrUpdateLibrary, removeFromLibraryQueued,
+    setProgressQueued, bulkProgressQueued,
+} from "../lib/offlineQueue";
 import AppLayout from "../components/AppLayout";
 import PosterCard from "../components/PosterCard";
 import StreamBadge from "../components/StreamBadge";
@@ -11,6 +15,31 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs"
 import { toast } from "sonner";
 import SeriesReviews from "../components/SeriesReviews";
 import { useAuth } from "../lib/auth";
+
+// Local stand-ins for what GET /progress/{id}/summary would compute,
+// used only while offline (queued action) so the UI doesn't wait for a
+// round trip that can't happen yet. Mirrors backend/routes/library.py's
+// progress_summary math exactly.
+function recomputeTotals(prev, seasons) {
+    const total_watched = seasons.reduce((a, se) => a + se.watched, 0);
+    const total_episodes = seasons.reduce((a, se) => a + se.total, 0);
+    return {
+        ...prev,
+        seasons,
+        total_watched,
+        total_episodes,
+        percent: total_episodes ? Math.round((total_watched / total_episodes) * 100) : 0,
+    };
+}
+
+function adjustSummary(prev, seasonNumber, delta) {
+    const seasons = prev.seasons.map((se) => {
+        if (se.season_number !== seasonNumber) return se;
+        const watched = Math.max(0, Math.min(se.total, se.watched + delta));
+        return { ...se, watched, percent: se.total ? Math.round((watched / se.total) * 100) : 0 };
+    });
+    return recomputeTotals(prev, seasons);
+}
 
 const STATUSES = [
     { key: "watching", label: "Assistindo", icon: Play },
@@ -40,19 +69,37 @@ export default function SeriesDetail() {
                 const { data } = await api.get(`/series/${id}`);
                 if (cancelled) return;
                 setSeries(data);
+                setCache(`series:${id}`, data);
                 if (data.seasons && data.seasons.length > 0) {
                     setSeasonNum(data.seasons[0].season_number);
                 }
-            } catch {
-                toast.error("Não foi possível carregar a série");
+            } catch (e) {
+                // No connection — show whatever we last cached for this
+                // series instead of a dead end (likely reached by tapping a
+                // poster in the already-cached library list).
+                const cached = !e?.response && getCache(`series:${id}`);
+                if (cached && !cancelled) {
+                    setSeries(cached);
+                    if (cached.seasons?.length > 0) setSeasonNum(cached.seasons[0].season_number);
+                } else {
+                    toast.error("Não foi possível carregar a série");
+                }
             } finally {
                 if (!cancelled) setLoading(false);
             }
             try {
                 const { data: lib } = await api.get(`/library/contains/${id}`);
                 if (!cancelled) setInLib(lib.in_library ? lib.item : false);
-            } catch {
-                if (!cancelled) setInLib(false);
+            } catch (e) {
+                if (cancelled) return;
+                if (!e?.response) {
+                    // Derive from the cached library list instead of assuming "not in library".
+                    const cachedLib = getCache("library", []);
+                    const item = cachedLib.find((x) => x.tmdb_id === Number(id));
+                    setInLib(item || false);
+                } else {
+                    setInLib(false);
+                }
             }
             // Load episode progress (only if logged in)
             if (user) {
@@ -64,8 +111,17 @@ export default function SeriesDetail() {
                     if (!cancelled) {
                         setProgress(new Set(prog.map((p) => `${p.season}-${p.episode}`)));
                         setProgressSummary(sum);
+                        setCache(`progress:${id}`, prog);
+                        setCache(`progress_summary:${id}`, sum);
                     }
-                } catch {}
+                } catch (e) {
+                    if (!e?.response && !cancelled) {
+                        const cachedProg = getCache(`progress:${id}`);
+                        const cachedSum = getCache(`progress_summary:${id}`);
+                        if (cachedProg) setProgress(new Set(cachedProg.map((p) => `${p.season}-${p.episode}`)));
+                        if (cachedSum) setProgressSummary(cachedSum);
+                    }
+                }
             }
         }
         load();
@@ -79,7 +135,15 @@ export default function SeriesDetail() {
             setSeasonLoading(true);
             try {
                 const { data } = await api.get(`/series/${id}/season/${seasonNum}`);
-                if (!cancelled) setSeason(data);
+                if (!cancelled) {
+                    setSeason(data);
+                    setCache(`season:${id}:${seasonNum}`, data);
+                }
+            } catch (e) {
+                if (!e?.response && !cancelled) {
+                    const cached = getCache(`season:${id}:${seasonNum}`);
+                    if (cached) setSeason(cached);
+                }
             } finally {
                 if (!cancelled) setSeasonLoading(false);
             }
@@ -91,7 +155,7 @@ export default function SeriesDetail() {
     const setStatus = async (status) => {
         setActLoading(true);
         try {
-            await api.post("/library", {
+            const { queued } = await addOrUpdateLibrary({
                 tmdb_id: Number(id),
                 status,
                 name: series.name,
@@ -100,7 +164,11 @@ export default function SeriesDetail() {
                 overview: series.overview,
             });
             setInLib({ tmdb_id: Number(id), status, name: series.name });
-            toast.success(`Adicionada como "${STATUSES.find((s) => s.key === status).label}"`);
+            toast.success(
+                queued
+                    ? `Adicionada como "${STATUSES.find((s) => s.key === status).label}" (sincroniza quando a conexão voltar)`
+                    : `Adicionada como "${STATUSES.find((s) => s.key === status).label}"`
+            );
         } catch (e) {
             const detail = e?.response?.data?.detail;
             if (e?.response?.status === 402 && detail?.code === "library_cap_reached") {
@@ -122,9 +190,9 @@ export default function SeriesDetail() {
     const remove = async () => {
         setActLoading(true);
         try {
-            await api.delete(`/library/${id}`);
+            const { queued } = await removeFromLibraryQueued(Number(id));
             setInLib(false);
-            toast.success("Removida da biblioteca");
+            toast.success(queued ? "Removida (sincroniza quando a conexão voltar)" : "Removida da biblioteca");
         } catch {
             toast.error("Erro ao remover");
         } finally {
@@ -139,9 +207,25 @@ export default function SeriesDetail() {
         if (willWatch) next.add(key); else next.delete(key);
         setProgress(next);
         try {
-            await api.post("/progress", { tmdb_id: Number(id), season: s, episode: e, watched: willWatch });
-            const { data: sum } = await api.get(`/progress/${id}/summary`);
-            setProgressSummary(sum);
+            const { queued } = await setProgressQueued({ tmdb_id: Number(id), season: s, episode: e, watched: willWatch });
+            setCache(`progress:${id}`, Array.from(next).map((k) => {
+                const [sx, ex] = k.split("-").map(Number);
+                return { season: sx, episode: ex };
+            }));
+            if (!queued) {
+                const { data: sum } = await api.get(`/progress/${id}/summary`);
+                setProgressSummary(sum);
+                setCache(`progress_summary:${id}`, sum);
+            } else {
+                // Offline — no server round trip to get a fresh summary, so
+                // adjust the one we already have by the single episode delta.
+                setProgressSummary((prev) => {
+                    if (!prev) return prev;
+                    const updated = adjustSummary(prev, s, willWatch ? 1 : -1);
+                    setCache(`progress_summary:${id}`, updated);
+                    return updated;
+                });
+            }
         } catch {
             // revert
             const r = new Set(progress);
@@ -156,17 +240,50 @@ export default function SeriesDetail() {
         const sum = progressSummary?.seasons?.find((x) => x.season_number === s);
         const allWatched = sum && sum.total > 0 && sum.watched >= sum.total;
         const willWatch = !allWatched;
+        const total = sum?.total || 0;
         setBulkLoading(true);
         try {
-            await api.post("/progress/bulk", { tmdb_id: Number(id), season: s, watched: willWatch });
-            // Refresh both progress set and summary
-            const [{ data: prog }, { data: newSum }] = await Promise.all([
-                api.get(`/progress/${id}`),
-                api.get(`/progress/${id}/summary`),
-            ]);
-            setProgress(new Set(prog.map((p) => `${p.season}-${p.episode}`)));
-            setProgressSummary(newSum);
-            toast.success(willWatch ? `Temporada ${s} marcada como assistida` : `Temporada ${s} desmarcada`);
+            const { queued } = await bulkProgressQueued({ tmdb_id: Number(id), season: s, watched: willWatch });
+            if (!queued) {
+                // Refresh both progress set and summary
+                const [{ data: prog }, { data: newSum }] = await Promise.all([
+                    api.get(`/progress/${id}`),
+                    api.get(`/progress/${id}/summary`),
+                ]);
+                setProgress(new Set(prog.map((p) => `${p.season}-${p.episode}`)));
+                setProgressSummary(newSum);
+                setCache(`progress:${id}`, prog);
+                setCache(`progress_summary:${id}`, newSum);
+            } else {
+                // Offline — no episode list to confirm exact numbers against,
+                // so derive from the season total we already know about.
+                setProgress((prevSet) => {
+                    const next = new Set(prevSet);
+                    for (let e = 1; e <= total; e++) {
+                        const key = `${s}-${e}`;
+                        if (willWatch) next.add(key); else next.delete(key);
+                    }
+                    setCache(`progress:${id}`, Array.from(next).map((k) => {
+                        const [sx, ex] = k.split("-").map(Number);
+                        return { season: sx, episode: ex };
+                    }));
+                    return next;
+                });
+                setProgressSummary((prev) => {
+                    if (!prev) return prev;
+                    const seasons = prev.seasons.map((se) => se.season_number === s
+                        ? { ...se, watched: willWatch ? se.total : 0, percent: willWatch && se.total ? 100 : 0 }
+                        : se);
+                    const updated = recomputeTotals(prev, seasons);
+                    setCache(`progress_summary:${id}`, updated);
+                    return updated;
+                });
+            }
+            toast.success(
+                willWatch
+                    ? `Temporada ${s} marcada como assistida${queued ? " (sincroniza quando a conexão voltar)" : ""}`
+                    : `Temporada ${s} desmarcada`
+            );
         } catch {
             toast.error("Erro ao atualizar temporada");
         } finally {

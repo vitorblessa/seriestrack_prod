@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
+import { getCache, setCache, removeFromLibraryQueued, onActionDropped } from "../lib/offlineQueue";
 import AppLayout from "../components/AppLayout";
 import { Loader2, Play, Heart, Pause, CheckCircle2, Trash2, Library as LibIcon, Share2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
@@ -30,20 +31,43 @@ export default function MyLibrary() {
             ]);
             setItems(lib);
             setStats(st);
+            setCache("library", lib);
+            setCache("stats", st);
+        } catch (e) {
+            // No connection (or backend unreachable) — fall back to whatever
+            // was last successfully loaded, instead of an empty library.
+            if (!e?.response) {
+                const cachedLib = getCache("library");
+                const cachedStats = getCache("stats");
+                if (cachedLib) setItems(cachedLib);
+                if (cachedStats) setStats(cachedStats);
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => {
+        load();
+        // If a queued action (e.g. an add that hit the free-tier cap) gets
+        // dropped once we're back online, re-sync from the server so the
+        // list reflects what actually got saved, not the optimistic guess.
+        return onActionDropped(() => load());
+    }, []);
 
     const remove = async (tmdb_id) => {
+        // Optimistic: drop it from the UI right away either way; queued if
+        // there's no connection, sent immediately otherwise.
+        setItems((p) => p.filter((x) => x.tmdb_id !== tmdb_id));
+        setCache("library", getCache("library", []).filter((x) => x.tmdb_id !== tmdb_id));
         try {
-            await api.delete(`/library/${tmdb_id}`);
-            setItems((p) => p.filter((x) => x.tmdb_id !== tmdb_id));
-            toast.success("Removida da biblioteca");
-            const { data: st } = await api.get("/stats");
-            setStats(st);
+            const { queued } = await removeFromLibraryQueued(tmdb_id);
+            toast.success(queued ? "Removida (sincroniza quando a conexão voltar)" : "Removida da biblioteca");
+            if (!queued) {
+                const { data: st } = await api.get("/stats");
+                setStats(st);
+                setCache("stats", st);
+            }
         } catch {
             toast.error("Erro ao remover");
         }

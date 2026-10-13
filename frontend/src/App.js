@@ -9,6 +9,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { registerSW } from "./lib/push";
 import { installNativeBridge } from "./lib/native";
 import { registerNativePush, ensureNativePushRegistered } from "./lib/nativePush";
+import { watchNetwork } from "./lib/offlineQueue";
+import OfflineBanner from "./components/OfflineBanner";
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -49,6 +51,7 @@ function NativeBridge() {
     useEffect(() => {
         installNativeBridge(navigate);
         registerNativePush(navigate);
+        watchNetwork();
     }, [navigate]);
     // Login (or a restored session) often happens AFTER the app-launch
     // registration above already tried and failed — that POST needs a valid
@@ -97,6 +100,7 @@ export default function App() {
                     <ThemeProvider>
                         <NativeBridge />
                         <ThemedToaster />
+                        <OfflineBanner />
                         <InstallPromptBanner />
                         <Routes>
                             <Route path="/" element={<Splash />} />

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import api from "../lib/api";
+import { addOrUpdateLibrary } from "../lib/offlineQueue";
 
 /** Shown on the dashboard while the user's library is empty — a quick way to
  * seed it with one tap, instead of having to open each series' page first.
@@ -17,7 +17,7 @@ export default function StartLibrarySuggestions({ shows, onAdded }) {
         const tmdbId = show.id || show.tmdb_id;
         setAddingId(tmdbId);
         try {
-            await api.post("/library", {
+            const { queued } = await addOrUpdateLibrary({
                 tmdb_id: tmdbId,
                 status: "want",
                 name: show.name,
@@ -26,7 +26,11 @@ export default function StartLibrarySuggestions({ shows, onAdded }) {
                 overview: show.overview,
             });
             setAddedIds((prev) => new Set(prev).add(tmdbId));
-            toast.success(`"${show.name}" adicionada como "Quero ver"`);
+            toast.success(
+                queued
+                    ? `"${show.name}" adicionada (sincroniza quando a conexão voltar)`
+                    : `"${show.name}" adicionada como "Quero ver"`
+            );
             onAdded?.(tmdbId);
         } catch (e) {
             const detail = e?.response?.data?.detail;

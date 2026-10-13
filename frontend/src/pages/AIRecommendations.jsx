@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../lib/api";
+import { addOrUpdateLibrary } from "../lib/offlineQueue";
 import AppLayout from "../components/AppLayout";
 import { useAuth } from "../lib/auth";
 import { Sparkles, Loader2, Crown, Plus, Check, Star } from "lucide-react";
@@ -40,14 +41,18 @@ export default function AIRecommendations() {
 
     const addToLib = async (rec) => {
         try {
-            await api.post("/library", {
+            const { queued } = await addOrUpdateLibrary({
                 tmdb_id: rec.tmdb_id,
                 status: "want",
                 name: rec.name,
                 poster_url: rec.poster_url,
                 backdrop_url: rec.backdrop_url,
             });
-            toast.success(`${rec.name} adicionada como "Quero assistir"`);
+            toast.success(
+                queued
+                    ? `${rec.name} adicionada (sincroniza quando a conexão voltar)`
+                    : `${rec.name} adicionada como "Quero assistir"`
+            );
             setRecs((p) => p.map((r) => (r.tmdb_id === rec.tmdb_id ? { ...r, in_library: true } : r)));
         } catch (e) {
             const detail = e?.response?.data?.detail;
