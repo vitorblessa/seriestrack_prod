@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import AppLayout from "../components/AppLayout";
 import { Bell, BellOff, Smartphone, Loader2, Send, Check, Upload, CalendarDays, Copy, ExternalLink, Palette, Crown, Lock, RefreshCw, Unlink, Sun, Moon } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 import { getPushStatus, subscribePush, unsubscribePush, sendTestPush } from "../lib/push";
+import { reregisterNativePush } from "../lib/nativePush";
 import { toast } from "sonner";
 import api from "../lib/api";
 import { Link } from "react-router-dom";
@@ -18,6 +20,8 @@ export default function Settings() {
     const fileRef = useRef(null);
     const letterboxdFileRef = useRef(null);
     const isPro = user?.subscription_tier === "pro";
+    const isNative = Capacitor.isNativePlatform();
+    const [nativeBusy, setNativeBusy] = useState(false);
 
     const handleThemeChange = async (t) => {
         const requiresPro = PRO_THEMES.includes(t);
@@ -87,6 +91,18 @@ export default function Settings() {
             else toast.error("Não foi possível enviar");
         } catch (e) {
             toast.error("Erro ao testar");
+        }
+    };
+
+    const reactivateNative = async () => {
+        setNativeBusy(true);
+        try {
+            await reregisterNativePush();
+            toast.success("Notificações ativadas neste aparelho!");
+        } catch (e) {
+            toast.error(e.message || "Não foi possível ativar as notificações.");
+        } finally {
+            setNativeBusy(false);
         }
     };
 
@@ -327,9 +343,24 @@ export default function Settings() {
                         <div className="flex-1 min-w-0">
                             <h2 className="font-display text-xl font-bold">Notificações Push</h2>
                             <p className="text-foreground/60 text-sm mt-1">
-                                Receba alertas no navegador (mesmo com a aba fechada) sempre que novos episódios saírem.
+                                {isNative
+                                    ? "Receba alertas direto no celular, mesmo com o app totalmente fechado, sempre que novos episódios saírem."
+                                    : "Receba alertas no navegador (mesmo com a aba fechada) sempre que novos episódios saírem."}
                             </p>
-                            {status === null ? (
+                            {isNative ? (
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
+                                        <Check className="w-3.5 h-3.5" /> Push nativo neste aparelho
+                                    </span>
+                                    <button onClick={test} disabled={busy} data-testid="push-test-btn" className="btn-glass text-sm">
+                                        <Send className="w-4 h-4" /> Enviar teste
+                                    </button>
+                                    <button onClick={reactivateNative} disabled={nativeBusy} data-testid="push-reactivate-native-btn" className="btn-glass text-sm">
+                                        {nativeBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                                        Reativar notificações
+                                    </button>
+                                </div>
+                            ) : status === null ? (
                                 <Loader2 className="w-5 h-5 animate-spin text-foreground/40 mt-4" />
                             ) : !status.supported ? (
                                 <p className="text-amber-400 text-sm mt-4">Seu navegador não suporta web push.</p>
