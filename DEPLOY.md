@@ -100,9 +100,15 @@ Isso gera uma chave pública e uma privada. Guarde os dois valores.
 ## 7. Conectar os dois (CORS)
 
 Volte no Render, no serviço do backend, e edite a variável `CORS_ORIGINS`
-para a URL exata do Vercel (sem barra no final):
+para a URL exata do Vercel (sem barra no final), **incluindo também
+`https://localhost`** — é a origem que o WebView do app Android (Capacitor,
+`androidScheme: 'https'`, sem `server.url`) usa pra chamar a API. Sem isso,
+toda requisição feita de dentro do app instalado (login, biblioteca, etc.)
+falha com "Network Error" no cliente, mesmo com o backend funcionando
+normalmente — foi exatamente o que aconteceu ao testar o primeiro APK de
+debug com o login nativo do Google.
 ```
-CORS_ORIGINS=https://www.series-track.com
+CORS_ORIGINS=https://www.series-track.com,https://localhost
 ```
 Salve — o Render reinicia o serviço automaticamente.
 
