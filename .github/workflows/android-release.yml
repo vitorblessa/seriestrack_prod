@@ -99,7 +99,12 @@ jobs:
       - name: Build web bundle
         working-directory: frontend
         env:
-          REACT_APP_BACKEND_URL: ${{ secrets.REACT_APP_BACKEND_URL }}
+          # Same fallback android-debug-apk.yml already uses — this is the
+          # live production backend's public URL, not a secret, so a release
+          # build isn't blocked just because REACT_APP_BACKEND_URL was never
+          # added to the repo's Actions secrets. Still overridable by that
+          # secret if you ever point releases at a different backend.
+          REACT_APP_BACKEND_URL: ${{ secrets.REACT_APP_BACKEND_URL || 'https://seriestrack-backend-zfla.onrender.com' }}
           # OAuth client IDs are public identifiers (meant to appear in
           # client-side requests/bundles, unlike a client *secret*) — safe to
           # inline here. Same value Vercel injects for the web build.
@@ -107,7 +112,7 @@ jobs:
           CI: 'true'
         run: |
           if [ -z "$REACT_APP_BACKEND_URL" ]; then
-            echo "::error::REACT_APP_BACKEND_URL secret is missing — refusing to build with an empty backend URL."
+            echo "::error::REACT_APP_BACKEND_URL is empty — refusing to build with an empty backend URL."
             exit 1
           fi
           npm run build
