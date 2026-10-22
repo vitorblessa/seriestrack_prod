@@ -110,7 +110,7 @@ The workflow will:
 5. Run `./gradlew bundleRelease` with signing
 6. Upload the AAB as an artifact (30-day retention)
 7. Upload `mapping.txt` for R8 deobfuscation (90-day retention)
-8. If `PLAY_SERVICE_ACCOUNT_JSON` is set → upload to Play Console Internal track as draft
+8. If `PLAY_SERVICE_ACCOUNT_JSON` is set → upload to Play Console **Production** track as a draft release (still needs a manual "Publish" click in the console — nothing reaches real users automatically)
 
 **Manual trigger** (Actions tab → "Android Release Build" → Run workflow): supports optional `versionName` / `versionCode` overrides without editing gradle.
 
