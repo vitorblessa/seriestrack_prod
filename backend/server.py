@@ -62,6 +62,22 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def _security_headers(request: Request, call_next):
+    """Baseline security headers (OWASP secure-headers checklist). These are
+    response-only metadata — safe to add unconditionally, no behavior change
+    for any existing client. HSTS is scoped to Render's own domain duty since
+    Render terminates TLS in front of us; browsers ignore the header entirely
+    over plain HTTP anyway, so it's harmless even behind a proxy that forwards
+    http internally."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
 @app.on_event("startup")
 async def startup():
     try:
