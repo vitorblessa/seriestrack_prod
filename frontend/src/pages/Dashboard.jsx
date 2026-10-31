@@ -7,8 +7,9 @@ import PosterCard from "../components/PosterCard";
 import UpsellPreview from "../components/UpsellPreview";
 import OnboardingTour from "../components/OnboardingTour";
 import StartLibrarySuggestions from "../components/StartLibrarySuggestions";
+import HeroCarousel from "../components/HeroCarousel";
 import { useAuth } from "../lib/auth";
-import { Sparkles, TrendingUp, Loader2, Calendar as CalIcon, Play } from "lucide-react";
+import { TrendingUp, Loader2, Calendar as CalIcon } from "lucide-react";
 import { brandFor } from "../lib/providers";
 
 export default function Dashboard() {
@@ -56,7 +57,7 @@ export default function Dashboard() {
     }, []);
 
     const watching = library.filter((x) => x.status === "watching").map((x) => ({ id: x.tmdb_id, ...x }));
-    const featured = trending[0];
+    const featured = useMemo(() => trending.slice(0, 5), [trending]);
     const libraryIsEmpty = library.length === 0 && justAddedCount === 0;
     const suggestions = useMemo(() => {
         const seen = new Set();
@@ -119,37 +120,8 @@ export default function Dashboard() {
                 }}
             />
 
-            {/* Featured hero */}
-            {featured && (
-                <section className="relative h-[60vh] md:h-[72vh] -mb-8" data-testid="dashboard-featured">
-                    <div className="absolute inset-0">
-                        {featured.backdrop_url ? (
-                            <img src={featured.backdrop_url} alt="" className="w-full h-full object-cover" />
-                        ) : null}
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0C] via-[#0A0A0C]/60 to-transparent" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0C] via-[#0A0A0C]/50 to-transparent" />
-                    </div>
-                    <div className="relative h-full flex items-end px-6 md:px-10 pb-12 md:pb-16">
-                        <div className="max-w-2xl animate-fade-up">
-                            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                                <Sparkles className="w-3 h-3" /> Em destaque agora
-                            </span>
-                            <h1 className="font-display text-4xl md:text-6xl font-black mt-3 tracking-tight leading-tight">
-                                {featured.name}
-                            </h1>
-                            <p className="text-white/70 mt-4 line-clamp-3 text-base md:text-lg leading-relaxed">
-                                {featured.overview}
-                            </p>
-                            <div className="mt-6 flex gap-3">
-                                <Link to={`/series/${featured.id}`} className="btn-primary" data-testid="featured-cta">
-                                    <Play className="w-4 h-4 fill-white" /> Ver detalhes
-                                </Link>
-                                <Link to="/search" className="btn-glass">Explorar mais</Link>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            )}
+            {/* Featured hero — swipeable carousel of the top 5 trending shows */}
+            <HeroCarousel items={featured} />
 
             {/* Greeting */}
             <section className="px-6 md:px-10 mt-8">
