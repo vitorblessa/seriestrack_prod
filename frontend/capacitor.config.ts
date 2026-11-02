@@ -42,6 +42,13 @@ const config: CapacitorConfig = {
       backgroundColor: '#0A0A0C',
       overlaysWebView: false,
     },
+    // Small icon for notifications the app displays itself (foreground pushes
+    // mirrored via @capacitor/local-notifications). Must be a monochrome
+    // drawable — see res/drawable/ic_stat_seriestrack.xml.
+    LocalNotifications: {
+      smallIcon: 'ic_stat_seriestrack',
+      iconColor: '#FF2A54',
+    },
     GoogleAuth: {
       // The WEB OAuth client (same one REACT_APP_GOOGLE_CLIENT_ID holds for
       // the browser/PWA flow), NOT an Android client ID. Native Google

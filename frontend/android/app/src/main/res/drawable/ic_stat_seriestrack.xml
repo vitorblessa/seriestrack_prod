@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Notification small icon (status bar / notification shade).
+  Android renders this as a SILHOUETTE: only the alpha channel matters, every
+  colored pixel becomes a flat tint. So it must be a single-color shape on a
+  transparent background — a colored/full-bleed launcher icon collapses into a
+  solid blob or square. Same TV mark as the app logo, as white strokes.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- TV body -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round"
+        android:pathData="M4,7 L20,7 A2,2 0 0 1 22,9 L22,20 A2,2 0 0 1 20,22 L4,22 A2,2 0 0 1 2,20 L2,9 A2,2 0 0 1 4,7 Z" />
+    <!-- Antenna -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M17,2 L12,7 L7,2" />
+</vector>

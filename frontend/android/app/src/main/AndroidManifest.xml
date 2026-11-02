@@ -63,6 +63,16 @@
 
         </activity>
 
+        <!-- Small icon + accent color for pushes FCM shows itself (app in the
+             background/closed). Without these Android falls back to the launcher
+             icon, which it flattens into a solid square silhouette. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_seriestrack" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/colorAccent" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
