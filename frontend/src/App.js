@@ -1,15 +1,17 @@
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import "@/App.css";
 import "./themes.css";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { ThemeProvider, useTheme } from "./lib/theme";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { registerSW } from "./lib/push";
 import { installNativeBridge } from "./lib/native";
 import { registerNativePush, ensureNativePushRegistered } from "./lib/nativePush";
 import { watchNetwork } from "./lib/offlineQueue";
+import { getToken } from "./lib/api";
+import { syncSessionReminders, tokenExpiresAt, expiringSoon, describeLeft, onSessionNotificationTap } from "./lib/session";
 import OfflineBanner from "./components/OfflineBanner";
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
@@ -64,6 +66,42 @@ function NativeBridge() {
     return null;
 }
 
+/**
+ * Avisa que a sessão está para vencer: agenda as notificações no app Android
+ * e, faltando menos de 24h, mostra um aviso na tela com "Entrar novamente".
+ */
+function SessionWatcher() {
+    const navigate = useNavigate();
+    const { user, logout } = useAuth();
+    const logoutRef = useRef(logout);
+    logoutRef.current = logout;
+
+    useEffect(() => {
+        if (!user) return;
+        const token = getToken();
+        syncSessionReminders(token).catch((e) => console.warn("Session reminders failed:", e));
+        const left = expiringSoon(tokenExpiresAt(token));
+        if (left) {
+            toast.warning(`Sua sessão expira em ${describeLeft(left)}.`, {
+                id: "session-expiring",
+                description: "Entre novamente para continuar sem interrupções.",
+                duration: 15000,
+                action: {
+                    label: "Entrar novamente",
+                    onClick: async () => { await logoutRef.current(); navigate("/login"); },
+                },
+            });
+        }
+    }, [user, navigate]);
+
+    // Tocar no aviso "Sua sessão expirou" leva direto ao login.
+    useEffect(() => onSessionNotificationTap((extra) => {
+        if (extra?.expired) navigate("/login");
+    }), [navigate]);
+
+    return null;
+}
+
 /** Keeps sonner's own toast skin (separate from our CSS vars) in sync with
  * the light/dark preference from lib/theme.jsx. */
 function ThemedToaster() {
@@ -99,6 +137,7 @@ export default function App() {
                 <AuthProvider>
                     <ThemeProvider>
                         <NativeBridge />
+                        <SessionWatcher />
                         <ThemedToaster />
                         <OfflineBanner />
                         <InstallPromptBanner />

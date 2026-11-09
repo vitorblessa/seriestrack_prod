@@ -15,6 +15,24 @@ client.interceptors.request.use((config) => {
     return config;
 });
 
+// Sessão vencida (ou token recusado) durante o uso: limpa o token e avisa o
+// AuthProvider (lib/auth.jsx), que mostra "Sua sessão expirou" e leva ao login.
+// Pedidos de login/cadastro ficam de fora — ali o 401 é senha errada.
+export const SESSION_EXPIRED_EVENT = "seriestrack:session-expired";
+client.interceptors.response.use(
+    (res) => res,
+    (error) => {
+        const status = error?.response?.status;
+        const url = error?.config?.url || "";
+        const sentToken = Boolean(error?.config?.headers?.Authorization);
+        if (status === 401 && sentToken && !/\/auth\/(login|register|google)/.test(url)) {
+            localStorage.removeItem(TOKEN_KEY);
+            window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+        }
+        return Promise.reject(error);
+    },
+);
+
 export default client;
 
 export function setToken(t) {

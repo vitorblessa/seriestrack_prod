@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import api, { setToken, getToken } from "./api";
+import { toast } from "sonner";
+import api, { setToken, getToken, SESSION_EXPIRED_EVENT } from "./api";
+import { cancelSessionReminders } from "./session";
 
 const AuthContext = createContext(null);
 
@@ -23,7 +25,11 @@ export function AuthProvider({ children }) {
         try {
             const { data } = await api.get("/auth/me");
             setUser(data);
-        } catch {
+        } catch (e) {
+            // Havia um token salvo, mas o servidor recusou: a sessão venceu.
+            if (e?.response?.status === 401) {
+                toast.error("Sua sessão expirou. Entre novamente para continuar.");
+            }
             setToken(null);
             setUser(false);
         } finally {
@@ -34,6 +40,23 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         fetchMe();
     }, [fetchMe]);
+
+    // Token vencido durante o uso (ver interceptor em lib/api.js).
+    useEffect(() => {
+        let shown = false;
+        const onExpired = () => {
+            setUser((prev) => {
+                if (prev && !shown) {
+                    shown = true;
+                    toast.error("Sua sessão expirou. Entre novamente para continuar.");
+                    setTimeout(() => { shown = false; }, 5000);
+                }
+                return false;
+            });
+        };
+        window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+        return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    }, []);
 
     const setSession = (userObj, token) => {
         if (token) setToken(token);
@@ -57,6 +80,7 @@ export function AuthProvider({ children }) {
 
     const logout = async () => {
         try { await api.post("/auth/logout"); } catch {}
+        cancelSessionReminders();
         setToken(null);
         setUser(false);
     };
