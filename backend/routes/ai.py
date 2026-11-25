@@ -76,7 +76,7 @@ _ai_recs_cache: dict = {}
 def _ai_recs_cache_key(user_id: str, lib: list, reviews: list) -> str:
     sig_parts = sorted(f"{it.get('tmdb_id')}:{it.get('status','')}" for it in lib)
     sig_parts += sorted(f"r{r.get('tmdb_id')}:{r.get('rating')}" for r in reviews)
-    return f"{user_id}:" + hashlib.md5("|".join(sig_parts).encode()).hexdigest()
+    return f"{user_id}:" + hashlib.md5("|".join(sig_parts).encode(), usedforsecurity=False).hexdigest()
 
 
 @router.post("/ai/recommendations")

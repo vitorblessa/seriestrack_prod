@@ -102,7 +102,9 @@ async def startup():
     # Seed admin — production requires ADMIN_PASSWORD env var, no insecure default.
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@seriestrack.app").lower()
     admin_pw = os.environ.get("ADMIN_PASSWORD")
-    is_prod = os.environ.get("APP_ENV", "development").lower() == "production"
+    # Default-deny: only an explicit dev-like APP_ENV may seed the well-known default password.
+    # A missing APP_ENV (e.g. a misconfigured prod deploy) is treated as production.
+    is_prod = os.environ.get("APP_ENV", "production").lower() not in ("development", "dev", "local", "test", "preview")
     existing = await db.users.find_one({"email": admin_email})
     if not existing:
         if not admin_pw:

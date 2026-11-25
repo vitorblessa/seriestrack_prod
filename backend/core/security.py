@@ -35,8 +35,12 @@ def create_token(user_id: str, email: str, kind: str = "access") -> str:
 
 
 def set_auth_cookies(response: Response, access: str, refresh: str):
-    response.set_cookie("access_token", access, httponly=True, secure=True, samesite="none", max_age=60 * 60 * 24 * 7, path="/")
-    response.set_cookie("refresh_token", refresh, httponly=True, secure=True, samesite="none", max_age=60 * 60 * 24 * 30, path="/")
+    # SameSite=Lax (not None): get_current_user also accepts this cookie, and there is no
+    # CSRF token, so a cross-site-sendable cookie would let any third-party page fire
+    # state-changing requests as the user. The SPA authenticates with the Bearer header
+    # (localStorage) and never needed cross-site cookies.
+    response.set_cookie("access_token", access, httponly=True, secure=True, samesite="lax", max_age=60 * 60 * 24 * 7, path="/")
+    response.set_cookie("refresh_token", refresh, httponly=True, secure=True, samesite="lax", max_age=60 * 60 * 24 * 30, path="/")
 
 
 def clear_auth_cookies(response: Response):
