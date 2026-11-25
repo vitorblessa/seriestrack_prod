@@ -26,7 +26,6 @@ import MyLibrary from "./pages/MyLibrary";
 import CalendarPage from "./pages/CalendarPage";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
-import AuthCallback from "./pages/AuthCallback";
 import CalendarGoogleCallback from "./pages/CalendarGoogleCallback";
 import PublicProfile from "./pages/PublicProfile";
 import Settings from "./pages/Settings";
@@ -156,7 +155,6 @@ export default function App() {
                             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                            <Route path="/auth/callback" element={<AuthCallback />} />
                             <Route path="/calendar/google/callback" element={<ProtectedRoute><CalendarGoogleCallback /></ProtectedRoute>} />
                             <Route path="/u/:id" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
                             <Route path="/pricing" element={<Pricing />} />

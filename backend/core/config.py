@@ -79,13 +79,6 @@ if VAPID_PRIVATE_PEM_PATH and os.path.exists(VAPID_PRIVATE_PEM_PATH):
 FIREBASE_SERVICE_ACCOUNT_JSON = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON', '')
 FCM_AVAILABLE = _FIREBASE_SDK_AVAILABLE and bool(FIREBASE_SERVICE_ACCOUNT_JSON)
 
-# Google OAuth via Emergent (legacy — kept only so the var doesn't error if still set;
-# no longer used now that /auth/google verifies Google ID tokens directly, see routes/auth.py)
-EMERGENT_OAUTH_SESSION_ENDPOINT = os.environ.get(
-    'EMERGENT_OAUTH_SESSION_ENDPOINT',
-    'https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data',
-)
-
 # Google OAuth Client ID (from Google Cloud Console). Required for "Continuar com
 # Google" — the frontend uses it to get an ID token, and this backend verifies that
 # token's audience matches it.

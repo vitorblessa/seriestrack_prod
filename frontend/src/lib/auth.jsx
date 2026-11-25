@@ -10,12 +10,6 @@ export function AuthProvider({ children }) {
     const [bootstrapped, setBootstrapped] = useState(false);
 
     const fetchMe = useCallback(async () => {
-        // CRITICAL: If returning from OAuth callback, skip the /auth/me check.
-        // AuthCallback will exchange the session_id and call setSession directly.
-        if (typeof window !== "undefined" && window.location.hash && window.location.hash.includes("session_id=")) {
-            setBootstrapped(true);
-            return;
-        }
         const tok = getToken();
         if (!tok) {
             setUser(false);
