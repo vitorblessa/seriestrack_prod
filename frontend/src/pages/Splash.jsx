@@ -1,13 +1,30 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import api from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { Tv, Bell, Calendar, Sparkles, ArrowRight, Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { Tv, Bell, Calendar, Sparkles, ArrowRight, Play, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import PosterCard from "../components/PosterCard";
 
 const HERO_BG = "https://images.unsplash.com/photo-1755963969538-00dfa22a7c0b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwxfHxjaW5lbWF0aWMlMjBkYXJrJTIwZnV0dXJpc3RpYyUyMGNpdHl8ZW58MHx8fHwxNzc4MDk3ODUyfDA&ixlib=rb-4.1.0&q=85";
 
+// "/" is the marketing landing page, meant for visitors. Someone who is already
+// signed in (web or the installed app) goes straight to their own home instead.
 export default function Splash() {
+    const { user, bootstrapped } = useAuth();
+    if (!bootstrapped) {
+        // Same loading state as ProtectedRoute — avoids flashing the landing
+        // page for a split second before redirecting a signed-in user.
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-obsidian" data-testid="splash-loading">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+    if (user) return <Navigate to="/dashboard" replace />;
+    return <SplashLanding />;
+}
+
+function SplashLanding() {
     const { user } = useAuth();
     const [trending, setTrending] = useState([]);
     const scrollerRef = useRef(null);
